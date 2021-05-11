@@ -12,6 +12,7 @@ bool init_unit_test();
 #include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/ADT/PostOrderIterator.h"
 #include "llvm/ADT/SCCIterator.h"
+#include "llvm/ADT/SmallSet.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/Support/GenericDomTreeConstruction.h"
 #include "llvm/Support/GraphWriter.h"
@@ -197,22 +198,22 @@ static DiamondGraph createGraph() {
 BOOST_AUTO_TEST_CASE(TestRPOT) {
   DiamondGraph DG = createGraph();
   ReversePostOrderTraversal<TestGraph *> RPOT(&DG.Graph);
-  std::vector<TestNode *> Visited;
+  llvm::SmallSet<unsigned, 4> Visited;
   for (TestNode *Node : RPOT)
-    Visited.push_back(Node);
+    Visited.insert(Node->Rank);
   revng_check(Visited.size() == 4);
 }
 
 BOOST_AUTO_TEST_CASE(TestDepthFirstVisit) {
   DiamondGraph DG = createGraph();
-  std::vector<TestNode *> Visited;
+  llvm::SmallSet<unsigned, 4> Visited;
   for (TestNode *Node : depth_first(&DG.Graph))
-    Visited.push_back(Node);
+    Visited.insert(Node->Rank);
   revng_check(Visited.size() == 4);
 
   Visited.clear();
   for (TestNode *Node : inverse_depth_first(DG.Final))
-    Visited.push_back(Node);
+    Visited.insert(Node->Rank);
   revng_check(Visited.size() == 4);
 }
 
@@ -236,13 +237,13 @@ BOOST_AUTO_TEST_CASE(TestDominatorTree) {
 
 BOOST_AUTO_TEST_CASE(TestSCC) {
   DiamondGraph DG = createGraph();
-  unsigned SCCCount = 0;
+  llvm::SmallSet<unsigned, 4> Visited;
   for (const std::vector<TestNode *> &SCC :
        make_range(scc_begin(&DG.Graph), scc_end(&DG.Graph))) {
     revng_check(SCC.size() == 1);
-    ++SCCCount;
+    Visited.insert(SCC.front()->Rank);
   }
-  revng_check(SCCCount == 4);
+  revng_check(Visited.size() == 4);
 }
 
 BOOST_AUTO_TEST_CASE(TestFilterGraphTraits) {
