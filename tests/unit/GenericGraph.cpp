@@ -24,11 +24,11 @@ bool init_unit_test();
 using namespace llvm;
 
 BOOST_AUTO_TEST_CASE(TestCompile) {
-  // Test only it compiles
+  // Only test if it compiles
   if constexpr (false) {
     {
       struct MyForwardNode {
-        MyForwardNode(int) {}
+        MyForwardNode(int M) : m(M) {}
         int m;
       };
       using NodeType = ForwardNode<MyForwardNode>;
@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE(TestCompile) {
 
     {
       struct MyBidirectionalNode {
-        MyBidirectionalNode(int) {}
+        MyBidirectionalNode(int M) : m(M) {}
         int m;
       };
       using NodeType = BidirectionalNode<MyBidirectionalNode>;
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(TestCompile) {
 
     {
       struct MyForwardNodeWithEdges {
-        MyForwardNodeWithEdges(int) {}
+        MyForwardNodeWithEdges(int M) : m(M) {}
         int m;
       };
 
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(TestCompile) {
 
     {
       struct MyBidirectionalNodeWithEdges {
-        MyBidirectionalNodeWithEdges(int) {}
+        MyBidirectionalNodeWithEdges(int M) : m(M) {}
         int m;
       };
       using NodeType = BidirectionalNode<MyBidirectionalNodeWithEdges,
