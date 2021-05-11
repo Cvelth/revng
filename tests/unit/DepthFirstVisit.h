@@ -4,9 +4,12 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include <array>
 #include <deque>
 #include <iterator>
+#include <numeric>
 #include <queue>
+#include <random>
 #include <set>
 
 #include "llvm/ADT/iterator_range.h"
@@ -71,30 +74,56 @@ inline Graph createSimpleGraph() {
   return SimpleGraph;
 }
 
+#include <iostream>
+template<typename OddsType,
+         typename ActionType = decltype(OddsType::value_type::first),
+         typename IntType = decltype(OddsType::value_type::second)>
+struct ActionDistribution {
+  ActionDistribution(OddsType const &Odds) :
+    Odds(Odds), Underlying(0, totalOdds() - 1) {}
+
+  template<typename GeneratorType>
+  ActionType operator()(GeneratorType &Generator) {
+    std::cout << "total:" << totalOdds() << '\n';
+    const IntType Random = Underlying(Generator);
+    std::cout << "random:" << Random << '\n';
+    IntType Accumulator = 0;
+    for (auto const &[Action, Value] : Odds) {
+      std::cout << "Accumulator:" << Accumulator << '\n';
+      if ((Accumulator += Value) >= Random)
+        return Action;
+    }
+    revng_check(false);
+    return ActionType{};
+  }
+
+private:
+  constexpr IntType totalOdds() {
+    return std::accumulate(Odds.begin(),
+                           Odds.end(),
+                           IntType{},
+                           [](auto const &lhs, auto const &rhs) {
+                             return lhs + rhs.second;
+                           });
+  }
+
+private:
+  OddsType const &Odds;
+  std::uniform_int_distribution<IntType> Underlying;
+};
+
 inline Graph createRandomGraph() {
   Graph Result;
   srandom(1);
 
-  enum Action { NewChildren, LinkToRandom, LinkToUncle, Stop };
+  enum class Action { NewChild, LinkToRandom, LinkToUncle, Stop };
+  static constexpr std::array Odds = { std::pair{ Action::NewChild, 20u },
+                                       std::pair{ Action::LinkToRandom, 5u },
+                                       std::pair{ Action::LinkToUncle, 5u },
+                                       std::pair{ Action::Stop, 5u } };
 
-  auto GetRandomAction = []() {
-    const long int NewChildrenLikelyhood = 20;
-    const long int LinkToRandomLikelyhood = 5;
-    const long int LinkToUncleLikelyhood = 5;
-    const long int StopLikelyhood = 5;
-    const long int Total = NewChildrenLikelyhood + LinkToRandomLikelyhood
-                           + StopLikelyhood + LinkToUncleLikelyhood;
-    const long int Random = random() % Total;
-    if (Random < NewChildrenLikelyhood)
-      return NewChildren;
-    else if (Random < NewChildrenLikelyhood + LinkToRandomLikelyhood)
-      return LinkToRandom;
-    else if (Random < NewChildrenLikelyhood + LinkToRandomLikelyhood
-                        + LinkToUncleLikelyhood)
-      return LinkToRandom;
-    else
-      return Stop;
-  };
+  std::mt19937 Generator(std::random_device{}());
+  ActionDistribution Distribution{ Odds };
 
   std::queue<Node *> ToProcess;
   ToProcess.push(Result.root());
@@ -103,26 +132,26 @@ inline Graph createRandomGraph() {
     Node *Current = ToProcess.front();
     ToProcess.pop();
 
-    Action CurrentAction = GetRandomAction();
-    while (CurrentAction != Stop) {
+    Action CurrentAction = Distribution(Generator);
+    while (CurrentAction != Action::Stop) {
       switch (CurrentAction) {
-      case NewChildren: {
+      case Action::NewChild: {
         Node *NewNode = Result.newNode();
         ToProcess.push(NewNode);
         Current->addChild(NewNode);
         break;
       }
-      case LinkToRandom:
+      case Action::LinkToRandom:
         Current->addChild(Result.getRandom());
         break;
-      case LinkToUncle:
+      case Action::LinkToUncle:
         Current->getRandomParent()->addChild(Current);
         break;
-      case Stop:
+      case Action::Stop:
         revng_abort();
       }
 
-      CurrentAction = GetRandomAction();
+      CurrentAction = Distribution(Generator);
     }
   }
 
