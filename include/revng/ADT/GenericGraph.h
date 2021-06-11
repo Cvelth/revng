@@ -145,6 +145,13 @@ class ForwardNode
                                         ParentSmallSize,
                                         ParentHasEntryNode>::Result {
 public:
+  using CurrentType = ForwardNode<Node,
+                                  EdgeLabel,
+                                  HasParent,
+                                  SmallSize,
+                                  FinalType,
+                                  ParentSmallSize,
+                                  ParentHasEntryNode>;
   static constexpr bool is_forward_node = true;
   static constexpr bool has_parent = HasParent;
   using TypeCalc = detail::ForwardNodeBaseTCalc<Node,
@@ -201,13 +208,35 @@ public:
   }
 
 public:
-  child_iterator removeSuccessor(child_iterator It) {
+  child_iterator findSuccessor(CurrentType *Another) {
+    return std::find(toNeighborRange(Successors).begin(),
+                     toNeighborRange(Successors).end(),
+                     Another);
+  }
+  const_child_iterator findSuccessor(CurrentType *Another) const {
+    return std::find(toNeighborRange(Successors).begin(),
+                     toNeighborRange(Successors).end(),
+                     Another);
+  }
+  bool hasSuccessor(CurrentType *Another) const {
+    return findSuccessor(Another) != toNeighborRange(Successors).end();
+  }
+
+public:
+  child_iterator removeSuccessor(const_child_iterator It) {
     auto InternalIt = Successors.erase(It.getCurrent());
     return child_iterator(InternalIt, getNeighbor);
   }
 
-  edge_iterator removeSuccessorEdge(edge_iterator It) {
+  edge_iterator removeSuccessorEdge(const_edge_iterator It) {
     return Successors.erase(It);
+  }
+
+  child_iterator removeSuccessor(CurrentType *NodePtr) {
+    auto It = findSuccessor(NodePtr);
+    if (It != toNeighborRange(Successors).end())
+      return removeSuccessor(It);
+    return It;
   }
 
 public:
@@ -257,6 +286,11 @@ private:
   NeighborContainer Successors;
 };
 
+template<typename T>
+concept IsForwardNode = requires {
+  T::is_forward_node;
+};
+
 namespace detail {
 
 /// To remove clutter from BidirectionalNode, the computation of some types are
@@ -294,6 +328,7 @@ public:
   static const bool is_bidirectional_node = true;
 
 public:
+  using CurrentType = BidirectionalNode<Node, EdgeLabel, HasParent, SmallSize>;
   using NodeData = Node;
   using EdgeLabelData = EdgeLabel;
   using Base = ForwardNode<Node,
@@ -337,13 +372,62 @@ public:
   }
 
 public:
-  child_iterator removePredecessor(child_iterator It) {
+  child_iterator findPredecessor(CurrentType *Another) {
+    return std::find(this->toNeighborRange(Predecessors).begin(),
+                     this->toNeighborRange(Predecessors).end(),
+                     Another);
+  }
+  const_child_iterator findPredecessor(CurrentType *Another) const {
+    return std::find(this->toNeighborRange(Predecessors).begin(),
+                     this->toNeighborRange(Predecessors).end(),
+                     Another);
+  }
+  bool hasPredecessor(CurrentType *Another) const {
+    return findPredecessor(Another)
+           != this->toNeighborRange(Predecessors).end();
+  }
+
+public:
+  child_iterator removeSuccessor(const_child_iterator It) {
+    auto &Predecessor = It.getCurrent()->Neighbor->findPredecessor(this);
+    if (Predecessor != It.getCurrent()->Neighbor->predecessors().end())
+      It.getCurrent()->Neighbor->Predecessors.erase(Predecessor.getCurrent());
+    return Base::removeSuccessor(It);
+  }
+
+  edge_iterator removeSuccessorEdge(const_edge_iterator It) {
+    auto &Predecessor = It.Neighbor->findPredecessor(this);
+    if (Predecessor != It.Neighbor->predecessors().end())
+      It.Neighbor->Predecessors.erase(Predecessor.getCurrent());
+    return Base::removeSuccessorEdge(It);
+  }
+
+  child_iterator removePredecessor(const_child_iterator It) {
+    auto const &Successor = It.getCurrent()->Neighbor->findSuccessor(this);
+    if (Successor != It.getCurrent()->Neighbor->successors().end())
+      It.getCurrent()->Neighbor->removeSuccessor(Successor.getCurrent());
     auto InternalIt = Predecessors.erase(It.getCurrent());
     return child_iterator(InternalIt, Base::getNeighbor);
   }
 
-  edge_iterator removePredecessorEdge(edge_iterator It) {
+  edge_iterator removePredecessorEdge(const_edge_iterator It) {
+    auto &Successor = It.Neighbor->findSuccessor(this);
+    if (Successor != It.Neighbor->successors().end())
+      It.Neighbor->Successors.erase(Successor.getCurrent());
     return Predecessors.erase(It);
+  }
+
+  child_iterator removeSuccessor(CurrentType *NodePtr) {
+    auto It = findSuccessor(NodePtr);
+    if (It != this->successors().end())
+      return removeSuccessor(It);
+    return It;
+  }
+  child_iterator removePredecessor(CurrentType *NodePtr) {
+    auto It = findPredecessor(NodePtr);
+    if (It != predecessors().end())
+      return removePredecessor(It);
+    return It;
   }
 
 public:
@@ -382,6 +466,12 @@ public:
 
 private:
   NeighborContainer Predecessors;
+};
+
+template<typename T>
+concept IsBidirectionalNode = requires {
+  T::is_bidirectional_node;
+  typename llvm::Inverse<T *>;
 };
 
 /// Simple data structure to hold the EntryNode of a GenericGraph
@@ -446,24 +536,37 @@ public:
     return Nodes.back().get();
   }
 
-  nodes_iterator removeNode(nodes_iterator It) {
+  nodes_iterator removeNode(const_nodes_iterator It) {
+    if constexpr (IsBidirectionalNode<NodeT>) {
+      auto *NodePtr = It->getCurrent();
+      for (auto *Predecessor : NodePtr->predecessors())
+        Predecessor->removeSuccessor(NodePtr);
+      for (auto *Successor : NodePtr->successors())
+        Successor->removePredecessor(NodePtr);
+    }
+
     auto InternalIt = Nodes.erase(It.getCurrent());
     return nodes_iterator(InternalIt, getNode);
   }
 
+  const_nodes_iterator findNode(Node *SomeNode) const {
+    auto Comparator = [SomeNode](auto &LHS) { return *LHS == SomeNode; };
+    return std::find_if(nodes().begin(), nodes().end(), Comparator);
+  }
+  nodes_iterator findNode(Node *SomeNode) {
+    auto Comparator = [SomeNode](auto &LHS) { return *LHS == SomeNode; };
+    return std::find_if(nodes().begin(), nodes().end(), Comparator);
+  }
+  nodes_iterator hasNode(Node *SomeNode) {
+    return findNode(SomeNode) != nodes().end();
+  }
+
+  nodes_iterator removeNode(Node *SomeNode) {
+    return removeNode(findNode(SomeNode));
+  }
+
 private:
   NodesContainer Nodes;
-};
-
-template<typename T>
-concept IsForwardNode = requires {
-  T::is_forward_node;
-};
-
-template<typename T>
-concept IsBidirectionalNode = requires {
-  T::is_bidirectional_node;
-  typename llvm::Inverse<T *>;
 };
 
 template<typename T>

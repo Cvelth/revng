@@ -194,6 +194,20 @@ static DiamondGraph createGraph() {
   return DG;
 }
 
+BOOST_AUTO_TEST_CASE(TestLinks) {
+  DiamondGraph DG = createGraph();
+
+  revng_check(DG.Then->hasSuccessor(DG.Final));
+  revng_check(DG.Else->hasSuccessor(DG.Final));
+  revng_check(DG.Final->hasPredecessor(DG.Then));
+  revng_check(DG.Final->hasPredecessor(DG.Else));
+  llvm::WriteGraph(llvm::outs(), &DG.Graph, "lol");
+  // DG.Then->removeSuccessor(DG.Then->findSuccessor(DG.Final));
+  DG.Then->removePredecessor(DG.Then->findPredecessor(DG.Root));
+  llvm::WriteGraph(llvm::outs(), &DG.Graph, "lol");
+  revng_check(false);
+}
+
 BOOST_AUTO_TEST_CASE(TestRPOT) {
   DiamondGraph DG = createGraph();
   ReversePostOrderTraversal<TestGraph *> RPOT(&DG.Graph);
