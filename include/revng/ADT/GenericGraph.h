@@ -973,6 +973,20 @@ public:
     return removeNode(findNode(NodePtr));
   }
 
+public:
+  nodes_iterator
+  insertNode(nodes_iterator Where, std::unique_ptr<NodeT> &&Ptr) {
+    auto InternalIt = Nodes.insert(Where.getCurrent(), std::move(Ptr));
+    return nodes_iterator(InternalIt, getNode);
+  }
+  template<class... Args>
+  nodes_iterator insertNode(nodes_iterator Where, Args &&...A) {
+    auto InternalIt = Nodes.insert(Where.getCurrent(),
+                                   std::make_unique<NodeT>(
+                                     std::forward<Args>(A)...));
+    return nodes_iterator(InternalIt, getNode);
+  }
+
 private:
   NodesContainer Nodes;
 };
