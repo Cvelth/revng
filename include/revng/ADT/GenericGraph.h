@@ -989,6 +989,7 @@ public:
 
 public:
   void reserve(size_t Size) { Nodes.reserve(Size); }
+  void clear() { Nodes.clear(); }
 
 private:
   NodesContainer Nodes;
