@@ -589,32 +589,35 @@ protected:
     }
   };
 
-protected:
-  using SuccessorEdgeIterator = revng::mapped_iterator<
-    OwningEdge *,
-    std::decay_t<decltype(SuccessorFilters::toView)>>;
-  using ConstSuccessorEdgeIterator = revng::mapped_iterator<
-    OwningEdge const *,
-    std::decay_t<decltype(SuccessorFilters::toConstView)>>;
-  using SuccessorIterator = revng::mapped_iterator<
-    OwningEdge *,
-    std::decay_t<decltype(SuccessorFilters::toNeighbor)>>;
-  using ConstSuccessorIterator = revng::mapped_iterator<
-    OwningEdge const *,
-    std::decay_t<decltype(SuccessorFilters::toConstNeighbor)>>;
+private:
+  template<typename IteratorType, typename FunctionType>
+  using MI = revng::mapped_iterator<IteratorType, FunctionType>;
 
-  using PredecessorEdgeIterator = revng::mapped_iterator<
-    NonOwningEdge *,
-    std::decay_t<decltype(PredecessorFilters::toView)>>;
-  using ConstPredecessorEdgeIterator = revng::mapped_iterator<
-    NonOwningEdge const *,
-    std::decay_t<decltype(PredecessorFilters::toConstView)>>;
-  using PredecessorIterator = revng::mapped_iterator<
-    NonOwningEdge *,
-    std::decay_t<decltype(PredecessorFilters::toNeighbor)>>;
-  using ConstPredecessorIterator = revng::mapped_iterator<
-    NonOwningEdge const *,
-    std::decay_t<decltype(PredecessorFilters::toConstNeighbor)>>;
+  using OEP = OwningEdge *;
+  using NEP = NonOwningEdge *;
+  using COEP = OwningEdge const *;
+  using CNEP = NonOwningEdge const *;
+
+  using SV = std::decay_t<decltype(SuccessorFilters::toView)>;
+  using SCV = std::decay_t<decltype(SuccessorFilters::toConstView)>;
+  using SN = std::decay_t<decltype(SuccessorFilters::toNeighbor)>;
+  using SCN = std::decay_t<decltype(SuccessorFilters::toConstNeighbor)>;
+
+  using PV = std::decay_t<decltype(PredecessorFilters::toView)>;
+  using PCV = std::decay_t<decltype(PredecessorFilters::toConstView)>;
+  using PN = std::decay_t<decltype(PredecessorFilters::toNeighbor)>;
+  using PCN = std::decay_t<decltype(PredecessorFilters::toConstNeighbor)>;
+
+protected:
+  using SuccessorEdgeIterator = MI<OEP, SV>;
+  using ConstSuccessorEdgeIterator = MI<COEP, SCV>;
+  using SuccessorIterator = MI<OEP, SN>;
+  using ConstSuccessorIterator = MI<COEP, SCN>;
+
+  using PredecessorEdgeIterator = MI<NEP, PV>;
+  using ConstPredecessorEdgeIterator = MI<CNEP, PCV>;
+  using PredecessorIterator = MI<NEP, PN>;
+  using ConstPredecessorIterator = MI<CNEP, PCN>;
 
   using ReverseSuccessorEdgeIterator = revng::mapped_iterator<
     std::reverse_iterator<OwningEdge *>,
