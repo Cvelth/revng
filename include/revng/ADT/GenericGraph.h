@@ -589,6 +589,7 @@ protected:
     }
   };
 
+protected:
   using SuccessorEdgeIterator = revng::mapped_iterator<
     OwningEdge *,
     std::decay_t<decltype(SuccessorFilters::toView)>>;
@@ -615,46 +616,265 @@ protected:
     NonOwningEdge const *,
     std::decay_t<decltype(PredecessorFilters::toConstNeighbor)>>;
 
+  using ReverseSuccessorEdgeIterator = revng::mapped_iterator<
+    std::reverse_iterator<OwningEdge *>,
+    std::decay_t<decltype(SuccessorFilters::toView)>>;
+  using ConstReverseSuccessorEdgeIterator = revng::mapped_iterator<
+    std::reverse_iterator<OwningEdge const *>,
+    std::decay_t<decltype(SuccessorFilters::toConstView)>>;
+  using ReverseSuccessorIterator = revng::mapped_iterator<
+    std::reverse_iterator<OwningEdge *>,
+    std::decay_t<decltype(SuccessorFilters::toNeighbor)>>;
+  using ConstReverseSuccessorIterator = revng::mapped_iterator<
+    std::reverse_iterator<OwningEdge const *>,
+    std::decay_t<decltype(SuccessorFilters::toConstNeighbor)>>;
+
+  using ReversePredecessorEdgeIterator = revng::mapped_iterator<
+    std::reverse_iterator<NonOwningEdge *>,
+    std::decay_t<decltype(PredecessorFilters::toView)>>;
+  using ConstReversePredecessorEdgeIterator = revng::mapped_iterator<
+    std::reverse_iterator<NonOwningEdge const *>,
+    std::decay_t<decltype(PredecessorFilters::toConstView)>>;
+  using ReversePredecessorIterator = revng::mapped_iterator<
+    std::reverse_iterator<NonOwningEdge *>,
+    std::decay_t<decltype(PredecessorFilters::toNeighbor)>>;
+  using ConstReversePredecessorIterator = revng::mapped_iterator<
+    std::reverse_iterator<NonOwningEdge const *>,
+    std::decay_t<decltype(PredecessorFilters::toConstNeighbor)>>;
+
+public:
+  SuccessorEdgeIterator successor_edges_begin() {
+    return revng::map_iterator(Successors.begin(), SuccessorFilters::toView);
+  }
+  ConstSuccessorEdgeIterator successor_edges_begin() const {
+    return revng::map_iterator(Successors.begin(),
+                               SuccessorFilters::toConstView);
+  }
+  ConstSuccessorEdgeIterator successor_edges_cbegin() const {
+    return revng::map_iterator(Successors.cbegin(),
+                               SuccessorFilters::toConstView);
+  }
+  ReverseSuccessorEdgeIterator successor_edges_rbegin() {
+    return revng::map_iterator(Successors.rbegin(), SuccessorFilters::toView);
+  }
+  ConstReverseSuccessorEdgeIterator successor_edges_rbegin() const {
+    return revng::map_iterator(Successors.rbegin(),
+                               SuccessorFilters::toConstView);
+  }
+  ConstReverseSuccessorEdgeIterator successor_edges_crbegin() const {
+    return revng::map_iterator(Successors.crbegin(),
+                               SuccessorFilters::toConstView);
+  }
+
+  SuccessorEdgeIterator successor_edges_end() {
+    return revng::map_iterator(Successors.end(), SuccessorFilters::toView);
+  }
+  ConstSuccessorEdgeIterator successor_edges_end() const {
+    return revng::map_iterator(Successors.end(), SuccessorFilters::toConstView);
+  }
+  ConstSuccessorEdgeIterator successor_edges_cend() const {
+    return revng::map_iterator(Successors.cend(),
+                               SuccessorFilters::toConstView);
+  }
+  ReverseSuccessorEdgeIterator successor_edges_rend() {
+    return revng::map_iterator(Successors.rend(), SuccessorFilters::toView);
+  }
+  ConstReverseSuccessorEdgeIterator successor_edges_rend() const {
+    return revng::map_iterator(Successors.rend(),
+                               SuccessorFilters::toConstView);
+  }
+  ConstReverseSuccessorEdgeIterator successor_edges_crend() const {
+    return revng::map_iterator(Successors.crend(),
+                               SuccessorFilters::toConstView);
+  }
+
+public:
+  SuccessorIterator successors_begin() {
+    return revng::map_iterator(Successors.begin(),
+                               SuccessorFilters::toNeighbor);
+  }
+  ConstSuccessorIterator successors_begin() const {
+    return revng::map_iterator(Successors.begin(),
+                               SuccessorFilters::toConstNeighbor);
+  }
+  ConstSuccessorIterator successors_cbegin() const {
+    return revng::map_iterator(Successors.cbegin(),
+                               SuccessorFilters::toConstNeighbor);
+  }
+  ReverseSuccessorIterator successors_rbegin() {
+    return revng::map_iterator(Successors.rbegin(),
+                               SuccessorFilters::toNeighbor);
+  }
+  ConstReverseSuccessorIterator successors_rbegin() const {
+    return revng::map_iterator(Successors.rbegin(),
+                               SuccessorFilters::toConstNeighbor);
+  }
+  ConstReverseSuccessorIterator successors_crbegin() const {
+    return revng::map_iterator(Successors.crbegin(),
+                               SuccessorFilters::toConstNeighbor);
+  }
+
+  SuccessorIterator successors_end() {
+    return revng::map_iterator(Successors.end(), SuccessorFilters::toNeighbor);
+  }
+  ConstSuccessorIterator successors_end() const {
+    return revng::map_iterator(Successors.end(),
+                               SuccessorFilters::toConstNeighbor);
+  }
+  ConstSuccessorIterator successors_cend() const {
+    return revng::map_iterator(Successors.cend(),
+                               SuccessorFilters::toConstNeighbor);
+  }
+  ReverseSuccessorIterator successors_rend() {
+    return revng::map_iterator(Successors.rend(), SuccessorFilters::toNeighbor);
+  }
+  ConstReverseSuccessorIterator successors_rend() const {
+    return revng::map_iterator(Successors.rend(),
+                               SuccessorFilters::toConstNeighbor);
+  }
+  ConstReverseSuccessorIterator successors_crend() const {
+    return revng::map_iterator(Successors.crend(),
+                               SuccessorFilters::toConstNeighbor);
+  }
+
+public:
+  PredecessorEdgeIterator predecessor_edges_begin() {
+    return revng::map_iterator(Predecessors.begin(),
+                               PredecessorFilters::toView);
+  }
+  ConstPredecessorEdgeIterator predecessor_edges_begin() const {
+    return revng::map_iterator(Predecessors.begin(),
+                               PredecessorFilters::toConstView);
+  }
+  ConstPredecessorEdgeIterator predecessor_edges_cbegin() const {
+    return revng::map_iterator(Predecessors.cbegin(),
+                               PredecessorFilters::toConstView);
+  }
+  ReversePredecessorEdgeIterator predecessor_edges_rbegin() {
+    return revng::map_iterator(Predecessors.rbegin(),
+                               PredecessorFilters::toView);
+  }
+  ConstReversePredecessorEdgeIterator predecessor_edges_rbegin() const {
+    return revng::map_iterator(Predecessors.rbegin(),
+                               PredecessorFilters::toConstView);
+  }
+  ConstReversePredecessorEdgeIterator predecessor_edges_crbegin() const {
+    return revng::map_iterator(Predecessors.crbegin(),
+                               PredecessorFilters::toConstView);
+  }
+
+  PredecessorEdgeIterator predecessor_edges_end() {
+    return revng::map_iterator(Predecessors.end(), PredecessorFilters::toView);
+  }
+  ConstPredecessorEdgeIterator predecessor_edges_end() const {
+    return revng::map_iterator(Predecessors.end(),
+                               PredecessorFilters::toConstView);
+  }
+  ConstPredecessorEdgeIterator predecessor_edges_cend() const {
+    return revng::map_iterator(Predecessors.cend(),
+                               PredecessorFilters::toConstView);
+  }
+  ReversePredecessorEdgeIterator predecessor_edges_rend() {
+    return revng::map_iterator(Predecessors.rend(), PredecessorFilters::toView);
+  }
+  ConstReversePredecessorEdgeIterator predecessor_edges_rend() const {
+    return revng::map_iterator(Predecessors.rend(),
+                               PredecessorFilters::toConstView);
+  }
+  ConstReversePredecessorEdgeIterator predecessor_edges_crend() const {
+    return revng::map_iterator(Predecessors.crend(),
+                               PredecessorFilters::toConstView);
+  }
+
+public:
+  PredecessorIterator predecessors_begin() {
+    return revng::map_iterator(Predecessors.begin(),
+                               PredecessorFilters::toNeighbor);
+  }
+  ConstPredecessorIterator predecessors_begin() const {
+    return revng::map_iterator(Predecessors.begin(),
+                               PredecessorFilters::toConstNeighbor);
+  }
+  ConstPredecessorIterator predecessors_cbegin() const {
+    return revng::map_iterator(Predecessors.cbegin(),
+                               PredecessorFilters::toConstNeighbor);
+  }
+  ReversePredecessorIterator predecessors_rbegin() {
+    return revng::map_iterator(Predecessors.rbegin(),
+                               PredecessorFilters::toNeighbor);
+  }
+  ConstReversePredecessorIterator predecessors_rbegin() const {
+    return revng::map_iterator(Predecessors.rbegin(),
+                               PredecessorFilters::toConstNeighbor);
+  }
+  ConstReversePredecessorIterator predecessors_crbegin() const {
+    return revng::map_iterator(Predecessors.crbegin(),
+                               PredecessorFilters::toConstNeighbor);
+  }
+
+  PredecessorIterator predecessors_end() {
+    return revng::map_iterator(Predecessors.end(),
+                               PredecessorFilters::toNeighbor);
+  }
+  ConstPredecessorIterator predecessors_end() const {
+    return revng::map_iterator(Predecessors.end(),
+                               PredecessorFilters::toConstNeighbor);
+  }
+  ConstPredecessorIterator predecessors_cend() const {
+    return revng::map_iterator(Predecessors.cend(),
+                               PredecessorFilters::toConstNeighbor);
+  }
+  ReversePredecessorIterator predecessors_rend() {
+    return revng::map_iterator(Predecessors.rend(),
+                               PredecessorFilters::toNeighbor);
+  }
+  ConstReversePredecessorIterator predecessors_rend() const {
+    return revng::map_iterator(Predecessors.rend(),
+                               PredecessorFilters::toConstNeighbor);
+  }
+  ConstReversePredecessorIterator predecessors_crend() const {
+    return revng::map_iterator(Predecessors.crend(),
+                               PredecessorFilters::toConstNeighbor);
+  }
+
 public:
   llvm::iterator_range<SuccessorEdgeIterator> successor_edges() {
-    auto Range = llvm::make_range(Successors.begin(), Successors.end());
-    return revng::map_range(Range, SuccessorFilters::toView);
+    return llvm::make_range(successor_edges_begin(), successor_edges_end());
   }
   llvm::iterator_range<ConstSuccessorEdgeIterator> successor_edges() const {
-    auto Range = llvm::make_range(Successors.begin(), Successors.end());
-    return revng::map_range(Range, SuccessorFilters::toConstView);
+    return llvm::make_range(successor_edges_begin(), successor_edges_end());
   }
   llvm::iterator_range<SuccessorIterator> successors() {
-    auto Range = llvm::make_range(Successors.begin(), Successors.end());
-    return revng::map_range(Range, SuccessorFilters::toNeighbor);
+    return llvm::make_range(successors_begin(), successors_end());
   }
   llvm::iterator_range<ConstSuccessorIterator> successors() const {
-    auto Range = llvm::make_range(Successors.begin(), Successors.end());
-    return revng::map_range(Range, SuccessorFilters::toConstNeighbor);
+    return llvm::make_range(successors_begin(), successors_end());
   }
 
   llvm::iterator_range<PredecessorEdgeIterator> predecessor_edges() {
-    auto Range = llvm::make_range(Predecessors.begin(), Predecessors.end());
-    return revng::map_range(Range, PredecessorFilters::toView);
+    return llvm::make_range(predecessor_edges_begin(), predecessor_edges_end());
   }
   llvm::iterator_range<ConstPredecessorEdgeIterator> predecessor_edges() const {
-    auto Range = llvm::make_range(Predecessors.begin(), Predecessors.end());
-    return revng::map_range(Range, PredecessorFilters::toConstView);
+    return llvm::make_range(predecessor_edges_begin(), predecessor_edges_end());
   }
   llvm::iterator_range<PredecessorIterator> predecessors() {
-    auto Range = llvm::make_range(Predecessors.begin(), Predecessors.end());
-    return revng::map_range(Range, PredecessorFilters::toNeighbor);
+    return llvm::make_range(predecessors_begin(), predecessors_end());
   }
   llvm::iterator_range<ConstPredecessorIterator> predecessors() const {
-    auto Range = llvm::make_range(Predecessors.begin(), Predecessors.end());
-    return revng::map_range(Range, PredecessorFilters::toConstNeighbor);
+    return llvm::make_range(predecessors_begin(), predecessors_end());
   }
 
 private:
+  template<typename IteratorType>
+  static auto findImpl(DerivedType const *N,
+                       IteratorType FromIterator,
+                       IteratorType ToIterator) {
+    auto Comparator = [N](auto const &Edge) { return Edge.Neighbor == N; };
+    return std::find_if(FromIterator, ToIterator, Comparator);
+  }
   template<typename ContainerType>
   static auto findImpl(DerivedType const *N, ContainerType &&Where) {
-    auto Comparator = [N](auto const &Edge) { return Edge.Neighbor == N; };
-    return std::find_if(Where.begin(), Where.end(), Comparator);
+    return findImpl(N, Where.begin(), Where.end());
   }
 
   static auto findSuccessorHalf(typename EdgeOwnerContainer::iterator Edge,
@@ -726,6 +946,12 @@ protected:
   using OwnerIteratorImpl = typename EdgeOwnerContainer::const_iterator;
   using ViewIteratorImpl = typename EdgeViewContainer::const_iterator;
 
+  using ReverseOwnerIteratorImpl = typename EdgeOwnerContainer::
+    const_reverse_iterator;
+  using ReverseViewIteratorImpl = typename EdgeViewContainer::
+    const_reverse_iterator;
+
+protected:
   auto removeSuccessorImpl(OwnerIteratorImpl InputIterator) {
     if (Successors.empty())
       return Successors.end();
@@ -785,6 +1011,16 @@ protected:
     return Iterator;
   }
 
+protected:
+  auto removeSuccessorImpl(ReverseOwnerIteratorImpl InputIterator) {
+    return std::reverse_iterator(
+      removeSuccessorImpl(std::prev(InputIterator.base())));
+  }
+  auto removePredecessorImpl(ReverseViewIteratorImpl InputIterator) {
+    return std::reverse_iterator(
+      removePredecessorImpl(std::prev(InputIterator.base())));
+  }
+
 public:
   auto removeSuccessor(ConstSuccessorEdgeIterator Iterator) {
     return SuccessorEdgeIterator(removeSuccessorImpl(Iterator.getCurrent()),
@@ -794,9 +1030,14 @@ public:
     return SuccessorIterator(removeSuccessorImpl(Iterator.getCurrent()),
                              SuccessorFilters::toNeighbor);
   }
-  auto removeSuccessor(DerivedType const *S) {
-    return SuccessorIterator(removeSuccessorImpl(findImpl(S, Successors)),
-                             SuccessorFilters::toNeighbor);
+  auto removeSuccessor(ConstReverseSuccessorEdgeIterator Iterator) {
+    return ReverseSuccessorEdgeIterator(removeSuccessorImpl(
+                                          Iterator.getCurrent()),
+                                        SuccessorFilters::toView);
+  }
+  auto removeSuccessor(ConstReverseSuccessorIterator Iterator) {
+    return ReverseSuccessorIterator(removeSuccessorImpl(Iterator.getCurrent()),
+                                    SuccessorFilters::toNeighbor);
   }
 
   auto removePredecessor(ConstPredecessorEdgeIterator Iterator) {
@@ -807,9 +1048,15 @@ public:
     return PredecessorIterator(removePredecessorImpl(Iterator.getCurrent()),
                                PredecessorFilters::toNeighbor);
   }
-  auto removePredecessor(DerivedType const *P) {
-    return PredecessorIterator(removePredecessorImpl(findImpl(P, Predecessors)),
-                               PredecessorFilters::toNeighbor);
+  auto removePredecessor(ConstReversePredecessorEdgeIterator Iterator) {
+    return ReversePredecessorEdgeIterator(removePredecessorImpl(
+                                            Iterator.getCurrent()),
+                                          PredecessorFilters::toView);
+  }
+  auto removePredecessor(ConstReversePredecessorIterator Iterator) {
+    return ReversePredecessorIterator(removePredecessorImpl(
+                                        Iterator.getCurrent()),
+                                      PredecessorFilters::toNeighbor);
   }
 
 public:
@@ -835,14 +1082,59 @@ public:
   }
 
 public:
-  MutableEdgeNode &disconnect() {
+  auto removeSuccessor(ReverseSuccessorEdgeIterator Iterator) {
+    return removeSuccessor(
+      ConstReverseSuccessorEdgeIterator(Iterator.getCurrent(),
+                                        SuccessorFilters::toConstView));
+  }
+  auto removeSuccessor(ReverseSuccessorIterator Iterator) {
+    return removeSuccessor(
+      ConstReverseSuccessorIterator(Iterator.getCurrent(),
+                                    SuccessorFilters::toConstNeighbor));
+  }
+  auto removePredecessor(ReversePredecessorEdgeIterator Iterator) {
+    return removePredecessor(
+      ConstReversePredecessorEdgeIterator(Iterator.getCurrent(),
+                                          PredecessorFilters::toConstView));
+  }
+  auto removePredecessor(ReversePredecessorIterator Iterator) {
+    return removePredecessor(
+      ConstReversePredecessorIterator(Iterator.getCurrent(),
+                                      PredecessorFilters::toConstNeighbor));
+  }
+
+public:
+  void removeSuccessors(DerivedType const *S) {
+    auto Iterator = findImpl(S, Successors);
+    while (Iterator != Successors.end()) {
+      Iterator = removeSuccessorImpl(Iterator);
+      Iterator = findImpl(S, Iterator, Successors.end());
+    }
+  }
+  void removePredecessors(DerivedType const *P) {
+    auto Iterator = findImpl(P, Predecessors);
+    while (Iterator != Predecessors.end()) {
+      Iterator = removePredecessorImpl(Iterator);
+      Iterator = findImpl(P, Iterator, Predecessors.end());
+    }
+  }
+
+public:
+  void removeSuccessors() {
     for (auto It = Successors.begin(); It != Successors.end();)
       It = removeSuccessorImpl(It);
+    revng_assert(Successors.empty());
+  }
+  void removePredecessors() {
     for (auto It = Predecessors.begin(); It != Predecessors.end();)
       It = removePredecessorImpl(It);
-
-    revng_assert(Successors.empty());
     revng_assert(Predecessors.empty());
+  }
+
+public:
+  MutableEdgeNode &disconnect() {
+    removeSuccessors();
+    removePredecessors();
     return *this;
   }
 
