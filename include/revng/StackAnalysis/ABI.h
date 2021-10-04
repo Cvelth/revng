@@ -17,6 +17,9 @@ using RegisterStateMap = std::map<model::Register::Values,
 template<model::abi::Values V>
 class ABI {
 public:
+  static bool isCompatible(model::Binary &TheBinary,
+                           const model::RawFunctionType &Explicit);
+
   static std::optional<model::RawFunctionType>
   toRaw(model::Binary &TheBinary, const model::CABIFunctionType &Original) {
     return {};
@@ -42,39 +45,73 @@ public:
 template<>
 class ABI<model::abi::SystemV_x86_64> {
 private:
-  static constexpr std::array<model::Register::Values, 6> ArgumentRegisters = {
+  static constexpr std::array ArgumentRegisters = {
     model::Register::rdi_x86_64, model::Register::rsi_x86_64,
     model::Register::rdx_x86_64, model::Register::rcx_x86_64,
     model::Register::r8_x86_64,  model::Register::r9_x86_64
   };
 
-  static constexpr std::array<model::Register::Values, 2>
-    ReturnValueRegisters = { model::Register::rax_x86_64,
-                             model::Register::rdx_x86_64 };
-
-  static constexpr std::array<model::Register::Values, 6>
-    CalleeSavedRegisters = {
-      model::Register::rbx_x86_64, model::Register::rbp_x86_64,
-      model::Register::r12_x86_64, model::Register::r13_x86_64,
-      model::Register::r14_x86_64, model::Register::r15_x86_64
-    };
-
-private:
-  struct AnalysisResult {
-    bool IsValid;
-    uint64_t Arguments;
-    uint64_t ReturnValues;
+  static constexpr std::array ReturnValueRegisters = {
+    model::Register::rax_x86_64,
+    model::Register::rdx_x86_64
   };
 
-  static AnalysisResult
-  analyze(model::Binary &TheBinary, const model::RawFunctionType &Explicit);
+  static constexpr std::array CalleeSavedRegisters = {
+    model::Register::rbx_x86_64, model::Register::rbp_x86_64,
+    model::Register::r12_x86_64, model::Register::r13_x86_64,
+    model::Register::r14_x86_64, model::Register::r15_x86_64
+  };
 
 public:
+  static bool isCompatible(model::Binary &TheBinary,
+                           const model::RawFunctionType &Explicit);
+
   static std::optional<model::RawFunctionType>
   toRaw(model::Binary &TheBinary, const model::CABIFunctionType &Original);
 
+  static std::optional<model::CABIFunctionType>
+  toCABI(model::Binary &TheBinary, const model::RawFunctionType &Explicit);
+
+  static model::TypePath defaultPrototype(model::Binary &TheBinary);
+
+  void applyDeductions(RegisterStateMap &Prototype);
+};
+
+template<>
+class ABI<model::abi::Microsoft_x64> {
+private:
+  static constexpr std::array GeneralArgumentRegisters = {
+    model::Register::rcx_x86_64,
+    model::Register::rdx_x86_64,
+    model::Register::r8_x86_64,
+    model::Register::r9_x86_64
+  };
+
+  static constexpr std::array AlternativeArgumentRegisters = {
+    model::Register::xmm0_x86_64,
+    model::Register::xmm1_x86_64,
+    model::Register::xmm2_x86_64,
+    model::Register::xmm3_x86_64
+  };
+
+  static constexpr std::array ReturnValueRegisters = {
+    model::Register::rax_x86_64
+  };
+
+  static constexpr std::array CalleeSavedRegisters = {
+    model::Register::r12_x86_64,  model::Register::r13_x86_64,
+    model::Register::r14_x86_64,  model::Register::r15_x86_64,
+    model::Register::rdi_x86_64,  model::Register::rsi_x86_64,
+    model::Register::rbx_x86_64,  model::Register::rbp_x86_64,
+    model::Register::xmm6_x86_64, model::Register::xmm7_x86_64
+  };
+
+public:
   static bool isCompatible(model::Binary &TheBinary,
                            const model::RawFunctionType &Explicit);
+
+  static std::optional<model::RawFunctionType>
+  toRaw(model::Binary &TheBinary, const model::CABIFunctionType &Original);
 
   static std::optional<model::CABIFunctionType>
   toCABI(model::Binary &TheBinary, const model::RawFunctionType &Explicit);

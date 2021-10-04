@@ -9,72 +9,89 @@
 #include "revng/Model/VerifyHelper.h"
 #include "revng/StackAnalysis/ABI.h"
 
-template<size_t N>
-static bool inWhitelist(const std::array<model::Register::Values, N> &Array,
-                        model::Register::Values Value) {
-  size_t Count = std::count(Array.begin(), Array.end(), Value);
-  revng_assert(Count < 2);
-  return Count == 1;
-}
-
 namespace abi {
 
 using namespace model::abi;
 
-ABI<SystemV_x86_64>::AnalysisResult
-ABI<SystemV_x86_64>::analyze(model::Binary &TheBinary,
-                             const model::RawFunctionType &Explicit) {
-  using namespace model;
+template<size_t Size>
+using RegisterArray = std::array<model::Register::Values, Size>;
 
-  // Check argument registers whitelist
-  for (const TypedRegister &Argument : Explicit.Arguments)
-    if (not inWhitelist(ArgumentRegisters, Argument.Location))
-      return { false, 0, 0 };
+template<model::Architecture::Values Architecture, size_t AllowedRegisterCount>
+static bool
+verify(const RegisterArray<AllowedRegisterCount> &AllowedRegisters) {
+  for (const auto &Register : AllowedRegisters) {
+    // Check if the registers of the same architecture are used.
+    if (model::Register::getArchitecture(Register) != Architecture)
+      return false;
 
-  // Check return values registers whitelist
-  for (const TypedRegister &ReturnValue : Explicit.ReturnValues)
-    if (not inWhitelist(ReturnValueRegisters, ReturnValue.Location))
-      return { false, 0, 0 };
-
-  // Ensure that if we have the second argument, we also have the first one
-  bool ArgumentMatch = false;
-  uint64_t ArgumentsCount = 0;
-  for (model::Register::Values Register :
-       llvm::make_range(ArgumentRegisters.rbegin(), ArgumentRegisters.rend())) {
-    bool IsArgument = Explicit.Arguments.count(Register) != 0;
-
-    if (IsArgument)
-      ++ArgumentsCount;
-
-    if (ArgumentMatch and not IsArgument)
-      return { false, 0, 0 };
-
-    ArgumentMatch = ArgumentMatch || IsArgument;
+    // Check if there are any duplicates in allowed register container.
+    if (llvm::count(AllowedRegisters, Register) != 1)
+      return false;
   }
 
-  // Same for return values
-  bool ReturnValueMatch = false;
-  uint64_t ReturnValuesCount = 0;
-  for (model::Register::Values Register :
-       llvm::make_range(ReturnValueRegisters.rbegin(),
-                        ReturnValueRegisters.rend())) {
-    bool IsReturnValue = Explicit.ReturnValues.count(Register) != 0;
-
-    if (IsReturnValue)
-      ++ReturnValuesCount;
-
-    if (ReturnValueMatch and not IsReturnValue)
-      return { false, 0, 0 };
-
-    ReturnValueMatch = ReturnValueMatch || IsReturnValue;
-  }
-
-  return { true, ArgumentsCount, ReturnValuesCount };
+  return true;
 }
+
+template<model::Architecture::Values Architecture, typename RegisterType>
+static bool verify(const SortedVector<RegisterType> &UsedRegisters) {
+  for (const auto &Register : UsedRegisters) {
+    // Check if the registers of the same architecture are used.
+    if (model::Register::getArchitecture(Register) != Architecture)
+      return false;
+  }
+
+  return true;
+}
+
+template<model::Architecture::Values Architecture,
+         typename RegisterType,
+         size_t AllowedRegisterCount,
+         size_t FallbackRegisterCount = 0>
+static std::optional<size_t>
+analyze(const SortedVector<RegisterType> &UsedRegisters,
+        const RegisterArray<AllowedRegisterCount> &AllowedRegisters,
+        [[maybe_unused]] const RegisterArray<FallbackRegisterCount>
+          &FallbackRegisters = {}) {
+
+  revng_assert(verify<Architecture>(UsedRegisters));
+  revng_assert(verify<Architecture>(AllowedRegisters));
+
+  // Ensure all the used registers are allowed
+  for (const auto &Register : UsedRegisters)
+    if (llvm::count(AllowedRegisters, Register.Location) != 1)
+      return std::nullopt;
+
+  // Ensure the register usage continuity, e. g. if the register for the second
+  // parameter is used, the register for the first one must be used as well.
+  size_t UsedCount = 0;
+  bool MustBeUsed = false;
+  for (model::Register::Values Register : llvm::reverse(AllowedRegisters)) {
+    bool IsUsed = UsedRegisters.count(Register) != 0;
+
+    if (IsUsed)
+      ++UsedCount;
+
+    if (!IsUsed && MustBeUsed)
+      return std::nullopt;
+
+    MustBeUsed = MustBeUsed || IsUsed;
+  }
+
+  return UsedCount;
+}
+
+//
+// SystemV_x86_64
+//
 
 bool ABI<SystemV_x86_64>::isCompatible(model::Binary &TheBinary,
                                        const model::RawFunctionType &Explicit) {
-  return analyze(TheBinary, Explicit).IsValid;
+  static constexpr auto Architecture = getArchitecture(SystemV_x86_64);
+  auto AreArgumentsCompatible = analyze<Architecture>(Explicit.Arguments,
+                                                      ArgumentRegisters);
+  auto AreReturnValuesCompatible = analyze<Architecture>(Explicit.ReturnValues,
+                                                         ReturnValueRegisters);
+  return AreArgumentsCompatible && AreReturnValuesCompatible;
 }
 
 std::optional<model::RawFunctionType>
@@ -307,6 +324,21 @@ void ABI<SystemV_x86_64>::applyDeductions(RegisterStateMap &Prototype) {
     if (not isYesOrDead(AsReturnValue))
       AsReturnValue = No;
   }
+}
+
+//
+// Microsoft_x64
+//
+
+bool ABI<Microsoft_x64>::isCompatible(model::Binary &TheBinary,
+                                      const model::RawFunctionType &Explicit) {
+  static constexpr auto Arch = getArchitecture(Microsoft_x64);
+  auto AreArgumentsCompatible = analyze<Arch>(Explicit.Arguments,
+                                              GeneralArgumentRegisters,
+                                              AlternativeArgumentRegisters);
+  auto AreReturnValuesCompatible = analyze<Arch>(Explicit.ReturnValues,
+                                                 ReturnValueRegisters);
+  return AreArgumentsCompatible && AreReturnValuesCompatible;
 }
 
 } // namespace abi
