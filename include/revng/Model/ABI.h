@@ -118,6 +118,37 @@ inline constexpr model::Architecture::Values getArchitecture(Values V) {
   }
 }
 
+constexpr inline size_t getRegisterSize(Values V) {
+  switch (V) {
+  case SystemV_x86_64:
+  case Microsoft_x64:
+  case Microsoft_x64_clrcall:
+  case Microsoft_x64_vectorcall:
+  case Microsoft_x64_regparm_3:
+  case Microsoft_x64_regparm_2:
+  case Microsoft_x64_regparm_1:
+    return 8;
+
+    switch (V) {
+    case Microsoft_x86_clrcall:
+    case Microsoft_x86_vectorcall:
+    case Microsoft_x86_cdecl:
+    case Microsoft_x86_stdcall:
+    case Microsoft_x86_fastcall:
+    case Microsoft_x86_thiscall:
+    case Microsoft_x86_regparm_3:
+    case Microsoft_x86_regparm_2:
+    case Microsoft_x86_regparm_1:
+      return 4;
+
+    case Count:
+    case Invalid:
+    default:
+      revng_abort();
+    }
+  }
+}
+
 } // namespace model::abi
 
 namespace llvm::yaml {

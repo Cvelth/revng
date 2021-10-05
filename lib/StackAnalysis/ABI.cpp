@@ -5,7 +5,10 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include "llvm/ADT/DenseMap.h"
+
 #include "revng/Model/Binary.h"
+#include "revng/Model/Register.h"
 #include "revng/Model/VerifyHelper.h"
 #include "revng/StackAnalysis/ABI.h"
 
@@ -43,33 +46,31 @@ static bool verify(const SortedVector<RegisterType> &UsedRegisters) {
   return true;
 }
 
-template<model::Architecture::Values Architecture,
-         typename RegisterType,
-         size_t AllowedRegisterCount,
-         size_t FallbackRegisterCount = 0>
-static std::optional<size_t>
-analyze(const SortedVector<RegisterType> &UsedRegisters,
-        const RegisterArray<AllowedRegisterCount> &AllowedRegisters,
-        [[maybe_unused]] const RegisterArray<FallbackRegisterCount>
-          &FallbackRegisters = {}) {
+template<typename RegisterType,
+         size_t GenericRegisterCount,
+         size_t VectorRegisterCount>
+static std::optional<llvm::SmallVector<RegisterType, GenericRegisterCount>>
+replImpl(const SortedVector<RegisterType> &UsedRegisters,
+         const RegisterArray<GenericRegisterCount> &AllowedGenericRegisters,
+         const RegisterArray<VectorRegisterCount> &AllowedVectorRegisters) {
+  llvm::SmallVector<RegisterType, GenericRegisterCount> Result;
 
-  revng_assert(verify<Architecture>(UsedRegisters));
-  revng_assert(verify<Architecture>(AllowedRegisters));
-
-  // Ensure all the used registers are allowed
-  for (const auto &Register : UsedRegisters)
-    if (llvm::count(AllowedRegisters, Register.Location) != 1)
-      return std::nullopt;
-
-  // Ensure the register usage continuity, e. g. if the register for the second
-  // parameter is used, the register for the first one must be used as well.
   size_t UsedCount = 0;
   bool MustBeUsed = false;
-  for (model::Register::Values Register : llvm::reverse(AllowedRegisters)) {
-    bool IsUsed = UsedRegisters.count(Register) != 0;
-
-    if (IsUsed)
-      ++UsedCount;
+  size_t Index = AllowedGenericRegisters.size();
+  for (; Index != size_t(-1); --Index) {
+    bool IsUsed = false;
+    auto GenericIterator = UsedRegisters.find(AllowedGenericRegisters[Index]);
+    if (GenericIterator != UsedRegisters.end()) {
+      Result.emplace_back(*GenericIterator);
+      IsUsed = true;
+    } else if (!AllowedVectorRegisters.empty()) {
+      auto VectorIterator = UsedRegisters.find(AllowedVectorRegisters[Index]);
+      if (VectorIterator != UsedRegisters.end()) {
+        Result.emplace_back(*VectorIterator);
+        IsUsed = true;
+      }
+    }
 
     if (!IsUsed && MustBeUsed)
       return std::nullopt;
@@ -77,127 +78,129 @@ analyze(const SortedVector<RegisterType> &UsedRegisters,
     MustBeUsed = MustBeUsed || IsUsed;
   }
 
-  return UsedCount;
+  return Result;
 }
 
-//
-// SystemV_x86_64
-//
+template<typename RegisterType,
+         size_t GenericRegisterCount,
+         size_t VectorRegisterCount>
+static std::optional<llvm::SmallVector<RegisterType, GenericRegisterCount>>
+nreplImpl(const SortedVector<RegisterType> &UsedRegisters,
+          const RegisterArray<GenericRegisterCount> &AllowedGenericRegisters,
+          const RegisterArray<VectorRegisterCount> &AllowedVectorRegisters) {
+  llvm::SmallVector<RegisterType, GenericRegisterCount> Result;
 
-bool ABI<SystemV_x86_64>::isCompatible(model::Binary &TheBinary,
-                                       const model::RawFunctionType &Explicit) {
-  static constexpr auto Architecture = getArchitecture(SystemV_x86_64);
-  auto AreArgumentsCompatible = analyze<Architecture>(Explicit.Arguments,
-                                                      ArgumentRegisters);
-  auto AreReturnValuesCompatible = analyze<Architecture>(Explicit.ReturnValues,
-                                                         ReturnValueRegisters);
-  return AreArgumentsCompatible && AreReturnValuesCompatible;
-}
+  auto SelectUsed = [&Result](const auto &RegisterContainer) -> bool {
+    size_t UsedCount = 0;
+    bool MustBeUsed = false;
+    for (model::Register::Values Register : RegisterContainer) {
+      bool IsUsed = UsedRegisters.count(Register) != 0;
+      if (IsUsed)
+        Result.emplace_back(Register);
 
-std::optional<model::RawFunctionType>
-ABI<SystemV_x86_64>::toRaw(model::Binary &TheBinary,
-                           const model::CABIFunctionType &Original) {
-  using namespace model;
+      if (!IsUsed && MustBeUsed)
+        return false;
 
-  //
-  // Allocate registers
-  //
-  uint64_t AvailableRegisters = ArgumentRegisters.size();
-  VerifyHelper VH;
-
-  for (const Argument &Argument : Original.Arguments) {
-
-    if (not Argument.Type.isScalar())
-      return {};
-
-    if (Argument.Type.isFloat())
-      return {};
-
-    std::optional<uint64_t> MaybeSize = Argument.Type.size(VH);
-    revng_assert(MaybeSize);
-    uint64_t Size = *MaybeSize;
-    if (Size > AvailableRegisters * 8) {
-      // TODO: handle stack arguments
-      return {};
-    } else {
-      AvailableRegisters -= (Size + 7) / 8;
-    }
-  }
-
-  //
-  // Record register arguments
-  //
-  using namespace model::PrimitiveTypeKind;
-  model::RawFunctionType Result;
-  auto Primitive = TheBinary.getPrimitiveType(PointerOrNumber, 8);
-  QualifiedType Generic64{ Primitive, {} };
-  int UsedRegisters = ArgumentRegisters.size() - AvailableRegisters;
-  for (int I = 0; I < UsedRegisters; ++I) {
-    model::NamedTypedRegister Argument(ArgumentRegisters[I]);
-    Argument.Type = Generic64;
-    const auto &OriginalArgument = Original.Arguments.at(I);
-    Argument.CustomName = OriginalArgument.CustomName;
-    Result.Arguments.insert(Argument);
-  }
-
-  //
-  // Allocate return values
-  //
-  if (not Original.ReturnType.isVoid()) {
-
-    if (not Original.ReturnType.isScalar())
-      return {};
-
-    if (Original.ReturnType.isFloat())
-      return {};
-
-    uint64_t AvailableRegisters = ReturnValueRegisters.size() * 8;
-
-    std::optional<uint64_t> MaybeSize = Original.ReturnType.size(VH);
-    revng_assert(MaybeSize);
-    uint64_t Size = *MaybeSize;
-    if (Size > AvailableRegisters * 8) {
-      // TODO: handle stack arguments
-      return {};
-    } else {
-      AvailableRegisters -= (Size + 7) / 8;
+      MustBeUsed = MustBeUsed || IsUsed;
     }
 
-    int UsedRegisters = ReturnValueRegisters.size() - AvailableRegisters;
-    for (int I = 0; I < UsedRegisters; ++I) {
-      model::TypedRegister Argument(ArgumentRegisters[I]);
-      Argument.Type = Generic64;
-      Result.ReturnValues.insert(Argument);
-    }
-  }
+    return true;
+  };
 
-  //
-  // Populate the list of preserved registers
-  //
-  for (auto CalleeSavedRegister : CalleeSavedRegisters)
-    Result.PreservedRegisters.insert(CalleeSavedRegister);
+  if (!SelectUsed(llvm::reverse(AllowedVectorRegisters)))
+    return std::nullopt;
+
+  if (!SelectUsed(llvm::reverse(AllowedGenericRegisters)))
+    return std::nullopt;
 
   return Result;
 }
 
-using OptionalCABIFunctionType = std::optional<model::CABIFunctionType>;
-OptionalCABIFunctionType
-ABI<SystemV_x86_64>::toCABI(model::Binary &TheBinary,
-                            const model::RawFunctionType &Explicit) {
-  using namespace model;
+template<model::Architecture::Values Architecture,
+         bool VectorArgumentsReplaceGenericOnes,
+         typename RegisterType,
+         size_t GenericRegisterCount,
+         size_t VectorRegisterCount>
+static std::optional<llvm::SmallVector<RegisterType, GenericRegisterCount>>
+analyze(const SortedVector<RegisterType> &UsedRegisters,
+        const RegisterArray<GenericRegisterCount> &AllowedGenericRegisters,
+        const RegisterArray<VectorRegisterCount> &AllowedVectorRegisters) {
+  revng_assert(verify<Architecture>(UsedRegisters));
+  revng_assert(verify<Architecture>(AllowedRegisters));
+  revng_assert(verify<Architecture>(FallbackRegisters));
 
-  auto AnalysisResult = analyze(TheBinary, Explicit);
+  if constexpr (VectorArgumentsReplaceGenericOnes) {
+    bool C = AllowedGenericRegisters.size() == AllowedVectorRegisters.size();
+    revng_assert(C);
+  }
 
-  if (not AnalysisResult.IsValid)
+  // Ensure all the used registers are allowed
+  for (const auto &Register : UsedRegisters)
+    if (llvm::count(AllowedGenericRegisters, Register.Location) != 1)
+      if (llvm::count(AllowedVectorRegisters, Register.Location) != 1)
+        return std::nullopt;
+
+  // Ensure the register usage continuity, e. g. if the register for the second
+  // parameter is used, the register for the first one must be used as well.
+  if constexpr (VectorArgumentsReplaceGenericOnes)
+    return replImpl(UsedRegisters,
+                    AllowedGenericRegisters,
+                    AllowedVectorRegisters);
+  else
+    return nreplImpl(UsedRegisters,
+                     AllowedGenericRegisters,
+                     AllowedVectorRegisters);
+}
+
+template<model::abi::Values V>
+bool ABI<V>::isCompatible(const model::RawFunctionType &Explicit) {
+  static constexpr auto Arch = getArchitecture(V);
+  bool ArgumentAnalysis = analyze<Arch>(Explicit.Arguments,
+                                        Allowed::GenericArgumentRegisters,
+                                        Allowed::VectorArgumentRegisters);
+  bool ReturnValueAnalysis = analyze<Arch>(Explicit.ReturnValues,
+                                           Allowed::GenericReturnValueRegisters,
+                                           Allowed::VectorReturnValueRegisters);
+  return ArgumentAnalysis && ReturnValueAnalysis;
+}
+
+model::PrimitiveTypeKind::Values
+selectTypeKind(model::Register::Type::Values RegisterType) {
+  switch (RegisterType) {
+  case model::Register::Type::Generic:
+    return model::PrimitiveTypeKind::PointerOrNumber;
+
+  case model::Register::Type::FloatingPoint:
+    return model::PrimitiveTypeKind::Float;
+
+  case Count:
+  case Invalid:
+  default:
+    revng_abort();
+  }
+}
+
+model::QualifiedType
+buildType(model::Register::Values Register, model::Binary &TheBinary) {
+  auto Kind = selectTypeKind(model::Register::getType(Register));
+  auto Size = model::Register::getSize(Register);
+  return model::QualifiedType{ TheBinary.getPrimitiveType(Kind, Size) };
+}
+
+template<model::abi::Values V>
+std::optional<model::CABIFunctionType>
+ABI<V>::toCABI(model::Binary &TheBinary,
+               const model::RawFunctionType &Explicit) {
+  static constexpr auto A = getArchitecture(V);
+  auto AnalyzedArguments = analyze<A>(Explicit.Arguments,
+                                      Allowed::GenericArgumentRegisters,
+                                      Allowed::VectorArgumentRegisters);
+  auto AnalyzedReturnValues = analyze<A>(Explicit.ReturnValues,
+                                         Allowed::GenericReturnValueRegisters,
+                                         Allowed::VectorReturnValueRegisters);
+
+  if (!AnalizedArguments.has_value() || !AnalizedReturnValues.has_value())
     return {};
-
-  auto PointerOrNumber = model::PrimitiveTypeKind::PointerOrNumber;
-  auto Primitive64 = TheBinary.getPrimitiveType(PointerOrNumber, 8);
-  QualifiedType Generic64{ Primitive64, {} };
-
-  auto VoidKind = model::PrimitiveTypeKind::Void;
-  auto PrimitiveVoid = TheBinary.getPrimitiveType(VoidKind, 0);
-  QualifiedType Void{ PrimitiveVoid, {} };
 
   model::CABIFunctionType Result;
   Result.ABI = SystemV_x86_64;
@@ -205,40 +208,174 @@ ABI<SystemV_x86_64>::toCABI(model::Binary &TheBinary,
   //
   // Build return type
   //
-  QualifiedType ReturnType;
-
-  auto ReturnValuesCount = AnalysisResult.ReturnValues;
-  if (ReturnValuesCount == 0) {
-    ReturnType = Void;
-  } else if (ReturnValuesCount == 1) {
-    ReturnType = Generic64;
+  if (AnalyzedReturnValues->size() == 0) {
+    Result.ReturnType = model::QualifiedType{
+      TheBinary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0)
+    };
+  } else if (AnalyzedReturnValues->size() == 1) {
+    Result.ReturnType = buildType(AnalyzedReturnValues->front(), TheBinary);
   } else {
+    size_t Offset = 0;
+
     auto NewType = makeType<StructType>();
     auto *MultipleReturnValues = llvm::cast<StructType>(NewType.get());
-    MultipleReturnValues->Size = ReturnValuesCount * 8;
-    for (uint64_t I = 0; I < AnalysisResult.ReturnValues; ++I) {
-      StructField NewField;
-      NewField.Offset = I * 8;
-      NewField.Type = Generic64;
+    for (const auto &Register : AnalyzedReturnValues.value()) {
+      model::StructField NewField;
+      NewField.Offset = Offset;
+      NewField.Type = buildType(Register, TheBinary);
       MultipleReturnValues->Fields.insert(std::move(NewField));
-    }
-    ReturnType = QualifiedType{ TheBinary.recordNewType(std::move(NewType)),
-                                {} };
-  }
 
-  Result.ReturnType = ReturnType;
+      Offset += model::Register::getSize(Register);
+    }
+    MultipleReturnValues->Size = Offset;
+
+    Result.ReturnType = { TheBinary.recordNewType(std::move(NewType)), {} };
+  }
 
   //
   // Build argument list
   //
-  for (uint64_t I = 0; I < AnalysisResult.Arguments; ++I) {
-    Argument NewArgument;
-    NewArgument.Index = I;
-    NewArgument.Type = Generic64;
-    const auto &ExplicitArgument = Explicit.Arguments.at(ArgumentRegisters[I]);
-    NewArgument.CustomName = ExplicitArgument.CustomName;
+  for (size_t Index = 0; auto Register : ArgumentAnalysis.value()) {
+    model::Argument NewArgument;
+    NewArgument.Index = Index++;
+    NewArgument.Type = buildType(Register, TheBinary);
+    NewArgument.CustomName = Explicit.Arguments.at(Register).CustomName;
     Result.Arguments.insert(std::move(NewArgument));
   }
+
+  return Result;
+}
+
+using IndexType = decltype(model::Argument::Index);
+struct InternalArguments {
+  llvm::DenseMap<IndexType, model::Register::Values> Register;
+  SortedVector<IndexType> Stack;
+};
+template<typename Allowed>
+static InternalArguments
+allocateRegisters(const SortedVector<model::Argument> &Arguments) {
+  InternalArguments Result;
+  size_t UsedGenericRegisterCounter = 0;
+  size_t UsedVectorRegisterCounter = 0;
+
+  using OR = std::optional<model::Register::Values>;
+  auto GetTheNextGenericRegister = [&UsedGenericRegisterCounter]() -> OR {
+    if (UsedGenericRegisterCounter < Allowed::GenericArgumentRegisters.size())
+      return Allowed::GenericArgumentRegisters[UsedGenericRegisterCounter];
+    else
+      return std::nullopt;
+  };
+  auto GetTheNextVectorRegister = [&UsedVectorRegisterCounter]() -> OR {
+    if (UsedVectorRegisterCounter < Allowed::VectorArgumentRegisters.size())
+      return Allowed::VectorArgumentRegisters[UsedVectorRegisterCounter];
+    else
+      return std::nullopt;
+  };
+
+  for (const model::Argument &Argument : Arguments) {
+    if (!Argument.Type.isScalar()) // This could probably be an assert.
+      return std::nullopt;
+
+    if (!Argument.Type.isFloat()) {
+      auto NextRegister = GetTheNextGenericRegister();
+      if (!NextRegister.has_value()) {
+        StackArguments.emplace(Argument.Index);
+        continue;
+      }
+      auto NextSize = model::Register::getSize(*NextRegister);
+
+      auto MaybeSize = Argument.Type.size(VH);
+      revng_assert(MaybeSize);
+
+      // TODO
+      // if constexpr (Allowed::AllowAnArgumentToOccupySubsequentRegisters) {
+      //
+      // } else {
+      if (*MaybeSize > NextSize) {
+        StackArguments.emplace(Argument.Index);
+      } else {
+        RegisterArguments.try_emplace(Argument.Index, *NextRegister);
+        ++UsedGenericRegisterCounter;
+        if constexpr (Allowed::VectorArgumentsReplaceGenericOnes)
+          UsedVectorRegisterCounter = UsedGenericRegisterCounter;
+      }
+      // }
+
+    } else {
+      auto NextRegister = GetTheNextVectorRegister();
+      if (!NextRegister.has_value()) {
+        StackArguments.emplace(Argument.Index);
+        continue;
+      }
+      auto NextSize = model::Register::getSize(*NextRegister);
+
+      auto MaybeSize = Argument.Type.size(VH);
+      revng_assert(MaybeSize);
+
+      if (*MaybeSize > NextSize) {
+        StackArguments.emplace(Argument.Index);
+      } else {
+        RegisterArguments.try_emplace(Argument.Index, *NextRegister);
+        ++UsedVectorRegisterCounter;
+        if constexpr (Allowed::VectorArgumentsReplaceGenericOnes)
+          UsedGenericRegisterCounter = UsedVectorRegisterCounter;
+      }
+    }
+  }
+}
+
+template<model::abi::Values V>
+std::optional<model::RawFunctionType>
+ABI<V>::toRaw(model::Binary &TheBinary,
+              const model::CABIFunctionType &Original) {
+  auto Arguments = allocateRegisters<Allowed>(Original.Arguments);
+  auto [RegisterArguments, StackArguments] = Arguments;
+
+  model::RawFunctionType Result;
+  for (auto [ArgumentIndex, Register] : RegisterArguments) {
+    model::NamedTypedRegister Argument(Register);
+    Argument.Type = buildType(Register, TheBinary);
+    Argument.CustomName = Original.Arguments.at(ArgumentIndex).CustomName;
+    Result.Arguments.insert(Argument);
+  }
+  for (auto ArgumentIndex : StackArguments) {
+    // TODO: handle stack arguments.
+  }
+
+  // TODO!
+  // Allocate return values
+  //
+  // if (not Original.ReturnType.isVoid()) {
+
+  //   if (not Original.ReturnType.isScalar())
+  //     return {};
+
+  //   if (Original.ReturnType.isFloat())
+  //     return {};
+
+  //   uint64_t AvailableRegisters = ReturnValueRegisters.size() * 8;
+
+  //   std::optional<uint64_t> MaybeSize = Original.ReturnType.size(VH);
+  //   revng_assert(MaybeSize);
+  //   uint64_t Size = *MaybeSize;
+  //   if (Size > AvailableRegisters * 8) {
+  //     // TODO: handle stack arguments
+  //     return {};
+  //   } else {
+  //     AvailableRegisters -= (Size + 7) / 8;
+  //   }
+
+  //   int UsedRegisters = ReturnValueRegisters.size() - AvailableRegisters;
+  //   for (int I = 0; I < UsedRegisters; ++I) {
+  //     model::TypedRegister Argument(ArgumentRegisters[I]);
+  //     Argument.Type = Generic64;
+  //     Result.ReturnValues.insert(Argument);
+  //   }
+  // }
+
+  // Populate the list of preserved registers
+  for (auto Register : Allowed::CalleeSavedRegisters)
+    Result.PreservedRegisters.insert(Register);
 
   return Result;
 }
@@ -327,18 +464,11 @@ void ABI<SystemV_x86_64>::applyDeductions(RegisterStateMap &Prototype) {
 }
 
 //
-// Microsoft_x64
+// Specializations
 //
 
-bool ABI<Microsoft_x64>::isCompatible(model::Binary &TheBinary,
-                                      const model::RawFunctionType &Explicit) {
-  static constexpr auto Arch = getArchitecture(Microsoft_x64);
-  auto AreArgumentsCompatible = analyze<Arch>(Explicit.Arguments,
-                                              GeneralArgumentRegisters,
-                                              AlternativeArgumentRegisters);
-  auto AreReturnValuesCompatible = analyze<Arch>(Explicit.ReturnValues,
-                                                 ReturnValueRegisters);
-  return AreArgumentsCompatible && AreReturnValuesCompatible;
-}
+template class ABI<model::abi::SystemV_x86_64>;
+template class ABI<model::abi::Microsoft_x64>;
+// More specializations are to come
 
 } // namespace abi
