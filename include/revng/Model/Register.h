@@ -691,7 +691,7 @@ inline Values fromName(llvm::StringRef Name) {
     return Invalid;
 }
 
-constexpr inline model::Architecture::Values getArchitecture(Values V) {
+inline model::Architecture::Values getArchitecture(Values V) {
   switch (V) {
   case eax_x86:
   case ebx_x86:
@@ -843,204 +843,19 @@ inline llvm::StringRef getRegisterName(Values V) {
   return FullName.substr(0, FullName.size() - ArchitectureNameSize - 1);
 }
 
-namespace Type {
-enum Values { Invalid, Generic, FloatingPoint, Count };
-}
-constexpr inline Type::Values getType(Values V) {
-  switch (V) {
-  case eax_x86:
-  case ebx_x86:
-  case ecx_x86:
-  case edx_x86:
-  case esi_x86:
-  case edi_x86:
-  case ebp_x86:
-  case esp_x86:
-  case rax_x86_64:
-  case rbx_x86_64:
-  case rcx_x86_64:
-  case rdx_x86_64:
-  case rbp_x86_64:
-  case rsp_x86_64:
-  case rsi_x86_64:
-  case rdi_x86_64:
-  case r8_x86_64:
-  case r9_x86_64:
-  case r10_x86_64:
-  case r11_x86_64:
-  case r12_x86_64:
-  case r13_x86_64:
-  case r14_x86_64:
-  case r15_x86_64:
-  case r0_arm:
-  case r1_arm:
-  case r2_arm:
-  case r3_arm:
-  case r4_arm:
-  case r5_arm:
-  case r6_arm:
-  case r7_arm:
-  case r8_arm:
-  case r9_arm:
-  case r10_arm:
-  case r11_arm:
-  case r12_arm:
-  case r13_arm:
-  case r14_arm:
-  case x0_aarch64:
-  case x1_aarch64:
-  case x2_aarch64:
-  case x3_aarch64:
-  case x4_aarch64:
-  case x5_aarch64:
-  case x6_aarch64:
-  case x7_aarch64:
-  case x8_aarch64:
-  case x9_aarch64:
-  case x10_aarch64:
-  case x11_aarch64:
-  case x12_aarch64:
-  case x13_aarch64:
-  case x14_aarch64:
-  case x15_aarch64:
-  case x16_aarch64:
-  case x17_aarch64:
-  case x18_aarch64:
-  case x19_aarch64:
-  case x20_aarch64:
-  case x21_aarch64:
-  case x22_aarch64:
-  case x23_aarch64:
-  case x24_aarch64:
-  case x25_aarch64:
-  case x26_aarch64:
-  case x27_aarch64:
-  case x28_aarch64:
-  case x29_aarch64:
-  case lr_aarch64:
-  case sp_aarch64:
-  case v0_mips:
-  case v1_mips:
-  case a0_mips:
-  case a1_mips:
-  case a2_mips:
-  case a3_mips:
-  case s0_mips:
-  case s1_mips:
-  case s2_mips:
-  case s3_mips:
-  case s4_mips:
-  case s5_mips:
-  case s6_mips:
-  case s7_mips:
-  case gp_mips:
-  case sp_mips:
-  case fp_mips:
-  case ra_mips:
-  case r0_systemz:
-  case r1_systemz:
-  case r2_systemz:
-  case r3_systemz:
-  case r4_systemz:
-  case r5_systemz:
-  case r6_systemz:
-  case r7_systemz:
-  case r8_systemz:
-  case r9_systemz:
-  case r10_systemz:
-  case r11_systemz:
-  case r12_systemz:
-  case r13_systemz:
-  case r14_systemz:
-  case r15_systemz:
-    return Type::Generic;
-
-  case xmm0_x86_64:
-  case xmm1_x86_64:
-  case xmm2_x86_64:
-  case xmm3_x86_64:
-  case xmm4_x86_64:
-  case xmm5_x86_64:
-  case xmm6_x86_64:
-  case xmm7_x86_64:
-  case f0_systemz:
-  case f1_systemz:
-  case f2_systemz:
-  case f3_systemz:
-  case f4_systemz:
-  case f5_systemz:
-  case f6_systemz:
-  case f7_systemz:
-  case f8_systemz:
-  case f9_systemz:
-  case f10_systemz:
-  case f11_systemz:
-  case f12_systemz:
-  case f13_systemz:
-  case f14_systemz:
-  case f15_systemz:
-    return Type::FloatingPoint;
-
-  case Count:
-  case Invalid:
-  default:
-    revng_abort();
-  }
-}
-
 /// Return the size of the register in bytes
-constexpr inline size_t getSize(Values V) {
-  Type::Values Type = getType(V);
+inline size_t getSize(Values V) {
   model::Architecture::Values Architecture = getArchitecture(V);
 
-  switch (Type) {
-  case Type::Generic:
-    switch (Architecture) {
-    case model::Architecture::x86:
-    case model::Architecture::arm:
-    case model::Architecture::mips:
-      return 4;
-
-    case model::Architecture::x86_64:
-    case model::Architecture::aarch64:
-    case model::Architecture::systemz:
-      return 8;
-
-    case Count:
-    case Invalid:
-    default:
-      revng_abort();
-    }
-
-  case Type::FloatingPoint:
-    switch (Architecture) {
-    case model::Architecture::x86:
-      return 16; // st0 - st7
-
-    case model::Architecture::arm:
-      return 8; // d0 - d15
-
-    case model::Architecture::mips:
-      return 4; // f0 - f31
-
-    case model::Architecture::x86_64:
-      return 16; // XMM0 - XMM15
-      // return 32; // YMM0 - YMM15
-      // return 64; // ZMM0 - ZMM15
-
-    case model::Architecture::aarch64:
-      return 16; // Q0 - Q31, V0 - V31
-
-    case model::Architecture::systemz:
-      return 8; // f0 - f15 (can be used in pairs)
-
-    case Count:
-    case Invalid:
-    default:
-      revng_abort();
-    }
-  case Count:
-  case Invalid:
+  switch (Architecture) {
+  case model::Architecture::x86:
+  case model::Architecture::arm:
+  case model::Architecture::mips:
+    return 4;
+  case model::Architecture::x86_64:
+  case model::Architecture::aarch64:
+  case model::Architecture::systemz:
+    return 8;
   default:
     revng_abort();
   }
