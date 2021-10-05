@@ -252,7 +252,7 @@ struct InternalArguments {
   SortedVector<IndexType> Stack;
 };
 template<typename Allowed>
-static InternalArguments
+static std::optional<InternalArguments>
 allocateRegisters(const SortedVector<model::Argument> &Arguments) {
   InternalArguments Result;
   size_t UsedGenericRegisterCounter = 0;
@@ -329,7 +329,9 @@ std::optional<model::RawFunctionType>
 ABI<V>::toRaw(model::Binary &TheBinary,
               const model::CABIFunctionType &Original) {
   auto Arguments = allocateRegisters<Allowed>(Original.Arguments);
-  auto [RegisterArguments, StackArguments] = Arguments;
+  if (!Arguments.has_values())
+    return std::nullopt;
+  auto [RegisterArguments, StackArguments] = *Arguments;
 
   model::RawFunctionType Result;
   for (auto [ArgumentIndex, Register] : RegisterArguments) {
@@ -342,36 +344,44 @@ ABI<V>::toRaw(model::Binary &TheBinary,
     // TODO: handle stack arguments.
   }
 
-  // TODO!
   // Allocate return values
-  //
-  // if (not Original.ReturnType.isVoid()) {
+  if (!Original.ReturnType.isVoid()) {
+    if (!Original.ReturnType.isScalar()) // This could probably be an assert.
+      return std::nullopt;
 
-  //   if (not Original.ReturnType.isScalar())
-  //     return {};
+    auto MaybeSize = Original.ReturnType.size(VH);
+    revng_assert(MaybeSize.has_value());
 
-  //   if (Original.ReturnType.isFloat())
-  //     return {};
+    if (!Original.ReturnType.isFloat()) {
+      // TODO
+      // if constexpr (Allowed::AllowAnArgumentToOccupySubsequentRegisters) {
+      //
+      // } else {
+      revng_assert(!Allowed::GenericReturnValueRegisters.empty());
+      auto ReturnRegister = Allowed::GenericReturnValueRegisters[0];
+      auto Size = model::Register::getSize(ReturnRegister);
+      revng_assert(*MaybeSize <= Size);
 
-  //   uint64_t AvailableRegisters = ReturnValueRegisters.size() * 8;
+      model::TypedRegister Argument(ReturnRegister);
+      Argument.Type = buildType(ReturnRegister, TheBinary);
+      Result.ReturnValues.insert(Argument);
+      // }
+    } else {
+      // TODO
+      // if constexpr (Allowed::AllowAnArgumentToOccupySubsequentRegisters) {
+      //
+      // } else {
+      revng_assert(!Allowed::VectorReturnValueRegisters.empty());
+      auto ReturnRegister = Allowed::VectorReturnValueRegisters[0];
+      auto Size = model::Register::getSize(ReturnRegister);
+      revng_assert(*MaybeSize <= Size);
 
-  //   std::optional<uint64_t> MaybeSize = Original.ReturnType.size(VH);
-  //   revng_assert(MaybeSize);
-  //   uint64_t Size = *MaybeSize;
-  //   if (Size > AvailableRegisters * 8) {
-  //     // TODO: handle stack arguments
-  //     return {};
-  //   } else {
-  //     AvailableRegisters -= (Size + 7) / 8;
-  //   }
-
-  //   int UsedRegisters = ReturnValueRegisters.size() - AvailableRegisters;
-  //   for (int I = 0; I < UsedRegisters; ++I) {
-  //     model::TypedRegister Argument(ArgumentRegisters[I]);
-  //     Argument.Type = Generic64;
-  //     Result.ReturnValues.insert(Argument);
-  //   }
-  // }
+      model::TypedRegister Argument(ReturnRegister);
+      Argument.Type = buildType(ReturnRegister, TheBinary);
+      Result.ReturnValues.insert(Argument);
+      // }
+    }
+  }
 
   // Populate the list of preserved registers
   for (auto Register : Allowed::CalleeSavedRegisters)
@@ -380,87 +390,90 @@ ABI<V>::toRaw(model::Binary &TheBinary,
   return Result;
 }
 
-model::TypePath
-ABI<SystemV_x86_64>::defaultPrototype(model::Binary &TheBinary) {
-  using namespace model;
-
+template<model::abi::Values V>
+model::TypePath ABI<V>::defaultPrototype(model::Binary &TheBinary) {
   auto NewType = model::makeType<model::RawFunctionType>();
   auto TypePath = TheBinary.recordNewType(std::move(NewType));
   auto &T = *llvm::cast<model::RawFunctionType>(TypePath.get());
 
-  auto PointerOrNumberKind = model::PrimitiveTypeKind::PointerOrNumber;
-  auto Primitive64 = TheBinary.getPrimitiveType(PointerOrNumberKind, 8);
-  QualifiedType Generic64{ Primitive64, {} };
-
-  for (Register::Values Register : ArgumentRegisters) {
-    NamedTypedRegister Argument(Register);
-    Argument.Type = Generic64;
+  for (auto Register : Allowed::GenericArgumentRegisters) {
+    model::NamedTypedRegister Argument(Register);
+    Argument.Type = buildType(Register, TheBinary);
     T.Arguments.insert(Argument);
   }
+  // for (auto Register : Allowed::VectorArgumentRegisters) {
+  //   model::NamedTypedRegister Argument(Register);
+  //   Argument.Type = buildType(Register, TheBinary);
+  //   T.Arguments.insert(Argument);
+  // }
 
-  for (Register::Values Register : ReturnValueRegisters) {
-    TypedRegister ReturnValue(Register);
-    ReturnValue.Type = Generic64;
+  for (auto Register : Allowed::GenericReturnValueRegisters) {
+    model::TypedRegister ReturnValue(Register);
+    ReturnValue.Type = buildType(Register, TheBinary);
     T.ReturnValues.insert(ReturnValue);
   }
+  // for (auto Register : Allowed::VectorReturnValueRegisters) {
+  //   model::TypedRegister ReturnValue(Register);
+  //   ReturnValue.Type = buildType(Register, TheBinary);
+  //   T.ReturnValues.insert(ReturnValue);
+  // }
 
-  for (Register::Values Register : CalleeSavedRegisters)
+  for (auto Register : CalleeSavedRegisters)
     T.PreservedRegisters.insert(Register);
 
   return TypePath;
 }
 
+// TODO: implement this!
 void ABI<SystemV_x86_64>::applyDeductions(RegisterStateMap &Prototype) {
-  using namespace model::RegisterState;
+  static_cast<void>(Prototype);
+  // using namespace model::RegisterState;
 
-  // Find the highest-indexed YesOrDead argument, and mark YesOrDead all those
-  // before it. Same for return values.
-  bool ArgumentMatch = false;
-  for (auto Register :
-       llvm::make_range(ArgumentRegisters.rbegin(), ArgumentRegisters.rend())) {
+  // // Find the highest-indexed YesOrDead argument, and mark YesOrDead all
+  // those
+  // // before it. Same for return values.
+  // bool ArgumentMatch = false;
+  // for (auto Register : llvm::reverse(Allowed::GenericArgumentRegisters)) {
+  //   auto State = getOrDefault(Prototype,
+  //                             Register,
+  //                             { model::RegisterState::Invalid,
+  //                               model::RegisterState::Invalid });
 
-    auto State = getOrDefault(Prototype,
-                              Register,
-                              { model::RegisterState::Invalid,
-                                model::RegisterState::Invalid });
+  //   auto AsArgument = State.first;
 
-    auto AsArgument = State.first;
+  //   if (not ArgumentMatch) {
+  //     ArgumentMatch = isYesOrDead(AsArgument);
+  //   } else if (AsArgument != Yes and AsArgument != Dead) {
+  //     Prototype[Register].first = YesOrDead;
+  //   }
+  // }
 
-    if (not ArgumentMatch) {
-      ArgumentMatch = isYesOrDead(AsArgument);
-    } else if (AsArgument != Yes and AsArgument != Dead) {
-      Prototype[Register].first = YesOrDead;
-    }
-  }
+  // bool ReturnValueMatch = false;
+  // for (auto Register : llvm::reverse(Allowed::GenericReturnValueRegisters)) {
+  //   auto State = getOrDefault(Prototype,
+  //                             Register,
+  //                             { model::RegisterState::Invalid,
+  //                               model::RegisterState::Invalid });
 
-  bool ReturnValueMatch = false;
-  for (auto Register : llvm::make_range(ReturnValueRegisters.rbegin(),
-                                        ReturnValueRegisters.rend())) {
+  //   auto AsReturnValue = State.second;
 
-    auto State = getOrDefault(Prototype,
-                              Register,
-                              { model::RegisterState::Invalid,
-                                model::RegisterState::Invalid });
+  //   if (not ReturnValueMatch) {
+  //     ReturnValueMatch = isYesOrDead(AsReturnValue);
+  //   } else if (AsReturnValue != Yes and AsReturnValue != Dead) {
+  //     Prototype[Register].second = YesOrDead;
+  //   }
+  // }
 
-    auto AsReturnValue = State.second;
+  // // Mark all the other non-YesOrDead as No
+  // for (auto &[Register, State] : Prototype) {
+  //   auto &[AsArgument, AsReturnValue] = State;
 
-    if (not ReturnValueMatch) {
-      ReturnValueMatch = isYesOrDead(AsReturnValue);
-    } else if (AsReturnValue != Yes and AsReturnValue != Dead) {
-      Prototype[Register].second = YesOrDead;
-    }
-  }
+  //   if (not isYesOrDead(AsArgument))
+  //     AsArgument = No;
 
-  // Mark all the other non-YesOrDead as No
-  for (auto &[Register, State] : Prototype) {
-    auto &[AsArgument, AsReturnValue] = State;
-
-    if (not isYesOrDead(AsArgument))
-      AsArgument = No;
-
-    if (not isYesOrDead(AsReturnValue))
-      AsReturnValue = No;
-  }
+  //   if (not isYesOrDead(AsReturnValue))
+  //     AsReturnValue = No;
+  // }
 }
 
 //
