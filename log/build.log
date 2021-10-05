@@ -1,0 +1,178 @@
+[1m[+] INFO[0m - Executing Action install (build) of revng@optimized
+[1m[+] INFO[0m - The following script is going to be executed:
+cmake --build "$BUILD_DIR" ${JOBS:+-j$JOBS}
+cmake --install "$BUILD_DIR"
+if test "$RUN_TESTS" -eq 1; then
+  cd "$BUILD_DIR"
+  ctest --output-on-failure ${JOBS:+-j$JOBS}
+  cd -
+fi
+[1/153] Building CXX object CMakeFiles/test_upcastablepointer.dir/tests/unit/UpcastablePointer.cpp.o
+[2/153] Building CXX object CMakeFiles/test_recursive_coroutines.dir/tests/unit/RecursiveCoroutine.cpp.o
+[3/153] Building CXX object CMakeFiles/test_recursive_coroutines_iterative.dir/tests/unit/RecursiveCoroutine.cpp.o
+[4/153] Building CXX object CMakeFiles/test_classsentinel.dir/tests/unit/ClassSentinel.cpp.o
+[5/153] Building CXX object CMakeFiles/test_constantrangeset.dir/tests/unit/ConstantRangeSet.cpp.o
+[6/153] Building CXX object CMakeFiles/test_lazysmallbitvector.dir/tests/unit/LazySmallBitVector.cpp.o
+[7/153] Building CXX object CMakeFiles/test_instantiatepasses.dir/tests/unit/InstantiatePasses.cpp.o
+FAILED: CMakeFiles/test_instantiatepasses.dir/tests/unit/InstantiatePasses.cpp.o 
+/home/o/orc/root/link-only/bin/clang++  -DBOOST_TEST_DYN_LINK=1 -DBUILD_PATH=\"/home/o/orc/build/revng/optimized\" -DHAVE_VALGRIND_CALLGRIND_H -DINSTALL_PATH=\"/home/o/orc/root\" -D_FILE_OFFSET_BITS=64 -I/home/o/orc/sources/revng/include -I/home/o/orc/sources/revng -isystem /home/o/orc/root/include -ggdb3 -O2 -fno-omit-frame-pointer -DDISABLE_RECURSIVE_COROUTINES -stdlib=libc++ -std=c++2a -Wall -Wextra -Werror -fno-rtti -fno-exceptions -Wno-unused-parameter -Wno-unused-variable -Wno-ambiguous-reversed-operator -Wstrict-aliasing -fstrict-aliasing -Wnon-virtual-dtor -Wunreachable-code-break -Wnewline-eof -Wmissing-prototypes -g -fPIE   -D_GNU_SOURCE -D_DEBUG -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -MD -MT CMakeFiles/test_instantiatepasses.dir/tests/unit/InstantiatePasses.cpp.o -MF CMakeFiles/test_instantiatepasses.dir/tests/unit/InstantiatePasses.cpp.o.d -o CMakeFiles/test_instantiatepasses.dir/tests/unit/InstantiatePasses.cpp.o -c /home/o/orc/sources/revng/tests/unit/InstantiatePasses.cpp
+In file included from /home/o/orc/sources/revng/tests/unit/InstantiatePasses.cpp:14:
+In file included from /home/o/orc/sources/revng/include/revng/Model/LoadModelPass.h:10:
+In file included from /home/o/orc/sources/revng/include/revng/Model/Binary.h:14:
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1010:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Invalid:
+         ^~~~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1009:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Count:
+         ^~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1009:10: error: case value not in enumerated type 'model::Architecture::Values' [-Werror,-Wswitch]
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1038:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Invalid:
+         ^~~~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1037:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Count:
+         ^~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1037:10: error: case value not in enumerated type 'model::Architecture::Values' [-Werror,-Wswitch]
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1043:8: error: comparison of different enumeration types in switch statement ('Type::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+  case Invalid:
+       ^~~~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1042:8: error: comparison of different enumeration types in switch statement ('Type::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+  case Count:
+       ^~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1042:8: error: case value not in enumerated type 'Type::Values' [-Werror,-Wswitch]
+In file included from /home/o/orc/sources/revng/tests/unit/InstantiatePasses.cpp:14:
+In file included from /home/o/orc/sources/revng/include/revng/Model/LoadModelPass.h:10:
+In file included from /home/o/orc/sources/revng/include/revng/Model/Binary.h:16:
+In file included from /home/o/orc/sources/revng/include/revng/Model/Type.h:18:
+/home/o/orc/sources/revng/include/revng/Model/ABI.h:122:11: error: 11 enumeration values not handled in switch: 'Invalid', 'Microsoft_x86_clrcall', 'Microsoft_x86_vectorcall'... [-Werror,-Wswitch]
+  switch (V) {
+          ^
+/home/o/orc/sources/revng/include/revng/Model/ABI.h:150:1: error: non-void function does not return a value in all control paths [-Werror,-Wreturn-type]
+}
+^
+11 errors generated.
+[8/153] Building CXX object CMakeFiles/test_metaaddress.dir/tests/unit/MetaAddress.cpp.o
+[9/153] Building CXX object CMakeFiles/test_recursive_coroutines_fallback.dir/tests/unit/RecursiveCoroutine.cpp.o
+[10/153] Building CXX object CMakeFiles/test_smallmap.dir/tests/unit/SmallMap.cpp.o
+[11/153] Building CXX object lib/Support/CMakeFiles/revngSupport.dir/Assert.cpp.o
+[12/153] Building CXX object CMakeFiles/test_irhelpers.dir/tests/unit/IRHelpers.cpp.o
+[13/153] Building CXX object CMakeFiles/test_model.dir/tests/unit/Model.cpp.o
+FAILED: CMakeFiles/test_model.dir/tests/unit/Model.cpp.o 
+/home/o/orc/root/link-only/bin/clang++  -DBOOST_TEST_DYN_LINK=1 -DBUILD_PATH=\"/home/o/orc/build/revng/optimized\" -DHAVE_VALGRIND_CALLGRIND_H -DINSTALL_PATH=\"/home/o/orc/root\" -D_FILE_OFFSET_BITS=64 -I/home/o/orc/sources/revng/include -I/home/o/orc/sources/revng -isystem /home/o/orc/root/include -ggdb3 -O2 -fno-omit-frame-pointer -DDISABLE_RECURSIVE_COROUTINES -stdlib=libc++ -std=c++2a -Wall -Wextra -Werror -fno-rtti -fno-exceptions -Wno-unused-parameter -Wno-unused-variable -Wno-ambiguous-reversed-operator -Wstrict-aliasing -fstrict-aliasing -Wnon-virtual-dtor -Wunreachable-code-break -Wnewline-eof -Wmissing-prototypes -g -fPIE   -D_GNU_SOURCE -D_DEBUG -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -MD -MT CMakeFiles/test_model.dir/tests/unit/Model.cpp.o -MF CMakeFiles/test_model.dir/tests/unit/Model.cpp.o.d -o CMakeFiles/test_model.dir/tests/unit/Model.cpp.o -c /home/o/orc/sources/revng/tests/unit/Model.cpp
+In file included from /home/o/orc/sources/revng/tests/unit/Model.cpp:12:
+In file included from /home/o/orc/sources/revng/include/revng/Model/Binary.h:14:
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1010:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Invalid:
+         ^~~~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1009:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Count:
+         ^~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1009:10: error: case value not in enumerated type 'model::Architecture::Values' [-Werror,-Wswitch]
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1038:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Invalid:
+         ^~~~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1037:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Count:
+         ^~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1037:10: error: case value not in enumerated type 'model::Architecture::Values' [-Werror,-Wswitch]
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1043:8: error: comparison of different enumeration types in switch statement ('Type::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+  case Invalid:
+       ^~~~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1042:8: error: comparison of different enumeration types in switch statement ('Type::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+  case Count:
+       ^~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1042:8: error: case value not in enumerated type 'Type::Values' [-Werror,-Wswitch]
+In file included from /home/o/orc/sources/revng/tests/unit/Model.cpp:12:
+In file included from /home/o/orc/sources/revng/include/revng/Model/Binary.h:16:
+In file included from /home/o/orc/sources/revng/include/revng/Model/Type.h:18:
+/home/o/orc/sources/revng/include/revng/Model/ABI.h:122:11: error: 11 enumeration values not handled in switch: 'Invalid', 'Microsoft_x86_clrcall', 'Microsoft_x86_vectorcall'... [-Werror,-Wswitch]
+  switch (V) {
+          ^
+/home/o/orc/sources/revng/include/revng/Model/ABI.h:150:1: error: non-void function does not return a value in all control paths [-Werror,-Wreturn-type]
+}
+^
+11 errors generated.
+[14/153] Building CXX object CMakeFiles/test_keyedobjectscontainers.dir/tests/unit/KeyedObjectsContainers.cpp.o
+[15/153] Building CXX object CMakeFiles/test_zipmapiterator.dir/tests/unit/ZipMapIterator.cpp.o
+[16/153] Building CXX object lib/BasicAnalyses/CMakeFiles/revngBasicAnalyses.dir/EmptyNewPC.cpp.o
+[17/153] Building CXX object CMakeFiles/test_model_type.dir/tests/unit/ModelType.cpp.o
+FAILED: CMakeFiles/test_model_type.dir/tests/unit/ModelType.cpp.o 
+/home/o/orc/root/link-only/bin/clang++  -DBOOST_TEST_DYN_LINK=1 -DBUILD_PATH=\"/home/o/orc/build/revng/optimized\" -DHAVE_VALGRIND_CALLGRIND_H -DINSTALL_PATH=\"/home/o/orc/root\" -D_FILE_OFFSET_BITS=64 -I/home/o/orc/sources/revng/include -I/home/o/orc/sources/revng -isystem /home/o/orc/root/include -ggdb3 -O2 -fno-omit-frame-pointer -DDISABLE_RECURSIVE_COROUTINES -stdlib=libc++ -std=c++2a -Wall -Wextra -Werror -fno-rtti -fno-exceptions -Wno-unused-parameter -Wno-unused-variable -Wno-ambiguous-reversed-operator -Wstrict-aliasing -fstrict-aliasing -Wnon-virtual-dtor -Wunreachable-code-break -Wnewline-eof -Wmissing-prototypes -g -fPIE   -D_GNU_SOURCE -D_DEBUG -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -MD -MT CMakeFiles/test_model_type.dir/tests/unit/ModelType.cpp.o -MF CMakeFiles/test_model_type.dir/tests/unit/ModelType.cpp.o.d -o CMakeFiles/test_model_type.dir/tests/unit/ModelType.cpp.o -c /home/o/orc/sources/revng/tests/unit/ModelType.cpp
+In file included from /home/o/orc/sources/revng/tests/unit/ModelType.cpp:10:
+In file included from /home/o/orc/sources/revng/include/revng/Model/Binary.h:14:
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1010:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Invalid:
+         ^~~~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1009:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Count:
+         ^~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1009:10: error: case value not in enumerated type 'model::Architecture::Values' [-Werror,-Wswitch]
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1038:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Invalid:
+         ^~~~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1037:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Count:
+         ^~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1037:10: error: case value not in enumerated type 'model::Architecture::Values' [-Werror,-Wswitch]
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1043:8: error: comparison of different enumeration types in switch statement ('Type::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+  case Invalid:
+       ^~~~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1042:8: error: comparison of different enumeration types in switch statement ('Type::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+  case Count:
+       ^~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1042:8: error: case value not in enumerated type 'Type::Values' [-Werror,-Wswitch]
+In file included from /home/o/orc/sources/revng/tests/unit/ModelType.cpp:10:
+In file included from /home/o/orc/sources/revng/include/revng/Model/Binary.h:16:
+In file included from /home/o/orc/sources/revng/include/revng/Model/Type.h:18:
+/home/o/orc/sources/revng/include/revng/Model/ABI.h:122:11: error: 11 enumeration values not handled in switch: 'Invalid', 'Microsoft_x86_clrcall', 'Microsoft_x86_vectorcall'... [-Werror,-Wswitch]
+  switch (V) {
+          ^
+/home/o/orc/sources/revng/include/revng/Model/ABI.h:150:1: error: non-void function does not return a value in all control paths [-Werror,-Wreturn-type]
+}
+^
+11 errors generated.
+[18/153] Building CXX object CMakeFiles/test_shrinkinstructionoperands.dir/tests/unit/ShrinkInstructionOperandsPass.cpp.o
+[19/153] Building CXX object CMakeFiles/test_stackanalysis.dir/tests/unit/StackAnalysis.cpp.o
+FAILED: CMakeFiles/test_stackanalysis.dir/tests/unit/StackAnalysis.cpp.o 
+/home/o/orc/root/link-only/bin/clang++  -DBOOST_TEST_DYN_LINK=1 -DBUILD_PATH=\"/home/o/orc/build/revng/optimized\" -DHAVE_VALGRIND_CALLGRIND_H -DINSTALL_PATH=\"/home/o/orc/root\" -D_FILE_OFFSET_BITS=64 -I/home/o/orc/sources/revng/include -I/home/o/orc/sources/revng -I/home/o/orc/sources/revng/lib/StackAnalysis -Ilib/StackAnalysis -isystem /home/o/orc/root/include -ggdb3 -O2 -fno-omit-frame-pointer -DDISABLE_RECURSIVE_COROUTINES -stdlib=libc++ -std=c++2a -Wall -Wextra -Werror -fno-rtti -fno-exceptions -Wno-unused-parameter -Wno-unused-variable -Wno-ambiguous-reversed-operator -Wstrict-aliasing -fstrict-aliasing -Wnon-virtual-dtor -Wunreachable-code-break -Wnewline-eof -Wmissing-prototypes -g -fPIE   -D_GNU_SOURCE -D_DEBUG -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -MD -MT CMakeFiles/test_stackanalysis.dir/tests/unit/StackAnalysis.cpp.o -MF CMakeFiles/test_stackanalysis.dir/tests/unit/StackAnalysis.cpp.o.d -o CMakeFiles/test_stackanalysis.dir/tests/unit/StackAnalysis.cpp.o -c /home/o/orc/sources/revng/tests/unit/StackAnalysis.cpp
+In file included from /home/o/orc/sources/revng/tests/unit/StackAnalysis.cpp:14:
+In file included from /home/o/orc/sources/revng/lib/StackAnalysis/Intraprocedural.h:15:
+In file included from /home/o/orc/sources/revng/include/revng/BasicAnalyses/GeneratedCodeBasicInfo.h:19:
+In file included from /home/o/orc/sources/revng/include/revng/Support/revng.h:17:
+/home/o/orc/sources/revng/include/revng/Model/ABI.h:122:11: error: 11 enumeration values not handled in switch: 'Invalid', 'Microsoft_x86_clrcall', 'Microsoft_x86_vectorcall'... [-Werror,-Wswitch]
+  switch (V) {
+          ^
+/home/o/orc/sources/revng/include/revng/Model/ABI.h:150:1: error: non-void function does not return a value in all control paths [-Werror,-Wreturn-type]
+}
+^
+In file included from /home/o/orc/sources/revng/tests/unit/StackAnalysis.cpp:14:
+In file included from /home/o/orc/sources/revng/lib/StackAnalysis/Intraprocedural.h:15:
+In file included from /home/o/orc/sources/revng/include/revng/BasicAnalyses/GeneratedCodeBasicInfo.h:19:
+In file included from /home/o/orc/sources/revng/include/revng/Support/revng.h:18:
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1010:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Invalid:
+         ^~~~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1009:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Count:
+         ^~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1009:10: error: case value not in enumerated type 'model::Architecture::Values' [-Werror,-Wswitch]
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1038:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Invalid:
+         ^~~~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1037:10: error: comparison of different enumeration types in switch statement ('model::Architecture::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+    case Count:
+         ^~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1037:10: error: case value not in enumerated type 'model::Architecture::Values' [-Werror,-Wswitch]
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1043:8: error: comparison of different enumeration types in switch statement ('Type::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+  case Invalid:
+       ^~~~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1042:8: error: comparison of different enumeration types in switch statement ('Type::Values' and 'model::Register::Values') [-Werror,-Wenum-compare-switch]
+  case Count:
+       ^~~~~
+/home/o/orc/sources/revng/include/revng/Model/Register.h:1042:8: error: case value not in enumerated type 'Type::Values' [-Werror,-Wswitch]
+11 errors generated.
+[20/153] Building CXX object CMakeFiles/test_advancedvalueinfo.dir/tests/unit/AdvancedValueInfo.cpp.o
+[21/153] Building CXX object CMakeFiles/test_genericgraph.dir/tests/unit/GenericGraph.cpp.o
+[22/153] Building CXX object CMakeFiles/test_filtered_graph_traits.dir/tests/unit/FilteredGraphTraits.cpp.o
+ninja: build stopped: subcommand failed.
+[31m[1m[+] ERROR[0m - Script failed with exit code 1
