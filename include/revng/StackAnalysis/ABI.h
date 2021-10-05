@@ -24,22 +24,12 @@ public:
   static bool isCompatible(const model::RawFunctionType &Explicit);
 
   static std::optional<model::CABIFunctionType>
-  toCABI(model::Binary &TheBinary, const model::RawFunctionType &Explicit) {
-    return {};
-  }
-
+  toCABI(model::Binary &TheBinary, const model::RawFunctionType &Explicit);
   static std::optional<model::RawFunctionType>
-  toRaw(model::Binary &TheBinary, const model::CABIFunctionType &Original) {
-    return {};
-  }
+  toRaw(model::Binary &TheBinary, const model::CABIFunctionType &Original);
 
-  static model::TypePath defaultPrototype(model::Binary &TheBinary) {
-    model::TypePath
-      Void = TheBinary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0);
-    return TheBinary.recordNewType(model::makeType<model::RawFunctionType>());
-  }
-
-  void applyDeductions(RegisterStateMap &Prototype) { return; }
+  static model::TypePath defaultPrototype(model::Binary &TheBinary);
+  void applyDeductions(RegisterStateMap &Prototype);
 };
 
 // TODO: make this as much reusable as possible

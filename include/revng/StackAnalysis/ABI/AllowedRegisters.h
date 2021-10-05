@@ -15,13 +15,18 @@ struct AllowedRegisterList {
   static constexpr bool VectorArgumentsReplaceGenericOnes = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
 
-  static constexpr std::array GenericArgumentRegisters = {};
-  static constexpr std::array GenericReturnValueRegisters = {};
+  static constexpr std::array<model::Register::Values, 0>
+    GenericArgumentRegisters = {};
+  static constexpr std::array<model::Register::Values, 0>
+    GenericReturnValueRegisters = {};
 
-  static constexpr std::array VectorArgumentRegisters = {};
-  static constexpr std::array VectorReturnValueRegisters = {};
+  static constexpr std::array<model::Register::Values, 0>
+    VectorArgumentRegisters = {};
+  static constexpr std::array<model::Register::Values, 0>
+    VectorReturnValueRegisters = {};
 
-  static constexpr std::array CalleeSavedRegisters = {};
+  static constexpr std::array<model::Register::Values, 0>
+    CalleeSavedRegisters = {};
 };
 
 template<>

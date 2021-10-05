@@ -46,51 +46,26 @@ static bool verify(const SortedVector<RegisterType> &UsedRegisters) {
   return true;
 }
 
-template<typename RegisterType,
-         size_t GenericRegisterCount,
-         size_t VectorRegisterCount>
+template<model::Architecture::Values Architecture,
+         typename RegisterType,
+         size_t GenericRegisterCount>
 static std::optional<llvm::SmallVector<RegisterType, GenericRegisterCount>>
-replImpl(const SortedVector<RegisterType> &UsedRegisters,
-         const RegisterArray<GenericRegisterCount> &AllowedGenericRegisters,
-         const RegisterArray<VectorRegisterCount> &AllowedVectorRegisters) {
-  llvm::SmallVector<RegisterType, GenericRegisterCount> Result;
+analyze(const SortedVector<RegisterType> &UsedRegisters,
+        const RegisterArray<GenericRegisterCount> &AllowedGenericRegisters) {
+  revng_assert(verify<Architecture>(UsedRegisters));
+  revng_assert(verify<Architecture>(AllowedGenericRegisters));
 
-  size_t UsedCount = 0;
-  bool MustBeUsed = false;
-  size_t Index = AllowedGenericRegisters.size();
-  for (; Index != size_t(-1); --Index) {
-    bool IsUsed = false;
-    auto GenericIterator = UsedRegisters.find(AllowedGenericRegisters[Index]);
-    if (GenericIterator != UsedRegisters.end()) {
-      Result.emplace_back(*GenericIterator);
-      IsUsed = true;
-    } else if (!AllowedVectorRegisters.empty()) {
-      auto VectorIterator = UsedRegisters.find(AllowedVectorRegisters[Index]);
-      if (VectorIterator != UsedRegisters.end()) {
-        Result.emplace_back(*VectorIterator);
-        IsUsed = true;
-      }
-    }
-
-    if (!IsUsed && MustBeUsed)
+  // Ensure all the used registers are allowed
+  for (const auto &Register : UsedRegisters)
+    if (llvm::count(AllowedGenericRegisters, Register.Location) != 1)
       return std::nullopt;
 
-    MustBeUsed = MustBeUsed || IsUsed;
-  }
-
-  return Result;
-}
-
-template<typename RegisterType,
-         size_t GenericRegisterCount,
-         size_t VectorRegisterCount>
-static std::optional<llvm::SmallVector<RegisterType, GenericRegisterCount>>
-nreplImpl(const SortedVector<RegisterType> &UsedRegisters,
-          const RegisterArray<GenericRegisterCount> &AllowedGenericRegisters,
-          const RegisterArray<VectorRegisterCount> &AllowedVectorRegisters) {
   llvm::SmallVector<RegisterType, GenericRegisterCount> Result;
 
-  auto SelectUsed = [&Result](const auto &RegisterContainer) -> bool {
+  // Ensure the register usage continuity, e. g. if the register for the second
+  // parameter is used, the register for the first one must be used as well.
+  auto SelectUsed = [&UsedRegisters,
+                     &Result](const auto &RegisterContainer) -> bool {
     size_t UsedCount = 0;
     bool MustBeUsed = false;
     for (model::Register::Values Register : RegisterContainer) {
@@ -107,82 +82,32 @@ nreplImpl(const SortedVector<RegisterType> &UsedRegisters,
     return true;
   };
 
-  if (!SelectUsed(llvm::reverse(AllowedVectorRegisters)))
-    return std::nullopt;
-
   if (!SelectUsed(llvm::reverse(AllowedGenericRegisters)))
     return std::nullopt;
 
   return Result;
 }
 
-template<model::Architecture::Values Architecture,
-         bool VectorArgumentsReplaceGenericOnes,
-         typename RegisterType,
-         size_t GenericRegisterCount,
-         size_t VectorRegisterCount>
-static std::optional<llvm::SmallVector<RegisterType, GenericRegisterCount>>
-analyze(const SortedVector<RegisterType> &UsedRegisters,
-        const RegisterArray<GenericRegisterCount> &AllowedGenericRegisters,
-        const RegisterArray<VectorRegisterCount> &AllowedVectorRegisters) {
-  revng_assert(verify<Architecture>(UsedRegisters));
-  revng_assert(verify<Architecture>(AllowedRegisters));
-  revng_assert(verify<Architecture>(FallbackRegisters));
-
-  if constexpr (VectorArgumentsReplaceGenericOnes) {
-    bool C = AllowedGenericRegisters.size() == AllowedVectorRegisters.size();
-    revng_assert(C);
-  }
-
-  // Ensure all the used registers are allowed
-  for (const auto &Register : UsedRegisters)
-    if (llvm::count(AllowedGenericRegisters, Register.Location) != 1)
-      if (llvm::count(AllowedVectorRegisters, Register.Location) != 1)
-        return std::nullopt;
-
-  // Ensure the register usage continuity, e. g. if the register for the second
-  // parameter is used, the register for the first one must be used as well.
-  if constexpr (VectorArgumentsReplaceGenericOnes)
-    return replImpl(UsedRegisters,
-                    AllowedGenericRegisters,
-                    AllowedVectorRegisters);
-  else
-    return nreplImpl(UsedRegisters,
-                     AllowedGenericRegisters,
-                     AllowedVectorRegisters);
-}
-
 template<model::abi::Values V>
 bool ABI<V>::isCompatible(const model::RawFunctionType &Explicit) {
   static constexpr auto Arch = getArchitecture(V);
   bool ArgumentAnalysis = analyze<Arch>(Explicit.Arguments,
-                                        Allowed::GenericArgumentRegisters,
-                                        Allowed::VectorArgumentRegisters);
-  bool ReturnValueAnalysis = analyze<Arch>(Explicit.ReturnValues,
-                                           Allowed::GenericReturnValueRegisters,
-                                           Allowed::VectorReturnValueRegisters);
+                                        Allowed::GenericArgumentRegisters);
+  bool
+    ReturnValueAnalysis = analyze<Arch>(Explicit.ReturnValues,
+                                        Allowed::GenericReturnValueRegisters);
   return ArgumentAnalysis && ReturnValueAnalysis;
 }
 
-model::PrimitiveTypeKind::Values
-selectTypeKind(model::Register::Type::Values RegisterType) {
-  switch (RegisterType) {
-  case model::Register::Type::Generic:
-    return model::PrimitiveTypeKind::PointerOrNumber;
-
-  case model::Register::Type::FloatingPoint:
-    return model::PrimitiveTypeKind::Float;
-
-  case Count:
-  case Invalid:
-  default:
-    revng_abort();
-  }
+constexpr static model::PrimitiveTypeKind::Values
+selectTypeKind(model::Register::Values) {
+  // TODO
+  return model::PrimitiveTypeKind::PointerOrNumber;
 }
 
-model::QualifiedType
+static model::QualifiedType
 buildType(model::Register::Values Register, model::Binary &TheBinary) {
-  auto Kind = selectTypeKind(model::Register::getType(Register));
+  auto Kind = selectTypeKind(Register);
   auto Size = model::Register::getSize(Register);
   return model::QualifiedType{ TheBinary.getPrimitiveType(Kind, Size) };
 }
@@ -193,13 +118,11 @@ ABI<V>::toCABI(model::Binary &TheBinary,
                const model::RawFunctionType &Explicit) {
   static constexpr auto A = getArchitecture(V);
   auto AnalyzedArguments = analyze<A>(Explicit.Arguments,
-                                      Allowed::GenericArgumentRegisters,
-                                      Allowed::VectorArgumentRegisters);
+                                      Allowed::GenericArgumentRegisters);
   auto AnalyzedReturnValues = analyze<A>(Explicit.ReturnValues,
-                                         Allowed::GenericReturnValueRegisters,
-                                         Allowed::VectorReturnValueRegisters);
+                                         Allowed::GenericReturnValueRegisters);
 
-  if (!AnalizedArguments.has_value() || !AnalizedReturnValues.has_value())
+  if (!AnalyzedArguments.has_value() || !AnalyzedReturnValues.has_value())
     return {};
 
   model::CABIFunctionType Result;
@@ -217,8 +140,11 @@ ABI<V>::toCABI(model::Binary &TheBinary,
   } else {
     size_t Offset = 0;
 
-    auto NewType = makeType<StructType>();
-    auto *MultipleReturnValues = llvm::cast<StructType>(NewType.get());
+    // TODO
+    // if constexpr (AllowAnArgumentToOccupySubsequentRegisters) {
+
+    auto NewType = model::makeType<model::StructType>();
+    auto *MultipleReturnValues = llvm::cast<model::StructType>(NewType.get());
     for (const auto &Register : AnalyzedReturnValues.value()) {
       model::StructField NewField;
       NewField.Offset = Offset;
@@ -235,7 +161,7 @@ ABI<V>::toCABI(model::Binary &TheBinary,
   //
   // Build argument list
   //
-  for (size_t Index = 0; auto Register : ArgumentAnalysis.value()) {
+  for (size_t Index = 0; auto Register : AnalyzedArguments.value()) {
     model::Argument NewArgument;
     NewArgument.Index = Index++;
     NewArgument.Type = buildType(Register, TheBinary);
@@ -256,7 +182,6 @@ static std::optional<InternalArguments>
 allocateRegisters(const SortedVector<model::Argument> &Arguments) {
   InternalArguments Result;
   size_t UsedGenericRegisterCounter = 0;
-  size_t UsedVectorRegisterCounter = 0;
 
   using OR = std::optional<model::Register::Values>;
   auto GetTheNextGenericRegister = [&UsedGenericRegisterCounter]() -> OR {
@@ -265,13 +190,8 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
     else
       return std::nullopt;
   };
-  auto GetTheNextVectorRegister = [&UsedVectorRegisterCounter]() -> OR {
-    if (UsedVectorRegisterCounter < Allowed::VectorArgumentRegisters.size())
-      return Allowed::VectorArgumentRegisters[UsedVectorRegisterCounter];
-    else
-      return std::nullopt;
-  };
 
+  model::VerifyHelper VH;
   for (const model::Argument &Argument : Arguments) {
     if (!Argument.Type.isScalar()) // This could probably be an assert.
       return std::nullopt;
@@ -279,7 +199,7 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
     if (!Argument.Type.isFloat()) {
       auto NextRegister = GetTheNextGenericRegister();
       if (!NextRegister.has_value()) {
-        StackArguments.emplace(Argument.Index);
+        Result.Stack.insert(Argument.Index);
         continue;
       }
       auto NextSize = model::Register::getSize(*NextRegister);
@@ -292,34 +212,15 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
       //
       // } else {
       if (*MaybeSize > NextSize) {
-        StackArguments.emplace(Argument.Index);
+        Result.Stack.insert(Argument.Index);
       } else {
-        RegisterArguments.try_emplace(Argument.Index, *NextRegister);
+        Result.Register.try_emplace(Argument.Index, *NextRegister);
         ++UsedGenericRegisterCounter;
-        if constexpr (Allowed::VectorArgumentsReplaceGenericOnes)
-          UsedVectorRegisterCounter = UsedGenericRegisterCounter;
       }
       // }
 
     } else {
-      auto NextRegister = GetTheNextVectorRegister();
-      if (!NextRegister.has_value()) {
-        StackArguments.emplace(Argument.Index);
-        continue;
-      }
-      auto NextSize = model::Register::getSize(*NextRegister);
-
-      auto MaybeSize = Argument.Type.size(VH);
-      revng_assert(MaybeSize);
-
-      if (*MaybeSize > NextSize) {
-        StackArguments.emplace(Argument.Index);
-      } else {
-        RegisterArguments.try_emplace(Argument.Index, *NextRegister);
-        ++UsedVectorRegisterCounter;
-        if constexpr (Allowed::VectorArgumentsReplaceGenericOnes)
-          UsedGenericRegisterCounter = UsedVectorRegisterCounter;
-      }
+      return std::nullopt;
     }
   }
 }
@@ -349,6 +250,7 @@ ABI<V>::toRaw(model::Binary &TheBinary,
     if (!Original.ReturnType.isScalar()) // This could probably be an assert.
       return std::nullopt;
 
+    model::VerifyHelper VH;
     auto MaybeSize = Original.ReturnType.size(VH);
     revng_assert(MaybeSize.has_value());
 
@@ -367,19 +269,7 @@ ABI<V>::toRaw(model::Binary &TheBinary,
       Result.ReturnValues.insert(Argument);
       // }
     } else {
-      // TODO
-      // if constexpr (Allowed::AllowAnArgumentToOccupySubsequentRegisters) {
-      //
-      // } else {
-      revng_assert(!Allowed::VectorReturnValueRegisters.empty());
-      auto ReturnRegister = Allowed::VectorReturnValueRegisters[0];
-      auto Size = model::Register::getSize(ReturnRegister);
-      revng_assert(*MaybeSize <= Size);
-
-      model::TypedRegister Argument(ReturnRegister);
-      Argument.Type = buildType(ReturnRegister, TheBinary);
-      Result.ReturnValues.insert(Argument);
-      // }
+      return std::nullopt;
     }
   }
 
@@ -401,22 +291,12 @@ model::TypePath ABI<V>::defaultPrototype(model::Binary &TheBinary) {
     Argument.Type = buildType(Register, TheBinary);
     T.Arguments.insert(Argument);
   }
-  // for (auto Register : Allowed::VectorArgumentRegisters) {
-  //   model::NamedTypedRegister Argument(Register);
-  //   Argument.Type = buildType(Register, TheBinary);
-  //   T.Arguments.insert(Argument);
-  // }
 
   for (auto Register : Allowed::GenericReturnValueRegisters) {
     model::TypedRegister ReturnValue(Register);
     ReturnValue.Type = buildType(Register, TheBinary);
     T.ReturnValues.insert(ReturnValue);
   }
-  // for (auto Register : Allowed::VectorReturnValueRegisters) {
-  //   model::TypedRegister ReturnValue(Register);
-  //   ReturnValue.Type = buildType(Register, TheBinary);
-  //   T.ReturnValues.insert(ReturnValue);
-  // }
 
   for (auto Register : CalleeSavedRegisters)
     T.PreservedRegisters.insert(Register);
