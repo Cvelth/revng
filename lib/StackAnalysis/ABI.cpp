@@ -39,7 +39,7 @@ template<model::Architecture::Values Architecture, typename RegisterType>
 static bool verify(const SortedVector<RegisterType> &UsedRegisters) {
   for (const auto &Register : UsedRegisters) {
     // Check if the registers of the same architecture are used.
-    if (model::Register::getArchitecture(Register) != Architecture)
+    if (model::Register::getArchitecture(Register.Location) != Architecture)
       return false;
   }
 
@@ -48,10 +48,10 @@ static bool verify(const SortedVector<RegisterType> &UsedRegisters) {
 
 template<model::Architecture::Values Architecture,
          typename RegisterType,
-         size_t GenericRegisterCount>
-static std::optional<llvm::SmallVector<RegisterType, GenericRegisterCount>>
+         size_t RegisterCount>
+static std::optional<llvm::SmallVector<model::Register::Values, RegisterCount>>
 analyze(const SortedVector<RegisterType> &UsedRegisters,
-        const RegisterArray<GenericRegisterCount> &AllowedGenericRegisters) {
+        const RegisterArray<RegisterCount> &AllowedGenericRegisters) {
   revng_assert(verify<Architecture>(UsedRegisters));
   revng_assert(verify<Architecture>(AllowedGenericRegisters));
 
@@ -60,7 +60,7 @@ analyze(const SortedVector<RegisterType> &UsedRegisters,
     if (llvm::count(AllowedGenericRegisters, Register.Location) != 1)
       return std::nullopt;
 
-  llvm::SmallVector<RegisterType, GenericRegisterCount> Result;
+  llvm::SmallVector<model::Register::Values, RegisterCount> Result;
 
   // Ensure the register usage continuity, e. g. if the register for the second
   // parameter is used, the register for the first one must be used as well.
@@ -90,13 +90,12 @@ analyze(const SortedVector<RegisterType> &UsedRegisters,
 
 template<model::abi::Values V>
 bool ABI<V>::isCompatible(const model::RawFunctionType &Explicit) {
-  static constexpr auto Arch = getArchitecture(V);
-  bool ArgumentAnalysis = analyze<Arch>(Explicit.Arguments,
-                                        Allowed::GenericArgumentRegisters);
-  bool
-    ReturnValueAnalysis = analyze<Arch>(Explicit.ReturnValues,
+  static constexpr auto A = getArchitecture(V);
+  auto ArgumentAnalysis = analyze<A>(Explicit.Arguments,
+                                     Allowed::GenericArgumentRegisters);
+  auto ReturnValueAnalysis = analyze<A>(Explicit.ReturnValues,
                                         Allowed::GenericReturnValueRegisters);
-  return ArgumentAnalysis && ReturnValueAnalysis;
+  return ArgumentAnalysis.has_value() && ReturnValueAnalysis.has_value();
 }
 
 constexpr static model::PrimitiveTypeKind::Values
@@ -223,6 +222,8 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
       return std::nullopt;
     }
   }
+
+  return Result;
 }
 
 template<model::abi::Values V>
@@ -230,7 +231,7 @@ std::optional<model::RawFunctionType>
 ABI<V>::toRaw(model::Binary &TheBinary,
               const model::CABIFunctionType &Original) {
   auto Arguments = allocateRegisters<Allowed>(Original.Arguments);
-  if (!Arguments.has_values())
+  if (!Arguments.has_value())
     return std::nullopt;
   auto [RegisterArguments, StackArguments] = *Arguments;
 
@@ -298,14 +299,15 @@ model::TypePath ABI<V>::defaultPrototype(model::Binary &TheBinary) {
     T.ReturnValues.insert(ReturnValue);
   }
 
-  for (auto Register : CalleeSavedRegisters)
+  for (auto Register : Allowed::CalleeSavedRegisters)
     T.PreservedRegisters.insert(Register);
 
   return TypePath;
 }
 
 // TODO: implement this!
-void ABI<SystemV_x86_64>::applyDeductions(RegisterStateMap &Prototype) {
+template<model::abi::Values V>
+void ABI<V>::applyDeductions(RegisterStateMap &Prototype) {
   static_cast<void>(Prototype);
   // using namespace model::RegisterState;
 
@@ -362,6 +364,20 @@ void ABI<SystemV_x86_64>::applyDeductions(RegisterStateMap &Prototype) {
 
 template class ABI<model::abi::SystemV_x86_64>;
 template class ABI<model::abi::Microsoft_x64>;
+template class ABI<model::abi::Microsoft_x64_clrcall>;
+template class ABI<model::abi::Microsoft_x86_clrcall>;
+template class ABI<model::abi::Microsoft_x64_vectorcall>;
+template class ABI<model::abi::Microsoft_x86_vectorcall>;
+template class ABI<model::abi::Microsoft_x86_cdecl>;
+template class ABI<model::abi::Microsoft_x86_stdcall>;
+template class ABI<model::abi::Microsoft_x86_fastcall>;
+template class ABI<model::abi::Microsoft_x86_thiscall>;
+template class ABI<model::abi::Microsoft_x64_regparm_3>;
+template class ABI<model::abi::Microsoft_x86_regparm_3>;
+template class ABI<model::abi::Microsoft_x64_regparm_2>;
+template class ABI<model::abi::Microsoft_x86_regparm_2>;
+template class ABI<model::abi::Microsoft_x64_regparm_1>;
+template class ABI<model::abi::Microsoft_x86_regparm_1>;
 // More specializations are to come
 
 } // namespace abi

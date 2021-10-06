@@ -32,6 +32,30 @@ public:
   void applyDeductions(RegisterStateMap &Prototype);
 };
 
+/// Asserting specialization for the `Invalid` ABI.
+template<>
+class ABI<model::abi::Invalid> {
+public:
+  static bool isCompatible(const model::RawFunctionType &Explicit) {
+    revng_abort();
+  }
+
+  static std::optional<model::CABIFunctionType>
+  toCABI(model::Binary &TheBinary, const model::RawFunctionType &Explicit) {
+    revng_abort();
+  }
+  static std::optional<model::RawFunctionType>
+  toRaw(model::Binary &TheBinary, const model::CABIFunctionType &Original) {
+    revng_abort();
+  }
+
+  static model::TypePath defaultPrototype(model::Binary &TheBinary) {
+    auto Void = TheBinary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0);
+    return TheBinary.recordNewType(model::makeType<model::RawFunctionType>());
+  }
+  void applyDeductions(RegisterStateMap &Prototype) { revng_abort(); }
+};
+
 // TODO: make this as much reusable as possible
 // TODO: test
 
