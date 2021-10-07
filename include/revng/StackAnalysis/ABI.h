@@ -7,7 +7,7 @@
 #include "revng/Model/Binary.h"
 #include "revng/Model/Register.h"
 #include "revng/Model/Type.h"
-#include "revng/StackAnalysis/ABI/AllowedRegisters.h"
+#include "revng/StackAnalysis/ABI/CallingConventionTrait.h"
 
 namespace abi {
 
@@ -18,7 +18,7 @@ using RegisterStateMap = std::map<model::Register::Values,
 template<model::abi::Values V>
 class ABI {
 private:
-  using Allowed = AllowedRegisterList<V>;
+  using Convention = CallingConventionTrait<V>;
 
 public:
   static bool isCompatible(const model::RawFunctionType &Explicit);
@@ -35,6 +35,30 @@ public:
 /// Asserting specialization for the `Invalid` ABI.
 template<>
 class ABI<model::abi::Invalid> {
+public:
+  static bool isCompatible(const model::RawFunctionType &Explicit) {
+    revng_abort();
+  }
+
+  static std::optional<model::CABIFunctionType>
+  toCABI(model::Binary &TheBinary, const model::RawFunctionType &Explicit) {
+    revng_abort();
+  }
+  static std::optional<model::RawFunctionType>
+  toRaw(model::Binary &TheBinary, const model::CABIFunctionType &Original) {
+    revng_abort();
+  }
+
+  static model::TypePath defaultPrototype(model::Binary &TheBinary) {
+    auto Void = TheBinary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0);
+    return TheBinary.recordNewType(model::makeType<model::RawFunctionType>());
+  }
+  void applyDeductions(RegisterStateMap &Prototype) { revng_abort(); }
+};
+
+/// Asserting specialization for the `Count` ABI.
+template<>
+class ABI<model::abi::Count> {
 public:
   static bool isCompatible(const model::RawFunctionType &Explicit) {
     revng_abort();

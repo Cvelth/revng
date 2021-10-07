@@ -92,9 +92,10 @@ template<model::abi::Values V>
 bool ABI<V>::isCompatible(const model::RawFunctionType &Explicit) {
   static constexpr auto A = getArchitecture(V);
   auto ArgumentAnalysis = analyze<A>(Explicit.Arguments,
-                                     Allowed::GenericArgumentRegisters);
-  auto ReturnValueAnalysis = analyze<A>(Explicit.ReturnValues,
-                                        Allowed::GenericReturnValueRegisters);
+                                     Convention::GenericArgumentRegisters);
+  auto
+    ReturnValueAnalysis = analyze<A>(Explicit.ReturnValues,
+                                     Convention::GenericReturnValueRegisters);
   return ArgumentAnalysis.has_value() && ReturnValueAnalysis.has_value();
 }
 
@@ -117,15 +118,16 @@ ABI<V>::toCABI(model::Binary &TheBinary,
                const model::RawFunctionType &Explicit) {
   static constexpr auto A = getArchitecture(V);
   auto AnalyzedArguments = analyze<A>(Explicit.Arguments,
-                                      Allowed::GenericArgumentRegisters);
-  auto AnalyzedReturnValues = analyze<A>(Explicit.ReturnValues,
-                                         Allowed::GenericReturnValueRegisters);
+                                      Convention::GenericArgumentRegisters);
+  auto
+    AnalyzedReturnValues = analyze<A>(Explicit.ReturnValues,
+                                      Convention::GenericReturnValueRegisters);
 
   if (!AnalyzedArguments.has_value() || !AnalyzedReturnValues.has_value())
     return {};
 
   model::CABIFunctionType Result;
-  Result.ABI = SystemV_x86_64;
+  Result.ABI = V;
 
   //
   // Build return type
@@ -176,7 +178,7 @@ struct InternalArguments {
   llvm::DenseMap<IndexType, model::Register::Values> Register;
   SortedVector<IndexType> Stack;
 };
-template<typename Allowed>
+template<typename CallConv>
 static std::optional<InternalArguments>
 allocateRegisters(const SortedVector<model::Argument> &Arguments) {
   InternalArguments Result;
@@ -184,8 +186,8 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
 
   using OR = std::optional<model::Register::Values>;
   auto GetTheNextGenericRegister = [&UsedGenericRegisterCounter]() -> OR {
-    if (UsedGenericRegisterCounter < Allowed::GenericArgumentRegisters.size())
-      return Allowed::GenericArgumentRegisters[UsedGenericRegisterCounter];
+    if (UsedGenericRegisterCounter < CallConv::GenericArgumentRegisters.size())
+      return CallConv::GenericArgumentRegisters[UsedGenericRegisterCounter];
     else
       return std::nullopt;
   };
@@ -207,7 +209,7 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
       revng_assert(MaybeSize);
 
       // TODO
-      // if constexpr (Allowed::AllowAnArgumentToOccupySubsequentRegisters) {
+      // if constexpr (CallConv::AllowAnArgumentToOccupySubsequentRegisters) {
       //
       // } else {
       if (*MaybeSize > NextSize) {
@@ -230,7 +232,7 @@ template<model::abi::Values V>
 std::optional<model::RawFunctionType>
 ABI<V>::toRaw(model::Binary &TheBinary,
               const model::CABIFunctionType &Original) {
-  auto Arguments = allocateRegisters<Allowed>(Original.Arguments);
+  auto Arguments = allocateRegisters<Convention>(Original.Arguments);
   if (!Arguments.has_value())
     return std::nullopt;
   auto [RegisterArguments, StackArguments] = *Arguments;
@@ -257,11 +259,11 @@ ABI<V>::toRaw(model::Binary &TheBinary,
 
     if (!Original.ReturnType.isFloat()) {
       // TODO
-      // if constexpr (Allowed::AllowAnArgumentToOccupySubsequentRegisters) {
+      // if constexpr (Convention::AllowAnArgumentToOccupySubsequentRegisters) {
       //
       // } else {
-      revng_assert(!Allowed::GenericReturnValueRegisters.empty());
-      auto ReturnRegister = Allowed::GenericReturnValueRegisters[0];
+      revng_assert(!Convention::GenericReturnValueRegisters.empty());
+      auto ReturnRegister = Convention::GenericReturnValueRegisters[0];
       auto Size = model::Register::getSize(ReturnRegister);
       revng_assert(*MaybeSize <= Size);
 
@@ -275,7 +277,7 @@ ABI<V>::toRaw(model::Binary &TheBinary,
   }
 
   // Populate the list of preserved registers
-  for (auto Register : Allowed::CalleeSavedRegisters)
+  for (auto Register : Convention::CalleeSavedRegisters)
     Result.PreservedRegisters.insert(Register);
 
   return Result;
@@ -287,19 +289,19 @@ model::TypePath ABI<V>::defaultPrototype(model::Binary &TheBinary) {
   auto TypePath = TheBinary.recordNewType(std::move(NewType));
   auto &T = *llvm::cast<model::RawFunctionType>(TypePath.get());
 
-  for (auto Register : Allowed::GenericArgumentRegisters) {
+  for (auto Register : Convention::GenericArgumentRegisters) {
     model::NamedTypedRegister Argument(Register);
     Argument.Type = buildType(Register, TheBinary);
     T.Arguments.insert(Argument);
   }
 
-  for (auto Register : Allowed::GenericReturnValueRegisters) {
+  for (auto Register : Convention::GenericReturnValueRegisters) {
     model::TypedRegister ReturnValue(Register);
     ReturnValue.Type = buildType(Register, TheBinary);
     T.ReturnValues.insert(ReturnValue);
   }
 
-  for (auto Register : Allowed::CalleeSavedRegisters)
+  for (auto Register : Convention::CalleeSavedRegisters)
     T.PreservedRegisters.insert(Register);
 
   return TypePath;
@@ -315,7 +317,7 @@ void ABI<V>::applyDeductions(RegisterStateMap &Prototype) {
   // those
   // // before it. Same for return values.
   // bool ArgumentMatch = false;
-  // for (auto Register : llvm::reverse(Allowed::GenericArgumentRegisters)) {
+  // for (auto Register : llvm::reverse(Convention::GenericArgumentRegisters)) {
   //   auto State = getOrDefault(Prototype,
   //                             Register,
   //                             { model::RegisterState::Invalid,
@@ -331,7 +333,8 @@ void ABI<V>::applyDeductions(RegisterStateMap &Prototype) {
   // }
 
   // bool ReturnValueMatch = false;
-  // for (auto Register : llvm::reverse(Allowed::GenericReturnValueRegisters)) {
+  // for (auto Register :
+  // llvm::reverse(Convention::GenericReturnValueRegisters)) {
   //   auto State = getOrDefault(Prototype,
   //                             Register,
   //                             { model::RegisterState::Invalid,
@@ -363,21 +366,21 @@ void ABI<V>::applyDeductions(RegisterStateMap &Prototype) {
 //
 
 template class ABI<model::abi::SystemV_x86_64>;
+template class ABI<model::abi::SystemV_x86>;
+template class ABI<model::abi::SystemV_x86_regparm_1>;
+template class ABI<model::abi::SystemV_x86_regparm_2>;
+template class ABI<model::abi::SystemV_x86_regparm_3>;
+
 template class ABI<model::abi::Microsoft_x64>;
 template class ABI<model::abi::Microsoft_x64_clrcall>;
-template class ABI<model::abi::Microsoft_x86_clrcall>;
 template class ABI<model::abi::Microsoft_x64_vectorcall>;
+
+template class ABI<model::abi::Microsoft_x86_clrcall>;
 template class ABI<model::abi::Microsoft_x86_vectorcall>;
 template class ABI<model::abi::Microsoft_x86_cdecl>;
 template class ABI<model::abi::Microsoft_x86_stdcall>;
 template class ABI<model::abi::Microsoft_x86_fastcall>;
 template class ABI<model::abi::Microsoft_x86_thiscall>;
-template class ABI<model::abi::Microsoft_x64_regparm_3>;
-template class ABI<model::abi::Microsoft_x86_regparm_3>;
-template class ABI<model::abi::Microsoft_x64_regparm_2>;
-template class ABI<model::abi::Microsoft_x86_regparm_2>;
-template class ABI<model::abi::Microsoft_x64_regparm_1>;
-template class ABI<model::abi::Microsoft_x86_regparm_1>;
 // More specializations are to come
 
 } // namespace abi

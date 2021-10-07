@@ -142,6 +142,44 @@ struct CallingConventionTrait<model::abi::Microsoft_x64> {
   };
 };
 
+/// The `__vectorcall` Microsoft x64 ABI.
+/// Function arguments are passed using both stack and specified registers.
+template<>
+struct CallingConventionTrait<model::abi::Microsoft_x64_vectorcall> {
+  static constexpr bool VectorArgumentsReplaceGenericOnes = true;
+  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
+
+  static constexpr size_t StackAlignment = 16;
+
+  static constexpr std::array GenericArgumentRegisters = {
+    model::Register::rcx_x86_64,
+    model::Register::rdx_x86_64,
+    model::Register::r8_x86_64,
+    model::Register::r9_x86_64
+  };
+  static constexpr std::array GenericReturnValueRegisters = {
+    model::Register::rax_x86_64
+  };
+
+  static constexpr std::array VectorArgumentRegisters = {
+    model::Register::xmm0_x86_64, model::Register::xmm1_x86_64,
+    model::Register::xmm2_x86_64, model::Register::xmm3_x86_64,
+    model::Register::xmm4_x86_64, model::Register::xmm5_x86_64
+  };
+  static constexpr std::array VectorReturnValueRegisters = {
+    model::Register::xmm0_x86_64
+  };
+
+  static constexpr std::array CalleeSavedRegisters = {
+    model::Register::r12_x86_64,  model::Register::r13_x86_64,
+    model::Register::r14_x86_64,  model::Register::r15_x86_64,
+    model::Register::rdi_x86_64,  model::Register::rsi_x86_64,
+    model::Register::rbx_x86_64,  model::Register::rbp_x86_64,
+    model::Register::xmm6_x86_64, model::Register::xmm7_x86_64
+  };
+};
+
 /// The `__clrcall` microsoft ABI (can be used for executables of either x86 or
 /// x64 architecture). The parameters are passed using CLR expression stack.
 /// No registers are affected on call.
@@ -151,8 +189,9 @@ struct CallingConventionTrait<model::abi::Microsoft_x64> {
 /// that information.
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = true;
+  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr std::array<model::Register::Values, 0>
     GenericArgumentRegisters = {};
@@ -173,11 +212,130 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
   };
 };
 
+/// The default SystemV x86 ABI
+/// The parameters are only passed using the stack.
+template<>
+struct CallingConventionTrait<model::abi::SystemV_x86> {
+  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
+
+  static constexpr size_t StackAlignment = 16;
+
+  static constexpr std::array<model::Register::Values, 0>
+    GenericArgumentRegisters = {};
+  static constexpr std::array<model::Register::Values, 0>
+    GenericReturnValueRegisters = { model::Register::eax_x86 };
+
+  static constexpr std::array<model::Register::Values, 0>
+    VectorArgumentRegisters = {};
+  static constexpr std::array<model::Register::Values, 0>
+    VectorReturnValueRegisters = {};
+
+  static constexpr std::array CalleeSavedRegisters = {
+    model::Register::ebx_x86,
+    model::Register::ebp_x86,
+    model::Register::esp_x86,
+    model::Register::edi_x86,
+    model::Register::esi_x86
+  };
+};
+
+/// `regparm(1)` SystemV x86 ABI
+/// Function arguments are passed using both stack and specified registers.
+template<>
+struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
+  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
+
+  static constexpr size_t StackAlignment = 16;
+
+  static constexpr std::array<model::Register::Values, 0>
+    GenericArgumentRegisters = { model::Register::eax_x86 };
+  static constexpr std::array<model::Register::Values, 0>
+    GenericReturnValueRegisters = { model::Register::eax_x86 };
+
+  static constexpr std::array<model::Register::Values, 0>
+    VectorArgumentRegisters = {};
+  static constexpr std::array<model::Register::Values, 0>
+    VectorReturnValueRegisters = {};
+
+  static constexpr std::array CalleeSavedRegisters = {
+    model::Register::ebx_x86,
+    model::Register::ebp_x86,
+    model::Register::esp_x86,
+    model::Register::edi_x86,
+    model::Register::esi_x86
+  };
+};
+
+/// `regparm(2)` SystemV x86 ABI
+/// Function arguments are passed using both stack and specified registers.
+template<>
+struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
+  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
+
+  static constexpr size_t StackAlignment = 16;
+
+  static constexpr std::array<model::Register::Values, 0>
+    GenericArgumentRegisters = { model::Register::eax_x86,
+                                 model::Register::edx_x86 };
+  static constexpr std::array<model::Register::Values, 0>
+    GenericReturnValueRegisters = { model::Register::eax_x86 };
+
+  static constexpr std::array<model::Register::Values, 0>
+    VectorArgumentRegisters = {};
+  static constexpr std::array<model::Register::Values, 0>
+    VectorReturnValueRegisters = {};
+
+  static constexpr std::array CalleeSavedRegisters = {
+    model::Register::ebx_x86,
+    model::Register::ebp_x86,
+    model::Register::esp_x86,
+    model::Register::edi_x86,
+    model::Register::esi_x86
+  };
+};
+
+/// `regparm(3)` SystemV x86 ABI
+/// Function arguments are passed using both stack and specified registers.
+template<>
+struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
+  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
+
+  static constexpr size_t StackAlignment = 16;
+
+  static constexpr std::array<model::Register::Values, 0>
+    GenericArgumentRegisters = { model::Register::eax_x86,
+                                 model::Register::edx_x86,
+                                 model::Register::ecx_x86 };
+  static constexpr std::array<model::Register::Values, 0>
+    GenericReturnValueRegisters = { model::Register::eax_x86 };
+
+  static constexpr std::array<model::Register::Values, 0>
+    VectorArgumentRegisters = {};
+  static constexpr std::array<model::Register::Values, 0>
+    VectorReturnValueRegisters = {};
+
+  static constexpr std::array CalleeSavedRegisters = {
+    model::Register::ebx_x86,
+    model::Register::ebp_x86,
+    model::Register::esp_x86,
+    model::Register::edi_x86,
+    model::Register::esi_x86
+  };
+};
+
 /// `__cdecl` Microsoft x86 ABI
 /// The parameters are only passed using the stack.
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = true;
+  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
@@ -207,7 +365,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
 /// The parameters are only passed using the stack.
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = true;
+  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = true;
 
@@ -215,6 +373,68 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
 
   static constexpr std::array<model::Register::Values, 0>
     GenericArgumentRegisters = {};
+  static constexpr std::array<model::Register::Values, 0>
+    GenericReturnValueRegisters = { model::Register::eax_x86,
+                                    model::Register::edx_x86 };
+
+  static constexpr std::array<model::Register::Values, 0>
+    VectorArgumentRegisters = {};
+  static constexpr std::array<model::Register::Values, 0>
+    VectorReturnValueRegisters = {};
+
+  static constexpr std::array CalleeSavedRegisters = {
+    model::Register::ebx_x86,
+    model::Register::ebp_x86,
+    model::Register::esp_x86,
+    model::Register::edi_x86,
+    model::Register::esi_x86
+  };
+};
+
+/// `__fastcall` Microsoft x86 ABI
+/// Function arguments are passed using both stack and specified registers.
+template<>
+struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
+  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = true;
+
+  static constexpr size_t StackAlignment = 4;
+
+  static constexpr std::array<model::Register::Values, 0>
+    GenericArgumentRegisters = { model::Register::ecx_x86,
+                                 model::Register::edx_x86 };
+  static constexpr std::array<model::Register::Values, 0>
+    GenericReturnValueRegisters = { model::Register::eax_x86,
+                                    model::Register::edx_x86 };
+
+  static constexpr std::array<model::Register::Values, 0>
+    VectorArgumentRegisters = {};
+  static constexpr std::array<model::Register::Values, 0>
+    VectorReturnValueRegisters = {};
+
+  static constexpr std::array CalleeSavedRegisters = {
+    model::Register::ebx_x86,
+    model::Register::ebp_x86,
+    model::Register::esp_x86,
+    model::Register::edi_x86,
+    model::Register::esi_x86
+  };
+};
+
+/// `__thiscall` Microsoft x86 ABI
+/// Function arguments are passed using both stack and the specified register.
+/// The register always contains the first parameter - `this` pointer.
+template<>
+struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
+  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = true;
+
+  static constexpr size_t StackAlignment = 4;
+
+  static constexpr std::array<model::Register::Values, 0>
+    GenericArgumentRegisters = { model::Register::ecx_x86 };
   static constexpr std::array<model::Register::Values, 0>
     GenericReturnValueRegisters = { model::Register::eax_x86,
                                     model::Register::edx_x86 };
@@ -242,7 +462,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
 /// that information.
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_clrcall> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = true;
+  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
 
   static constexpr std::array<model::Register::Values, 0>
@@ -261,6 +481,49 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_clrcall> {
     model::Register::esp_x86,
     model::Register::edi_x86,
     model::Register::esi_x86
+  };
+};
+
+/// The `__vectorcall` Microsoft x86 ABI.
+/// Function arguments are passed using both stack and specified registers.
+template<>
+struct CallingConventionTrait<model::abi::Microsoft_x86_vectorcall> {
+  static constexpr bool VectorArgumentsReplaceGenericOnes = true;
+  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
+
+  static constexpr size_t StackAlignment = 16;
+
+  static constexpr std::array GenericArgumentRegisters = {
+    model::Register::ecx_x86,
+    model::Register::edx_x86
+  };
+  static constexpr std::array GenericReturnValueRegisters = {
+    model::Register::eax_x86
+  };
+
+  static constexpr std::array<model::Register::Values, 0>
+    VectorArgumentRegisters = {
+      // model::Register::xmm0_x86,
+      // model::Register::xmm1_x86,
+      // model::Register::xmm2_x86,
+      // model::Register::xmm3_x86,
+      // model::Register::xmm4_x86,
+      // model::Register::xmm5_x86
+    };
+  static constexpr std::array<model::Register::Values, 0>
+    VectorReturnValueRegisters = {
+      // model::Register::xmm0_x86
+    };
+
+  static constexpr std::array CalleeSavedRegisters = {
+    model::Register::ebx_x86,
+    model::Register::ebp_x86,
+    model::Register::esp_x86,
+    model::Register::edi_x86,
+    model::Register::esi_x86
+    // model::Register::xmm6_x86,
+    // model::Register::xmm7_x86
   };
 };
 
