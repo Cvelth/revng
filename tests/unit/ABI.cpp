@@ -12,54 +12,74 @@ bool init_unit_test();
 #include "revng/Model/Binary.h"
 #include "revng/StackAnalysis/ABI.h"
 
-#include "helpers/ABI.h"
+#include "helpers/ABI_TEST_x64.h"
 
-auto DefaultCallable = [](const std::optional<model::CABIFunctionType> &Input) {
-  return Input.has_value();
-};
-
-static std::vector<const model::RawFunctionType *>
-chooseRawFunctions(const SortedVector<UpcastablePointer<model::Type>> &Types) {
-  std::vector<const model::RawFunctionType *> Result;
+template<DerivesFrom<model::Type> DerivedType>
+static std::vector<const DerivedType *>
+chooseTypeImpl(const SortedVector<UpcastablePointer<model::Type>> &Types) {
+  std::vector<const DerivedType *> Result;
   for (const auto &Type : Types)
-    if (auto *Function = llvm::dyn_cast<model::RawFunctionType>(Type.get()))
-      Result.emplace_back(Function);
+    if (auto *Upscaled = llvm::dyn_cast<DerivedType>(Type.get()))
+      Result.emplace_back(Upscaled);
   return Result;
 }
 
-using CallableType = bool (*)(const std::optional<model::CABIFunctionType> &);
-template<typename ABI, bool ShouldFail>
-bool testImpl(const char *Source, CallableType Callable = DefaultCallable) {
-  auto Deserialized = TupleTree<model::Binary>::deserialize(Source);
+static std::vector<const model::RawFunctionType *>
+chooseRawFunctions(const SortedVector<UpcastablePointer<model::Type>> &Types) {
+  return chooseTypeImpl<model::RawFunctionType>(Types);
+}
+
+static std::vector<const model::CABIFunctionType *>
+chooseCABIFunctions(const SortedVector<UpcastablePointer<model::Type>> &Types) {
+  return chooseTypeImpl<model::CABIFunctionType>(Types);
+}
+
+template<model::abi::Values ABI>
+bool testImpl(std::string_view Input, std::string_view Output) {
+  auto Deserialized = TupleTree<model::Binary>::deserialize(Input);
   BOOST_REQUIRE(Deserialized);
   auto &ModelBinary = **Deserialized;
+  BOOST_REQUIRE(ModelBinary.verify());
+  BOOST_REQUIRE(ModelBinary.Architecture == model::abi::getArchitecture(ABI));
 
   auto RawFunctions = chooseRawFunctions(ModelBinary.Types);
+  std::cout << "Raw function count: " << RawFunctions.size() << std::endl;
+
+  TupleTree<model::Binary> OutputBinary;
   for (auto *Function : RawFunctions) {
-    auto Result = ABI::toCABI(ModelBinary, *Function);
-    if (Callable(Result) != !ShouldFail)
-      return false;
+    auto Result = abi::ABI<ABI>::toCABI(*OutputBinary, *Function);
+    if (Result.has_value()) {
+      auto P = model::UpcastableType::make<model::CABIFunctionType>(*Result);
+      OutputBinary->recordNewType(std::move(P));
+      std::cout << "Adding.\n";
+    } else {
+      std::cout << "Ignoring.\n";
+    }
   }
+
+  auto CABIFunctions = chooseCABIFunctions(OutputBinary->Types);
+  std::cout << "CABI function count: " << CABIFunctions.size() << std::endl;
+
+  std::string Serialized;
+  OutputBinary.serialize(Serialized);
+
+  std::cout << "\n\n" << Serialized << "\n" << std::endl;
 
   return true;
 }
 
-template<typename ABI>
-static bool testSuccess(const char *Source, CallableType C = DefaultCallable) {
-  return testImpl<ABI, false>(Source, C);
-}
-
-template<typename ABI>
-static bool testFailure(const char *Source, CallableType C = DefaultCallable) {
-  return testImpl<ABI, true>(Source, C);
-}
-
 BOOST_AUTO_TEST_CASE(throwaway) {
-  using ABI = abi::ABI<model::abi::Microsoft_x64>;
-  auto Success = ABI_TEST_DATA::success::Microsoft_x64;
-  auto Failure = ABI_TEST_DATA::failure::Microsoft_x64;
-  // TODO: Design a robust ABI selection/iteration system.
-
-  BOOST_CHECK(testSuccess<ABI>(Success));
-  BOOST_CHECK(testFailure<ABI>(Failure));
+  using namespace model::abi;
+  testImpl<SystemV_x86_64>(ABI_TEST::Input_x86_64,
+                           ABI_TEST::SystemV_x86_64,
+                           ABI_TEST::SystemV_x86_64_IDs);
+  testImpl<Microsoft_x64>(ABI_TEST::Input_x86_64,
+                          ABI_TEST::Microsoft_x64,
+                          ABI_TEST::Microsoft_x64_IDs);
+  testImpl<Microsoft_x64_vectorcall>(ABI_TEST::Input_x86_64,
+                                     ABI_TEST::Microsoft_x64_vectorcall,
+                                     ABI_TEST::Microsoft_x64_vectorcall_IDs);
+  testImpl<Microsoft_x64_clrcall>(ABI_TEST::Input_x86_64,
+                                  ABI_TEST::Microsoft_x64_clrcall,
+                                  ABI_TEST::Microsoft_x64_clrcall_IDs);
 }

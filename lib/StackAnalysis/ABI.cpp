@@ -124,7 +124,7 @@ ABI<V>::toCABI(model::Binary &TheBinary,
                                       Convention::GenericReturnValueRegisters);
 
   if (!AnalyzedArguments.has_value() || !AnalyzedReturnValues.has_value())
-    return {};
+    return std::nullopt;
 
   model::CABIFunctionType Result;
   Result.ABI = V;

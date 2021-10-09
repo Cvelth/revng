@@ -333,7 +333,7 @@ set_tests_properties(test_model_type PROPERTIES LABELS "unit")
 # test_abi
 #
 
-revng_add_private_executable(test_abi "${SRC}/ABI.cpp" "${SRC}/helpers/ABI.cpp")
+revng_add_private_executable(test_abi "${SRC}/ABI.cpp")
 target_compile_definitions(test_abi
   PRIVATE "BOOST_TEST_DYN_LINK=1")
 target_include_directories(test_abi
