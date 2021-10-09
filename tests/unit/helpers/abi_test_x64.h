@@ -555,21 +555,21 @@ Segments:        []
 
 )";
 
-inline SortedVector<size_t> Microsoft_x64_IDs{
+inline const SortedVector<size_t> Microsoft_x64_IDs{
   // TODO
 };
 constexpr const char *Microsoft_x64 = R"(---
 
 )";
 
-inline SortedVector<size_t> Microsoft_x64_vectorcall_IDs{
+inline const SortedVector<size_t> Microsoft_x64_vectorcall_IDs{
   // TODO
 };
 constexpr const char *Microsoft_x64_vectorcall = R"(---
 
 )";
 
-inline SortedVector<size_t> Microsoft_x64_clrcall_IDs{
+inline const SortedVector<size_t> Microsoft_x64_clrcall_IDs{
   // TODO
 };
 constexpr const char *Microsoft_x64_clrcall = R"(---

@@ -12,7 +12,7 @@ bool init_unit_test();
 #include "revng/Model/Binary.h"
 #include "revng/StackAnalysis/ABI.h"
 
-#include "helpers/ABI_TEST_x64.h"
+#include "helpers/abi_test_x64.h"
 
 template<DerivesFrom<model::Type> DerivedType>
 static std::vector<const DerivedType *>
@@ -35,35 +35,54 @@ chooseCABIFunctions(const SortedVector<UpcastablePointer<model::Type>> &Types) {
 }
 
 template<model::abi::Values ABI>
-bool testImpl(std::string_view Input, std::string_view Output) {
+bool testImpl(std::string_view Input,
+              std::string_view Output,
+              const SortedVector<size_t> &SuccessfulIDs) {
   auto Deserialized = TupleTree<model::Binary>::deserialize(Input);
-  BOOST_REQUIRE(Deserialized);
+  BOOST_REQUIRE_MESSAGE(Deserialized,
+                        "Fail to deserialize the input on "
+                          << model::abi::getName(ABI).data());
   auto &ModelBinary = **Deserialized;
-  BOOST_REQUIRE(ModelBinary.verify());
-  BOOST_REQUIRE(ModelBinary.Architecture == model::abi::getArchitecture(ABI));
+  BOOST_REQUIRE_MESSAGE(ModelBinary.verify(),
+                        "Model verification failed on "
+                          << model::abi::getName(ABI).data());
+
+  constexpr auto Architecture = model::abi::getArchitecture(ABI);
+  BOOST_REQUIRE_MESSAGE(ModelBinary.Architecture == Architecture,
+                        "Deserialized model architecture is not supported by "
+                        "the ABI on "
+                          << model::abi::getName(ABI).data());
 
   auto RawFunctions = chooseRawFunctions(ModelBinary.Types);
-  std::cout << "Raw function count: " << RawFunctions.size() << std::endl;
+  BOOST_TEST_LAZY_MSG("Raw function count: " << RawFunctions.size());
 
   TupleTree<model::Binary> OutputBinary;
   for (auto *Function : RawFunctions) {
+    auto Iterator = SuccessfulIDs.find(Function->ID);
     auto Result = abi::ABI<ABI>::toCABI(*OutputBinary, *Function);
     if (Result.has_value()) {
       auto P = model::UpcastableType::make<model::CABIFunctionType>(*Result);
       OutputBinary->recordNewType(std::move(P));
-      std::cout << "Adding.\n";
+      BOOST_CHECK_MESSAGE(Iterator != SuccessfulIDs.end(),
+                          "Converting a function (with ID="
+                            << Function->ID
+                            << ") succeeded (it should have failed) on "
+                            << model::abi::getName(ABI).data());
     } else {
-      std::cout << "Ignoring.\n";
+      BOOST_CHECK_MESSAGE(Iterator == SuccessfulIDs.end(),  
+                          "Converting a function (with ID="
+                            << Function->ID
+                            << ") failed (it should have succeeded) on "
+                            << model::abi::getName(ABI).data());
     }
   }
 
   auto CABIFunctions = chooseCABIFunctions(OutputBinary->Types);
-  std::cout << "CABI function count: " << CABIFunctions.size() << std::endl;
+  BOOST_TEST_LAZY_MSG("CABI function count: " << RawFunctions.size());
 
   std::string Serialized;
   OutputBinary.serialize(Serialized);
-
-  std::cout << "\n\n" << Serialized << "\n" << std::endl;
+  BOOST_TEST_LAZY_MSG(Serialized);
 
   return true;
 }
