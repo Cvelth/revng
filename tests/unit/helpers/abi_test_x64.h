@@ -374,13 +374,12 @@ ImportedDynamicFunctions: []
 ...
 )";
 
-inline SortedVector<size_t> SystemV_x86_64_IDs{ 1000000001, 1000000006,
-                                                1000000010, 1000000012,
-                                                1000000013, 1000000015,
-                                                1000000024, 1000000026 };
+inline const SortedVector<size_t> SystemV_x86_64_IDs{
+  1000000001, 1000000006, 1000000010, 1000000011, 1000000012,
+  1000000013, 1000000015, 1000000024, 1000000025, 1000000026
+};
 constexpr const char *SystemV_x86_64 = R"(---
-Functions:       []
-ImportedDynamicFunctions: []
+Architecture:    x86_64
 Types:
   - !Primitive
     Kind:            Primitive
@@ -394,7 +393,7 @@ Types:
     Size:            8
   - !Struct
     Kind:            Struct
-    ID:              1335321884804283477
+    ID:              9000000024
     Fields:
       - Type:
           UnqualifiedType: "/Types/Primitive-776"
@@ -405,7 +404,7 @@ Types:
     Size:            16
   - !Struct
     Kind:            Struct
-    ID:              5716125174011464812
+    ID:              9000000025
     Fields:
       - Type:
           UnqualifiedType: "/Types/Primitive-776"
@@ -416,7 +415,7 @@ Types:
     Size:            16
   - !Struct
     Kind:            Struct
-    ID:              17980513573599731558
+    ID:              9000000026
     Fields:
       - Type:
           UnqualifiedType: "/Types/Primitive-776"
@@ -427,27 +426,24 @@ Types:
     Size:            16
   - !CABIFunctionType
     Kind:            CABIFunctionType
-    ID:              5138255738841215271
+    ID:              1000000001
     ABI:             SystemV_x86_64
     ReturnType:
-      UnqualifiedType: "/Types/Struct-5716125174011464812"
-    Arguments:
-      - Index:           0
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
-      - Index:           1
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              6631456382567141768
-    ABI:             SystemV_x86_64
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-776"
+      UnqualifiedType: "/Types/Primitive-256"
     Arguments:       []
   - !CABIFunctionType
     Kind:            CABIFunctionType
-    ID:              10430495091541537418
+    ID:              1000000006
+    ABI:             SystemV_x86_64
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000010
     ABI:             SystemV_x86_64
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
@@ -460,7 +456,7 @@ Types:
           UnqualifiedType: "/Types/Primitive-776"
   - !CABIFunctionType
     Kind:            CABIFunctionType
-    ID:              11102518950390179631
+    ID:              1000000011
     ABI:             SystemV_x86_64
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
@@ -468,9 +464,12 @@ Types:
       - Index:           0
         Type:
           UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
   - !CABIFunctionType
     Kind:            CABIFunctionType
-    ID:              11248538841738655236
+    ID:              1000000012
     ABI:             SystemV_x86_64
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
@@ -492,7 +491,7 @@ Types:
           UnqualifiedType: "/Types/Primitive-776"
   - !CABIFunctionType
     Kind:            CABIFunctionType
-    ID:              12767434259461903843
+    ID:              1000000013
     ABI:             SystemV_x86_64
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
@@ -517,8 +516,90 @@ Types:
           UnqualifiedType: "/Types/Primitive-776"
   - !CABIFunctionType
     Kind:            CABIFunctionType
-    ID:              13459690020052950716
+    ID:              1000000015
     ABI:             SystemV_x86_64
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-776"
+    Arguments:       []
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000024
+    ABI:             SystemV_x86_64
+    ReturnType:
+      UnqualifiedType: "/Types/Struct-9000000024"
+    Arguments:       []
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000025
+    ABI:             SystemV_x86_64
+    ReturnType:
+      UnqualifiedType: "/Types/Struct-9000000025"
+    Arguments:       []
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000026
+    ABI:             SystemV_x86_64
+    ReturnType:
+      UnqualifiedType: "/Types/Struct-9000000026"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+Segments:        []
+Functions:       []
+ImportedDynamicFunctions: []
+...
+
+)";
+
+inline const SortedVector<size_t> Microsoft_x64_IDs{ 1000000001, 1000000004,
+                                                     1000000015, 1000000020,
+                                                     1000000021, 1000000022,
+                                                     1000000023 };
+constexpr const char *Microsoft_x64 = R"(---
+Architecture:    x86_64
+Types:
+  - !Primitive
+    Kind:            Primitive
+    ID:              256
+    PrimitiveKind:   Void
+    Size:            0
+  - !Primitive
+    Kind:            Primitive
+    ID:              776
+    PrimitiveKind:   PointerOrNumber
+    Size:            8
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000001
+    ABI:             Microsoft_x64
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:       []
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000004
+    ABI:             Microsoft_x64
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000015
+    ABI:             Microsoft_x64
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-776"
+    Arguments:       []
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000020
+    ABI:             Microsoft_x64
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -530,50 +611,186 @@ Types:
           UnqualifiedType: "/Types/Primitive-776"
   - !CABIFunctionType
     Kind:            CABIFunctionType
-    ID:              14245176506062173910
-    ABI:             SystemV_x86_64
+    ID:              1000000021
+    ABI:             Microsoft_x64
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000022
+    ABI:             Microsoft_x64
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           2
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000023
+    ABI:             Microsoft_x64
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           2
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           3
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+Segments:        []
+Functions:       []
+ImportedDynamicFunctions: []
+...
+)";
+
+inline const SortedVector<size_t> Microsoft_x64_vectorcall_IDs{
+  1000000001, 1000000004, 1000000015, 1000000020,
+  1000000021, 1000000022, 1000000023
+};
+constexpr const char *Microsoft_x64_vectorcall = R"(---
+Architecture:    x86_64
+Types:
+  - !Primitive
+    Kind:            Primitive
+    ID:              256
+    PrimitiveKind:   Void
+    Size:            0
+  - !Primitive
+    Kind:            Primitive
+    ID:              776
+    PrimitiveKind:   PointerOrNumber
+    Size:            8
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000001
+    ABI:             Microsoft_x64_vectorcall
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:       []
   - !CABIFunctionType
     Kind:            CABIFunctionType
-    ID:              15156727636343558496
-    ABI:             SystemV_x86_64
+    ID:              1000000004
+    ABI:             Microsoft_x64_vectorcall
     ReturnType:
-      UnqualifiedType: "/Types/Struct-17980513573599731558"
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000015
+    ABI:             Microsoft_x64_vectorcall
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-776"
     Arguments:       []
   - !CABIFunctionType
     Kind:            CABIFunctionType
-    ID:              15378945583623756331
-    ABI:             SystemV_x86_64
+    ID:              1000000020
+    ABI:             Microsoft_x64_vectorcall
     ReturnType:
-      UnqualifiedType: "/Types/Struct-1335321884804283477"
-    Arguments:       []
-Architecture:    Invalid
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000021
+    ABI:             Microsoft_x64_vectorcall
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000022
+    ABI:             Microsoft_x64_vectorcall
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           2
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000023
+    ABI:             Microsoft_x64_vectorcall
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           2
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           3
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
 Segments:        []
+Functions:       []
+ImportedDynamicFunctions: []
 ...
-
 )";
 
-inline const SortedVector<size_t> Microsoft_x64_IDs{
-  // TODO
-};
-constexpr const char *Microsoft_x64 = R"(---
-
-)";
-
-inline const SortedVector<size_t> Microsoft_x64_vectorcall_IDs{
-  // TODO
-};
-constexpr const char *Microsoft_x64_vectorcall = R"(---
-
-)";
-
-inline const SortedVector<size_t> Microsoft_x64_clrcall_IDs{
-  // TODO
-};
+inline const SortedVector<size_t> Microsoft_x64_clrcall_IDs{ 1000000001 };
 constexpr const char *Microsoft_x64_clrcall = R"(---
-
+Architecture:    x86_64
+Types:
+  - !Primitive
+    Kind:            Primitive
+    ID:              256
+    PrimitiveKind:   Void
+    Size:            0
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000001
+    ABI:             Microsoft_x64_clrcall
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:       []
+Segments:        []
+Functions:       []
+ImportedDynamicFunctions: []
+...
 )";
 
 } // namespace ABI_TEST

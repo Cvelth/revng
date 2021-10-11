@@ -10,9 +10,11 @@ bool init_unit_test();
 #include "boost/test/unit_test.hpp"
 
 #include "revng/Model/Binary.h"
+#include "revng/Model/TupleTreeDiff.h"
 #include "revng/StackAnalysis/ABI.h"
 
 #include "helpers/abi_test_x64.h"
+#include "helpers/abi_test_x86.h"
 
 template<DerivesFrom<model::Type> DerivedType>
 static std::vector<const DerivedType *>
@@ -57,10 +59,18 @@ bool testImpl(std::string_view Input,
   BOOST_TEST_LAZY_MSG("Raw function count: " << RawFunctions.size());
 
   TupleTree<model::Binary> OutputBinary;
+  OutputBinary->Architecture = ModelBinary.Architecture;
   for (auto *Function : RawFunctions) {
     auto Iterator = SuccessfulIDs.find(Function->ID);
     auto Result = abi::ABI<ABI>::toCABI(*OutputBinary, *Function);
     if (Result.has_value()) {
+      Result->ID = Function->ID;
+      auto *ReturnValueType = Result->ReturnType.UnqualifiedType.get();
+      if (ReturnValueType->Kind == model::TypeKind::Struct)
+        ReturnValueType->ID = 8000000000 + Function->ID;
+      auto NewReturnTypePath = OutputBinary->getTypePath(ReturnValueType);
+      Result->ReturnType.UnqualifiedType = NewReturnTypePath;
+
       auto P = model::UpcastableType::make<model::CABIFunctionType>(*Result);
       OutputBinary->recordNewType(std::move(P));
       BOOST_CHECK_MESSAGE(Iterator != SuccessfulIDs.end(),
@@ -69,7 +79,7 @@ bool testImpl(std::string_view Input,
                             << ") succeeded (it should have failed) on "
                             << model::abi::getName(ABI).data());
     } else {
-      BOOST_CHECK_MESSAGE(Iterator == SuccessfulIDs.end(),  
+      BOOST_CHECK_MESSAGE(Iterator == SuccessfulIDs.end(),
                           "Converting a function (with ID="
                             << Function->ID
                             << ") failed (it should have succeeded) on "
@@ -82,12 +92,31 @@ bool testImpl(std::string_view Input,
 
   std::string Serialized;
   OutputBinary.serialize(Serialized);
-  BOOST_TEST_LAZY_MSG(Serialized);
+
+  auto DeserializedOutput = TupleTree<model::Binary>::deserialize(Output);
+  BOOST_REQUIRE_MESSAGE(DeserializedOutput,
+                        "Fail to deserialize the output on "
+                          << model::abi::getName(ABI).data());
+  auto &ExpectedBinary = **DeserializedOutput;
+  BOOST_REQUIRE_MESSAGE(ExpectedBinary.verify(),
+                        "Expected model verification failed on "
+                          << model::abi::getName(ABI).data());
+
+  BOOST_REQUIRE_MESSAGE(ExpectedBinary.Architecture == Architecture,
+                        "Expected model architecture is not supported by "
+                        "the ABI on "
+                          << model::abi::getName(ABI).data());
+
+  BOOST_CHECK_MESSAGE(diff(*OutputBinary, ExpectedBinary).Changes.empty(),
+                      "Received output is different from what was expected on "
+                        << model::abi::getName(ABI).data() << ":\n"
+                        << Serialized << "\n\nExpected:\n"
+                        << Output);
 
   return true;
 }
 
-BOOST_AUTO_TEST_CASE(throwaway) {
+BOOST_AUTO_TEST_CASE(x64_ABIs) {
   using namespace model::abi;
   testImpl<SystemV_x86_64>(ABI_TEST::Input_x86_64,
                            ABI_TEST::SystemV_x86_64,
@@ -101,4 +130,38 @@ BOOST_AUTO_TEST_CASE(throwaway) {
   testImpl<Microsoft_x64_clrcall>(ABI_TEST::Input_x86_64,
                                   ABI_TEST::Microsoft_x64_clrcall,
                                   ABI_TEST::Microsoft_x64_clrcall_IDs);
+}
+
+BOOST_AUTO_TEST_CASE(x86_ABIs) {
+  using namespace model::abi;
+  testImpl<SystemV_x86>(ABI_TEST::Input_x86,
+                        ABI_TEST::SystemV_x86,
+                        ABI_TEST::SystemV_x86_IDs);
+  testImpl<SystemV_x86_regparm_1>(ABI_TEST::Input_x86,
+                                  ABI_TEST::SystemV_x86_regparm_1,
+                                  ABI_TEST::SystemV_x86_regparm_1_IDs);
+  testImpl<SystemV_x86_regparm_2>(ABI_TEST::Input_x86,
+                                  ABI_TEST::SystemV_x86_regparm_2,
+                                  ABI_TEST::SystemV_x86_regparm_2_IDs);
+  testImpl<SystemV_x86_regparm_3>(ABI_TEST::Input_x86,
+                                  ABI_TEST::SystemV_x86_regparm_3,
+                                  ABI_TEST::SystemV_x86_regparm_3_IDs);
+  testImpl<Microsoft_x86_cdecl>(ABI_TEST::Input_x86,
+                                ABI_TEST::Microsoft_x86_cdecl,
+                                ABI_TEST::Microsoft_x86_cdecl_IDs);
+  testImpl<Microsoft_x86_stdcall>(ABI_TEST::Input_x86,
+                                  ABI_TEST::Microsoft_x86_stdcall,
+                                  ABI_TEST::Microsoft_x86_stdcall_IDs);
+  testImpl<Microsoft_x86_thiscall>(ABI_TEST::Input_x86,
+                                   ABI_TEST::Microsoft_x86_thiscall,
+                                   ABI_TEST::Microsoft_x86_thiscall_IDs);
+  testImpl<Microsoft_x86_fastcall>(ABI_TEST::Input_x86,
+                                   ABI_TEST::Microsoft_x86_fastcall,
+                                   ABI_TEST::Microsoft_x86_fastcall_IDs);
+  testImpl<Microsoft_x86_clrcall>(ABI_TEST::Input_x86,
+                                  ABI_TEST::Microsoft_x86_clrcall,
+                                  ABI_TEST::Microsoft_x86_clrcall_IDs);
+  testImpl<Microsoft_x86_vectorcall>(ABI_TEST::Input_x86,
+                                     ABI_TEST::Microsoft_x86_vectorcall,
+                                     ABI_TEST::Microsoft_x86_vectorcall_IDs);
 }

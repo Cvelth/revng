@@ -214,6 +214,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
 
 /// The default SystemV x86 ABI
 /// The parameters are only passed using the stack.
+/// \todo: look into the st-return values.
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86> {
   static constexpr bool VectorArgumentsReplaceGenericOnes = false;
@@ -224,8 +225,9 @@ struct CallingConventionTrait<model::abi::SystemV_x86> {
 
   static constexpr std::array<model::Register::Values, 0>
     GenericArgumentRegisters = {};
-  static constexpr std::array<model::Register::Values, 0>
-    GenericReturnValueRegisters = { model::Register::eax_x86 };
+  static constexpr std::array GenericReturnValueRegisters = {
+    model::Register::eax_x86
+  };
 
   static constexpr std::array<model::Register::Values, 0>
     VectorArgumentRegisters = {};
@@ -251,10 +253,12 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
 
   static constexpr size_t StackAlignment = 16;
 
-  static constexpr std::array<model::Register::Values, 0>
-    GenericArgumentRegisters = { model::Register::eax_x86 };
-  static constexpr std::array<model::Register::Values, 0>
-    GenericReturnValueRegisters = { model::Register::eax_x86 };
+  static constexpr std::array GenericArgumentRegisters = {
+    model::Register::eax_x86
+  };
+  static constexpr std::array GenericReturnValueRegisters = {
+    model::Register::eax_x86
+  };
 
   static constexpr std::array<model::Register::Values, 0>
     VectorArgumentRegisters = {};
@@ -280,11 +284,13 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
 
   static constexpr size_t StackAlignment = 16;
 
-  static constexpr std::array<model::Register::Values, 0>
-    GenericArgumentRegisters = { model::Register::eax_x86,
-                                 model::Register::edx_x86 };
-  static constexpr std::array<model::Register::Values, 0>
-    GenericReturnValueRegisters = { model::Register::eax_x86 };
+  static constexpr std::array GenericArgumentRegisters = {
+    model::Register::eax_x86,
+    model::Register::edx_x86
+  };
+  static constexpr std::array GenericReturnValueRegisters = {
+    model::Register::eax_x86
+  };
 
   static constexpr std::array<model::Register::Values, 0>
     VectorArgumentRegisters = {};
@@ -310,12 +316,14 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
 
   static constexpr size_t StackAlignment = 16;
 
-  static constexpr std::array<model::Register::Values, 0>
-    GenericArgumentRegisters = { model::Register::eax_x86,
-                                 model::Register::edx_x86,
-                                 model::Register::ecx_x86 };
-  static constexpr std::array<model::Register::Values, 0>
-    GenericReturnValueRegisters = { model::Register::eax_x86 };
+  static constexpr std::array GenericArgumentRegisters = {
+    model::Register::eax_x86,
+    model::Register::edx_x86,
+    model::Register::ecx_x86
+  };
+  static constexpr std::array GenericReturnValueRegisters = {
+    model::Register::eax_x86
+  };
 
   static constexpr std::array<model::Register::Values, 0>
     VectorArgumentRegisters = {};
@@ -343,9 +351,10 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
 
   static constexpr std::array<model::Register::Values, 0>
     GenericArgumentRegisters = {};
-  static constexpr std::array<model::Register::Values, 0>
-    GenericReturnValueRegisters = { model::Register::eax_x86,
-                                    model::Register::edx_x86 };
+  static constexpr std::array GenericReturnValueRegisters = {
+    model::Register::eax_x86,
+    model::Register::edx_x86
+  };
 
   static constexpr std::array<model::Register::Values, 0>
     VectorArgumentRegisters = {};
@@ -373,9 +382,10 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
 
   static constexpr std::array<model::Register::Values, 0>
     GenericArgumentRegisters = {};
-  static constexpr std::array<model::Register::Values, 0>
-    GenericReturnValueRegisters = { model::Register::eax_x86,
-                                    model::Register::edx_x86 };
+  static constexpr std::array GenericReturnValueRegisters = {
+    model::Register::eax_x86,
+    model::Register::edx_x86
+  };
 
   static constexpr std::array<model::Register::Values, 0>
     VectorArgumentRegisters = {};
@@ -401,12 +411,14 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
 
   static constexpr size_t StackAlignment = 4;
 
-  static constexpr std::array<model::Register::Values, 0>
-    GenericArgumentRegisters = { model::Register::ecx_x86,
-                                 model::Register::edx_x86 };
-  static constexpr std::array<model::Register::Values, 0>
-    GenericReturnValueRegisters = { model::Register::eax_x86,
-                                    model::Register::edx_x86 };
+  static constexpr std::array GenericArgumentRegisters = {
+    model::Register::ecx_x86,
+    model::Register::edx_x86
+  };
+  static constexpr std::array GenericReturnValueRegisters = {
+    model::Register::eax_x86,
+    model::Register::edx_x86
+  };
 
   static constexpr std::array<model::Register::Values, 0>
     VectorArgumentRegisters = {};
@@ -433,11 +445,13 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
 
   static constexpr size_t StackAlignment = 4;
 
-  static constexpr std::array<model::Register::Values, 0>
-    GenericArgumentRegisters = { model::Register::ecx_x86 };
-  static constexpr std::array<model::Register::Values, 0>
-    GenericReturnValueRegisters = { model::Register::eax_x86,
-                                    model::Register::edx_x86 };
+  static constexpr std::array GenericArgumentRegisters = {
+    model::Register::ecx_x86
+  };
+  static constexpr std::array GenericReturnValueRegisters = {
+    model::Register::eax_x86,
+    model::Register::edx_x86
+  };
 
   static constexpr std::array<model::Register::Values, 0>
     VectorArgumentRegisters = {};

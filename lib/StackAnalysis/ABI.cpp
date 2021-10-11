@@ -69,7 +69,7 @@ analyze(const SortedVector<RegisterType> &UsedRegisters,
     size_t UsedCount = 0;
     bool MustBeUsed = false;
     for (model::Register::Values Register : RegisterContainer) {
-      bool IsUsed = UsedRegisters.count(Register) != 0;
+      bool IsUsed = UsedRegisters.find(Register) != UsedRegisters.end();
       if (IsUsed)
         Result.emplace_back(Register);
 
@@ -129,9 +129,7 @@ ABI<V>::toCABI(model::Binary &TheBinary,
   model::CABIFunctionType Result;
   Result.ABI = V;
 
-  //
   // Build return type
-  //
   if (AnalyzedReturnValues->size() == 0) {
     Result.ReturnType = model::QualifiedType{
       TheBinary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0)
@@ -139,11 +137,14 @@ ABI<V>::toCABI(model::Binary &TheBinary,
   } else if (AnalyzedReturnValues->size() == 1) {
     Result.ReturnType = buildType(AnalyzedReturnValues->front(), TheBinary);
   } else {
+    if constexpr (!Convention::AllowAnArgumentToOccupySubsequentRegisters) {
+      // Maybe this should be a softer fail, like `return std::nullopt`.
+      revng_abort("There shouldn't be more than one register used for "
+                  "returning values when ABI doesn't allow splitting "
+                  "arguments between multiple registers.");
+    }
+
     size_t Offset = 0;
-
-    // TODO
-    // if constexpr (AllowAnArgumentToOccupySubsequentRegisters) {
-
     auto NewType = model::makeType<model::StructType>();
     auto *MultipleReturnValues = llvm::cast<model::StructType>(NewType.get());
     for (const auto &Register : AnalyzedReturnValues.value()) {
@@ -159,9 +160,7 @@ ABI<V>::toCABI(model::Binary &TheBinary,
     Result.ReturnType = { TheBinary.recordNewType(std::move(NewType)), {} };
   }
 
-  //
   // Build argument list
-  //
   for (size_t Index = 0; auto Register : AnalyzedArguments.value()) {
     model::Argument NewArgument;
     NewArgument.Index = Index++;
@@ -259,7 +258,8 @@ ABI<V>::toRaw(model::Binary &TheBinary,
 
     if (!Original.ReturnType.isFloat()) {
       // TODO
-      // if constexpr (Convention::AllowAnArgumentToOccupySubsequentRegisters) {
+      // if constexpr (Convention::AllowAnArgumentToOccupySubsequentRegisters)
+      // {
       //
       // } else {
       revng_assert(!Convention::GenericReturnValueRegisters.empty());
@@ -317,7 +317,8 @@ void ABI<V>::applyDeductions(RegisterStateMap &Prototype) {
   // those
   // // before it. Same for return values.
   // bool ArgumentMatch = false;
-  // for (auto Register : llvm::reverse(Convention::GenericArgumentRegisters)) {
+  // for (auto Register : llvm::reverse(Convention::GenericArgumentRegisters))
+  // {
   //   auto State = getOrDefault(Prototype,
   //                             Register,
   //                             { model::RegisterState::Invalid,
