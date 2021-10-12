@@ -691,7 +691,7 @@ inline Values fromName(llvm::StringRef Name) {
     return Invalid;
 }
 
-inline model::Architecture::Values getArchitecture(Values V) {
+constexpr inline model::Architecture::Values getArchitecture(Values V) {
   switch (V) {
   case eax_x86:
   case ebx_x86:
@@ -844,7 +844,7 @@ inline llvm::StringRef getRegisterName(Values V) {
 }
 
 /// Return the size of the register in bytes
-inline size_t getSize(Values V) {
+constexpr inline size_t getSize(Values V) {
   model::Architecture::Values Architecture = getArchitecture(V);
 
   switch (Architecture) {

@@ -173,8 +173,9 @@ ABI<V>::toCABI(model::Binary &TheBinary,
 }
 
 using IndexType = decltype(model::Argument::Index);
+using MultiRegister = llvm::SmallVector<model::Register::Values, 1>;
 struct InternalArguments {
-  llvm::DenseMap<IndexType, model::Register::Values> Register;
+  llvm::DenseMap<IndexType, MultiRegister> Registers;
   SortedVector<IndexType> Stack;
 };
 template<typename CallConv>
@@ -191,40 +192,88 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
       return std::nullopt;
   };
 
+  using RV = llvm::SmallVector<model::Register::Values, 8>;
+  auto GetGenericRegisters = [&UsedGenericRegisterCounter](size_t Size) -> RV {
+    size_t ConsideredRegisterCounter = UsedGenericRegisterCounter;
+    auto HasRunOutOfRegisters = [&ConsideredRegisterCounter]() {
+      using CC = CallConv;
+      return ConsideredRegisterCounter >= CC::GenericArgumentRegisters.size();
+    };
+
+    size_t SizeCounter = 0;
+    do {
+      auto Rg = CallConv::GenericArgumentRegisters[++ConsideredRegisterCounter];
+      SizeCounter += model::Register::getSize(Rg);
+    } while (SizeCounter < Size && !HasRunOutOfRegisters());
+
+    llvm::SmallVector<model::Register::Values, 8> Result;
+    if (SizeCounter >= Size) {
+      for (size_t Index = UsedGenericRegisterCounter;
+           Index < ConsideredRegisterCounter;
+           ++Index)
+        Result.emplace_back(CallConv::GenericArgumentRegisters[Index]);
+    }
+    return Result;
+  };
+
   model::VerifyHelper VH;
   for (const model::Argument &Argument : Arguments) {
-    if (!Argument.Type.isScalar()) // This could probably be an assert.
-      return std::nullopt;
+    auto MaybeSize = Argument.Type.size(VH);
+    revng_assert(MaybeSize);
 
-    if (!Argument.Type.isFloat()) {
+    if constexpr (CallConv::AllowAnArgumentToOccupySubsequentRegisters) {
+      auto Registers = GetGenericRegisters(*MaybeSize);
+      if (Registers.empty()) {
+        Result.Stack.insert(Argument.Index);
+        continue;
+      } else {
+        auto &Container = Result.Registers[Argument.Index];
+        for (auto &Register : Registers)
+          Container.emplace_back(Register);
+        UsedGenericRegisterCounter += Registers.size();
+      }
+    } else {
       auto NextRegister = GetTheNextGenericRegister();
       if (!NextRegister.has_value()) {
         Result.Stack.insert(Argument.Index);
         continue;
       }
+
       auto NextSize = model::Register::getSize(*NextRegister);
-
-      auto MaybeSize = Argument.Type.size(VH);
-      revng_assert(MaybeSize);
-
-      // TODO
-      // if constexpr (CallConv::AllowAnArgumentToOccupySubsequentRegisters) {
-      //
-      // } else {
       if (*MaybeSize > NextSize) {
         Result.Stack.insert(Argument.Index);
       } else {
-        Result.Register.try_emplace(Argument.Index, *NextRegister);
+        Result.Registers[Argument.Index].emplace_back(*NextRegister);
         ++UsedGenericRegisterCounter;
       }
-      // }
-
-    } else {
-      return std::nullopt;
     }
   }
 
   return Result;
+}
+
+template<size_t AvailableRegisterCount>
+struct Capacity {
+  const size_t NeededRegisterCount;
+  const size_t MaximumSizePossible;
+};
+
+template<size_t Size>
+Capacity<Size>
+countCapacity(size_t ValueSize, const RegisterArray<Size> &Registers) {
+  size_t RegisterCounter = 0;
+  size_t SizeCounter = 0;
+
+  for (const auto &Register : Registers) {
+    auto RegisterSize = model::Register::getSize(Register);
+    if (SizeCounter < ValueSize)
+      ++RegisterCounter;
+    SizeCounter += RegisterSize;
+  }
+  if (SizeCounter < ValueSize)
+    ++RegisterCounter;
+
+  return Capacity<Size>{ RegisterCounter, SizeCounter };
 }
 
 template<model::abi::Values V>
@@ -237,42 +286,79 @@ ABI<V>::toRaw(model::Binary &TheBinary,
   auto [RegisterArguments, StackArguments] = *Arguments;
 
   model::RawFunctionType Result;
-  for (auto [ArgumentIndex, Register] : RegisterArguments) {
-    model::NamedTypedRegister Argument(Register);
-    Argument.Type = buildType(Register, TheBinary);
-    Argument.CustomName = Original.Arguments.at(ArgumentIndex).CustomName;
-    Result.Arguments.insert(Argument);
+  for (auto [ArgumentIndex, Registers] : RegisterArguments) {
+    revng_assert(!Registers.empty());
+    auto OriginalName = Original.Arguments.at(ArgumentIndex).CustomName;
+    for (size_t Index = 0; auto &Register : Registers) {
+      model::Identifier FinalName = OriginalName;
+      if (Registers.size() > 1 && !FinalName.empty())
+        FinalName += "_part_" + std::to_string(++Index) + "_out_of_"
+                     + std::to_string(Registers.size());
+      model::NamedTypedRegister Argument(Register);
+      Argument.Type = buildType(Register, TheBinary);
+      Argument.CustomName = FinalName;
+      Result.Arguments.insert(Argument);
+    }
   }
   for (auto ArgumentIndex : StackArguments) {
     // TODO: handle stack arguments.
+    // \note: different ABIs could use different stack types.
+    // \see: `clrcall` ABI.
   }
+
+  constexpr auto Arch = model::abi::getArchitecture(V);
+  constexpr auto PointerSize = model::Architecture::getPointerSize(Arch);
+  auto PointerQualifier = model::Qualifier::createPointer(PointerSize);
 
   // Allocate return values
   if (!Original.ReturnType.isVoid()) {
-    if (!Original.ReturnType.isScalar()) // This could probably be an assert.
+    if (Convention::GenericReturnValueRegisters.empty())
       return std::nullopt;
 
-    model::VerifyHelper VH;
-    auto MaybeSize = Original.ReturnType.size(VH);
-    revng_assert(MaybeSize.has_value());
+    auto MaybeReturnValueSize = Original.ReturnType.size();
+    revng_assert(MaybeReturnValueSize.has_value());
+    auto Capacity = countCapacity(*MaybeReturnValueSize,
+                                  Convention::GenericReturnValueRegisters);
 
-    if (!Original.ReturnType.isFloat()) {
-      // TODO
-      // if constexpr (Convention::AllowAnArgumentToOccupySubsequentRegisters)
-      // {
-      //
-      // } else {
-      revng_assert(!Convention::GenericReturnValueRegisters.empty());
+    if constexpr (Convention::AllowAnArgumentToOccupySubsequentRegisters) {
+      constexpr size_t
+        AvailableRegisterCount = Convention::GenericReturnValueRegisters.size();
+
+      if (!Original.ReturnType.isScalar()) {
+        if (Original.ReturnType.size() > Capacity.MaximumSizePossible) {
+          revng_assert(AvailableRegisterCount != 0);
+          auto ReturnValueRegister = Convention::GenericReturnValueRegisters[0];
+
+          auto ReturnType = Original.ReturnType;
+          ReturnType.Qualifiers.emplace_back(PointerQualifier);
+
+          model::TypedRegister ReturnPointer(ReturnValueRegister);
+          ReturnPointer.Type = std::move(ReturnType);
+          Result.ReturnValues.insert(std::move(ReturnPointer));
+        } else {
+          revng_assert(Capacity.NeededRegisterCount <= AvailableRegisterCount);
+          for (size_t Index = 0; Index < Capacity.NeededRegisterCount;
+               ++Index) {
+            auto Register = Convention::GenericReturnValueRegisters[Index];
+            auto Type = buildType(Register, TheBinary);
+
+            model::TypedRegister ReturnPointer(Register);
+            ReturnPointer.Type = std::move(Type);
+            Result.ReturnValues.insert(ReturnPointer);
+          }
+        }
+      }
+    }
+
+    if (Result.ReturnValues.empty()) {
       auto ReturnRegister = Convention::GenericReturnValueRegisters[0];
-      auto Size = model::Register::getSize(ReturnRegister);
-      revng_assert(*MaybeSize <= Size);
+      auto RegisterSize = model::Register::getSize(ReturnRegister);
+      if (*MaybeReturnValueSize > RegisterSize)
+        return std::nullopt;
 
       model::TypedRegister Argument(ReturnRegister);
       Argument.Type = buildType(ReturnRegister, TheBinary);
       Result.ReturnValues.insert(Argument);
-      // }
-    } else {
-      return std::nullopt;
     }
   }
 
