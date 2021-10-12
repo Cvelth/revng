@@ -17,9 +17,8 @@ struct CallingConventionTrait {
 
   /// States whether specified ABI supports using both generic and vector
   /// registers in parallel.
-  /// For example of `true` calling ABIs see Microsoft x64 one, for `false` -
-  /// see SystemV x64 ABI.
-  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  /// For example of `true` see Microsoft x64, for `false` - SystemV x64 ABI.
+  static constexpr bool RegistersArePositionBased = false;
 
   /// States whether specified ABI supports splitting a single parameter among
   /// a couple of subsequent registers.
@@ -69,7 +68,7 @@ struct CallingConventionTrait {
 /// Function arguments are passed using both stack and specified registers.
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_64> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
@@ -107,7 +106,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_64> {
 /// Function arguments are passed using both stack and specified registers.
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = true;
+  static constexpr bool RegistersArePositionBased = true;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
@@ -146,7 +145,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x64> {
 /// Function arguments are passed using both stack and specified registers.
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64_vectorcall> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = true;
+  static constexpr bool RegistersArePositionBased = true;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
@@ -189,7 +188,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_vectorcall> {
 /// that information.
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
@@ -217,7 +216,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
 /// \todo: look into the st-return values.
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
@@ -247,7 +246,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86> {
 /// Function arguments are passed using both stack and specified registers.
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
@@ -278,7 +277,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
 /// Function arguments are passed using both stack and specified registers.
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
@@ -310,7 +309,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
 /// Function arguments are passed using both stack and specified registers.
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
@@ -343,7 +342,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
 /// The parameters are only passed using the stack.
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
@@ -374,7 +373,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
 /// The parameters are only passed using the stack.
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = true;
 
@@ -405,7 +404,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
 /// Function arguments are passed using both stack and specified registers.
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = true;
 
@@ -439,7 +438,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
 /// The register always contains the first parameter - `this` pointer.
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = true;
 
@@ -476,7 +475,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
 /// that information.
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_clrcall> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = false;
+  static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
 
   static constexpr std::array<model::Register::Values, 0>
@@ -502,7 +501,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_clrcall> {
 /// Function arguments are passed using both stack and specified registers.
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_vectorcall> {
-  static constexpr bool VectorArgumentsReplaceGenericOnes = true;
+  static constexpr bool RegistersArePositionBased = true;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
