@@ -376,14 +376,14 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000001
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments: []
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000002
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -393,7 +393,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000003
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -406,7 +406,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000004
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -422,7 +422,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000005
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -441,7 +441,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000006
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -463,7 +463,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000007
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -488,7 +488,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000008
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -516,14 +516,14 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000009
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-776"
     Arguments: []
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000010
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-776"
     Arguments:
@@ -533,7 +533,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000011
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-776"
     Arguments:
@@ -546,7 +546,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000012
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-776"
     Arguments:
@@ -562,7 +562,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000013
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-776"
     Arguments:
@@ -581,7 +581,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000014
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-776"
     Arguments:
@@ -603,7 +603,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000015
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-776"
     Arguments:
@@ -628,7 +628,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000016
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-776"
     Arguments:
@@ -667,14 +667,14 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000017
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Struct-9000000000"
     Arguments: []
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000018
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Struct-9000000000"
     Arguments:
@@ -684,7 +684,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000019
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Struct-9000000000"
     Arguments:
@@ -697,7 +697,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000020
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Struct-9000000000"
     Arguments:
@@ -713,7 +713,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000021
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Struct-9000000000"
     Arguments:
@@ -732,7 +732,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000022
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Struct-9000000000"
     Arguments:
@@ -754,7 +754,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000023
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Struct-9000000000"
     Arguments:
@@ -779,7 +779,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000024
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Struct-9000000000"
     Arguments:
@@ -807,7 +807,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000025
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-776"
     Arguments:
@@ -817,7 +817,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000026
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -830,7 +830,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000027
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-776"
     Arguments:
@@ -863,7 +863,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000028
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -873,7 +873,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000029
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -886,7 +886,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000030
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-776"
     Arguments:
@@ -931,7 +931,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000031
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Struct-9000000000"
     Arguments:
@@ -941,7 +941,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000032
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -954,7 +954,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000033
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -967,7 +967,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000034
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -980,7 +980,7 @@ Types:
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              2000000035
-    ABI:             SystemV_x86_64
+    ABI:             Invalid
     ReturnType:
       UnqualifiedType: "/Types/Primitive-256"
     Arguments:
@@ -2009,7 +2009,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
-    FinalStackOffset: 0  
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000033
