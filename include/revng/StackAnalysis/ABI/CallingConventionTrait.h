@@ -477,6 +477,7 @@ template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_clrcall> {
   static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr std::array<model::Register::Values, 0>
     GenericArgumentRegisters = {};

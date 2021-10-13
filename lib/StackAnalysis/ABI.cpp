@@ -28,7 +28,7 @@ verify(const RegisterArray<AllowedRegisterCount> &AllowedRegisters) {
       return false;
 
     // Check if there are any duplicates in allowed register container.
-    if (llvm::count(AllowedRegisters, Register) != 1)
+    if (std::count(AllowedRegisters.begin(), AllowedRegisters.end(), Register) != 1)
       return false;
   }
 
@@ -56,9 +56,10 @@ analyze(const SortedVector<RegisterType> &UsedRegisters,
   revng_assert(verify<Architecture>(AllowedGenericRegisters));
 
   // Ensure all the used registers are allowed
-  for (const RegisterType &Register : UsedRegisters)
-    if (llvm::count(AllowedGenericRegisters, Register.Location) != 1)
+  for (const RegisterType &Register : UsedRegisters) {
+    if (std::count(AllowedGenericRegisters.begin(), AllowedGenericRegisters.end(), Register.Location) != 1)
       return std::nullopt;
+  }
 
   llvm::SmallVector<model::Register::Values, RegisterCount> Result;
 

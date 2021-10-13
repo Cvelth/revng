@@ -19,6 +19,11 @@ Types:
     ID:              516
     PrimitiveKind:   Generic
     Size:            4
+  - !Primitive
+    Kind:            Primitive
+    ID:              776
+    PrimitiveKind:   PointerOrNumber
+    Size:            8
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              1000000001
@@ -251,13 +256,413 @@ Types:
           UnqualifiedType: "/Types/Primitive-516"
     PreservedRegisters: []
     FinalStackOffset: 0
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000001
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments: []
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000002
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000003
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000004
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           2
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000005
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           2
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           3
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000006
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-776"
+    Arguments: []
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000007
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-776"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000008
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-776"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000009
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-776"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           2
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000010
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-776"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           2
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           3
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !Struct
+    Kind:            Struct
+    ID:              9000000000
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          8
+    Size:            16
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000011
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Struct-9000000000"
+    Arguments: []
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000012
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Struct-9000000000"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000013
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Struct-9000000000"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000014
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Struct-9000000000"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           2
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000015
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Struct-9000000000"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           2
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Index:           3
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000016
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-776"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000017
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000018
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-776"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+      - Index:           2
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+  - !Struct
+    Kind:            Struct
+    ID:              9000000019
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          8
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          16
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          24
+    Size:            32
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000019
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000019"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000020
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000019"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000021
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-776"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000019"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000019"
+      - Index:           2
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000019"
+  - !Struct
+    Kind:            Struct
+    ID:              9000000022
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          8
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          16
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          24
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          32
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          40
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          48
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          56
+    Size:            64
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000022
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Struct-9000000000"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000022"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000023
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000022"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000022"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000024
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000022"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000025
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              2000000026
+    ABI:             Invalid
+    ReturnType:
+      UnqualifiedType: "/Types/Primitive-256"
+    Arguments:
+      - Index:           0
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000022"
+      - Index:           1
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
 Segments:        []
 Functions:       []
 ImportedDynamicFunctions: []
 ...
 )";
 
-inline const SortedVector<size_t> SystemV_x86_IDs{ 1000000001, 1000000011 };
+inline const SortedVector<size_t> SystemV_x86_IDs{
+  1000000001, 1000000011,
+
+  2000000001, 2000000002, 2000000003, 2000000004, 2000000005, 2000000006,
+  2000000007, 2000000008, 2000000009, 2000000010, 2000000011, 2000000012,
+  2000000013, 2000000014, 2000000015, 2000000016, 2000000017, 2000000018,
+  2000000019, 2000000020, 2000000021, 2000000022, 2000000023, 2000000024,
+  2000000025, 2000000026
+};
 constexpr const char *SystemV_x86 = R"(---
 Architecture:    x86
 Types:

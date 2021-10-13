@@ -1876,12 +1876,6 @@ Types:
       - Location:        rdi_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
-      - Location:        r8_x86_64
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
-      - Location:        r9_x86_64
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
       - Location:        rax_x86_64
         Type:
@@ -1933,12 +1927,6 @@ Types:
         Type:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        rdi_x86_64
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
-      - Location:        r8_x86_64
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
-      - Location:        r9_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:    []
