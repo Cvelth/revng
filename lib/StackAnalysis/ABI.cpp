@@ -22,7 +22,7 @@ using RegisterArray = std::array<model::Register::Values, Size>;
 template<model::Architecture::Values Architecture, size_t AllowedRegisterCount>
 static bool
 verify(const RegisterArray<AllowedRegisterCount> &AllowedRegisters) {
-  for (const auto &Register : AllowedRegisters) {
+  for (const model::Register::Values &Register : AllowedRegisters) {
     // Check if the registers of the same architecture are used.
     if (model::Register::getArchitecture(Register) != Architecture)
       return false;
@@ -37,7 +37,7 @@ verify(const RegisterArray<AllowedRegisterCount> &AllowedRegisters) {
 
 template<model::Architecture::Values Architecture, typename RegisterType>
 static bool verify(const SortedVector<RegisterType> &UsedRegisters) {
-  for (const auto &Register : UsedRegisters) {
+  for (const model::Register::Values &Register : UsedRegisters) {
     // Check if the registers of the same architecture are used.
     if (model::Register::getArchitecture(Register.Location) != Architecture)
       return false;
@@ -56,7 +56,7 @@ analyze(const SortedVector<RegisterType> &UsedRegisters,
   revng_assert(verify<Architecture>(AllowedGenericRegisters));
 
   // Ensure all the used registers are allowed
-  for (const auto &Register : UsedRegisters)
+  for (const model::Register::Values &Register : UsedRegisters)
     if (llvm::count(AllowedGenericRegisters, Register.Location) != 1)
       return std::nullopt;
 
@@ -90,7 +90,7 @@ analyze(const SortedVector<RegisterType> &UsedRegisters,
 
 template<model::abi::Values V>
 bool ABI<V>::isCompatible(const model::RawFunctionType &Explicit) {
-  static constexpr auto A = getArchitecture(V);
+  static constexpr model::Architecture::Values A = getArchitecture(V);
   auto ArgumentAnalysis = analyze<A>(Explicit.Arguments,
                                      Convention::GenericArgumentRegisters);
   auto
@@ -107,8 +107,8 @@ selectTypeKind(model::Register::Values) {
 
 static model::QualifiedType
 buildType(model::Register::Values Register, model::Binary &TheBinary) {
-  auto Kind = selectTypeKind(Register);
-  auto Size = model::Register::getSize(Register);
+  model::PrimitiveTypeKind::Values Kind = selectTypeKind(Register);
+  size_t Size = model::Register::getSize(Register);
   return model::QualifiedType{ TheBinary.getPrimitiveType(Kind, Size) };
 }
 
@@ -116,7 +116,7 @@ template<model::abi::Values V>
 std::optional<model::CABIFunctionType>
 ABI<V>::toCABI(model::Binary &TheBinary,
                const model::RawFunctionType &Explicit) {
-  static constexpr auto A = getArchitecture(V);
+  static constexpr model::Architecture::Values A = getArchitecture(V);
   auto AnalyzedArguments = analyze<A>(Explicit.Arguments,
                                       Convention::GenericArgumentRegisters);
   auto
@@ -145,9 +145,9 @@ ABI<V>::toCABI(model::Binary &TheBinary,
     }
 
     size_t Offset = 0;
-    auto NewType = model::makeType<model::StructType>();
+    model::UpcastableType NewType = model::makeType<model::StructType>();
     auto *MultipleReturnValues = llvm::cast<model::StructType>(NewType.get());
-    for (const auto &Register : AnalyzedReturnValues.value()) {
+    for (model::Register::Values &Register : AnalyzedReturnValues.value()) {
       model::StructField NewField;
       NewField.Offset = Offset;
       NewField.Type = buildType(Register, TheBinary);
@@ -196,8 +196,8 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
   auto GetGenericRegisters = [&UsedGenericRegisterCounter](size_t Size) -> RV {
     size_t ConsideredRegisterCounter = UsedGenericRegisterCounter;
     auto HasRunOutOfRegisters = [&ConsideredRegisterCounter]() {
-      using CC = CallConv;
-      return ConsideredRegisterCounter >= CC::GenericArgumentRegisters.size();
+      constexpr auto RegisterCount = CallConv::GenericArgumentRegisters.size();
+      return ConsideredRegisterCounter >= RegisterCount - 1;
     };
 
     size_t SizeCounter = 0;
@@ -216,9 +216,8 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
     return Result;
   };
 
-  model::VerifyHelper VH;
   for (const model::Argument &Argument : Arguments) {
-    auto MaybeSize = Argument.Type.size(VH);
+    std::optional<uint64_t> MaybeSize = Argument.Type.size();
     revng_assert(MaybeSize);
 
     if constexpr (CallConv::AllowAnArgumentToOccupySubsequentRegisters) {
@@ -227,8 +226,8 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
         Result.Stack.insert(Argument.Index);
         continue;
       } else {
-        auto &Container = Result.Registers[Argument.Index];
-        for (auto &Register : Registers)
+        abi::MultiRegister &Container = Result.Registers[Argument.Index];
+        for (model::Register::Values &Register : Registers)
           Container.emplace_back(Register);
         UsedGenericRegisterCounter += Registers.size();
       }
@@ -239,7 +238,7 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
         continue;
       }
 
-      auto NextSize = model::Register::getSize(*NextRegister);
+      size_t NextSize = model::Register::getSize(*NextRegister);
       if (*MaybeSize > NextSize) {
         Result.Stack.insert(Argument.Index);
       } else {
@@ -264,8 +263,8 @@ countCapacity(size_t ValueSize, const RegisterArray<Size> &Registers) {
   size_t RegisterCounter = 0;
   size_t SizeCounter = 0;
 
-  for (const auto &Register : Registers) {
-    auto RegisterSize = model::Register::getSize(Register);
+  for (const model::Register::Values &Register : Registers) {
+    size_t RegisterSize = model::Register::getSize(Register);
     if (SizeCounter < ValueSize)
       ++RegisterCounter;
     SizeCounter += RegisterSize;
@@ -306,7 +305,7 @@ ABI<V>::toRaw(model::Binary &TheBinary,
     // \see: `clrcall` ABI.
   }
 
-  constexpr auto Arch = model::abi::getArchitecture(V);
+  constexpr model::Architecture::Values Arch = model::abi::getArchitecture(V);
   constexpr auto PointerSize = model::Architecture::getPointerSize(Arch);
   auto PointerQualifier = model::Qualifier::createPointer(PointerSize);
 
@@ -329,7 +328,7 @@ ABI<V>::toRaw(model::Binary &TheBinary,
           revng_assert(AvailableRegisterCount != 0);
           auto ReturnValueRegister = Convention::GenericReturnValueRegisters[0];
 
-          auto ReturnType = Original.ReturnType;
+          model::QualifiedType ReturnType = Original.ReturnType;
           ReturnType.Qualifiers.emplace_back(PointerQualifier);
 
           model::TypedRegister ReturnPointer(ReturnValueRegister);
@@ -340,7 +339,7 @@ ABI<V>::toRaw(model::Binary &TheBinary,
           for (size_t Index = 0; Index < Capacity.NeededRegisterCount;
                ++Index) {
             auto Register = Convention::GenericReturnValueRegisters[Index];
-            auto Type = buildType(Register, TheBinary);
+            model::QualifiedType Type = buildType(Register, TheBinary);
 
             model::TypedRegister ReturnPointer(Register);
             ReturnPointer.Type = std::move(Type);
@@ -363,7 +362,7 @@ ABI<V>::toRaw(model::Binary &TheBinary,
   }
 
   // Populate the list of preserved registers
-  for (auto Register : Convention::CalleeSavedRegisters)
+  for (model::Register::Values Register : Convention::CalleeSavedRegisters)
     Result.PreservedRegisters.insert(Register);
 
   return Result;
@@ -371,23 +370,23 @@ ABI<V>::toRaw(model::Binary &TheBinary,
 
 template<model::abi::Values V>
 model::TypePath ABI<V>::defaultPrototype(model::Binary &TheBinary) {
-  auto NewType = model::makeType<model::RawFunctionType>();
-  auto TypePath = TheBinary.recordNewType(std::move(NewType));
+  model::UpcastableType NewType = model::makeType<model::RawFunctionType>();
+  model::TypePath TypePath = TheBinary.recordNewType(std::move(NewType));
   auto &T = *llvm::cast<model::RawFunctionType>(TypePath.get());
 
-  for (auto Register : Convention::GenericArgumentRegisters) {
+  for (const auto &Register : Convention::GenericArgumentRegisters) {
     model::NamedTypedRegister Argument(Register);
     Argument.Type = buildType(Register, TheBinary);
     T.Arguments.insert(Argument);
   }
 
-  for (auto Register : Convention::GenericReturnValueRegisters) {
+  for (const auto &Register : Convention::GenericReturnValueRegisters) {
     model::TypedRegister ReturnValue(Register);
     ReturnValue.Type = buildType(Register, TheBinary);
     T.ReturnValues.insert(ReturnValue);
   }
 
-  for (auto Register : Convention::CalleeSavedRegisters)
+  for (model::Register::Values &Register : Convention::CalleeSavedRegisters)
     T.PreservedRegisters.insert(Register);
 
   return TypePath;

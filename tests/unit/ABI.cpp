@@ -17,22 +17,22 @@ bool init_unit_test();
 #include "helpers/abi_test_x86.h"
 
 template<DerivesFrom<model::Type> DerivedType>
-static std::vector<const DerivedType *>
-chooseTypeImpl(const SortedVector<UpcastablePointer<model::Type>> &Types) {
-  std::vector<const DerivedType *> Result;
-  for (const auto &Type : Types)
+static std::vector<DerivedType *>
+chooseTypeImpl(SortedVector<UpcastablePointer<model::Type>> &Types) {
+  std::vector<DerivedType *> Result;
+  for (model::UpcastableType &Type : Types)
     if (auto *Upscaled = llvm::dyn_cast<DerivedType>(Type.get()))
       Result.emplace_back(Upscaled);
   return Result;
 }
 
-static std::vector<const model::RawFunctionType *>
-chooseRawFunctions(const SortedVector<UpcastablePointer<model::Type>> &Types) {
+static std::vector<model::RawFunctionType *>
+chooseRawFunctions(SortedVector<UpcastablePointer<model::Type>> &Types) {
   return chooseTypeImpl<model::RawFunctionType>(Types);
 }
 
-static std::vector<const model::CABIFunctionType *>
-chooseCABIFunctions(const SortedVector<UpcastablePointer<model::Type>> &Types) {
+static std::vector<model::CABIFunctionType *>
+chooseCABIFunctions(SortedVector<UpcastablePointer<model::Type>> &Types) {
   return chooseTypeImpl<model::CABIFunctionType>(Types);
 }
 
@@ -103,7 +103,7 @@ bool testImpl(std::string_view Input,
   BOOST_REQUIRE_MESSAGE(Deserialized,
                         "Fail to deserialize the input on "
                           << model::abi::getName(ABI).data());
-  auto &ModelBinary = **Deserialized;
+  model::Binary &ModelBinary = **Deserialized;
   BOOST_REQUIRE_MESSAGE(ModelBinary.verify(),
                         "Input model verification failed on "
                           << model::abi::getName(ABI).data());
@@ -123,12 +123,14 @@ bool testImpl(std::string_view Input,
   TupleTree<model::Binary> Result;
   Result->Architecture = ModelBinary.Architecture;
 
-  for (auto *Function : RawFunctions)
+  for (model::RawFunctionType *Function : RawFunctions)
     if (auto P = tryConvertToCABI<ABI>(Function, Result, SuccessfulIDs))
       Result->recordNewType(std::move(P.value()));
-  for (auto *Function : CABIFunctions)
+  for (model::CABIFunctionType *Function : CABIFunctions) {
+    Function->ABI = ABI;
     if (auto P = tryConvertToRaw<ABI>(Function, Result, SuccessfulIDs))
       Result->recordNewType(std::move(P.value()));
+  }
 
   std::string Serialized;
   Result.serialize(Serialized);
@@ -137,7 +139,7 @@ bool testImpl(std::string_view Input,
   BOOST_REQUIRE_MESSAGE(DeserializedOutput,
                         "Fail to deserialize the output on "
                           << model::abi::getName(ABI).data());
-  auto &ExpectedBinary = **DeserializedOutput;
+  model::Binary &ExpectedBinary = **DeserializedOutput;
   BOOST_REQUIRE_MESSAGE(ExpectedBinary.verify(),
                         "Expected model verification failed on "
                           << model::abi::getName(ABI).data());
