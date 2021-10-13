@@ -37,7 +37,7 @@ verify(const RegisterArray<AllowedRegisterCount> &AllowedRegisters) {
 
 template<model::Architecture::Values Architecture, typename RegisterType>
 static bool verify(const SortedVector<RegisterType> &UsedRegisters) {
-  for (const model::Register::Values &Register : UsedRegisters) {
+  for (const RegisterType &Register : UsedRegisters) {
     // Check if the registers of the same architecture are used.
     if (model::Register::getArchitecture(Register.Location) != Architecture)
       return false;
@@ -56,7 +56,7 @@ analyze(const SortedVector<RegisterType> &UsedRegisters,
   revng_assert(verify<Architecture>(AllowedGenericRegisters));
 
   // Ensure all the used registers are allowed
-  for (const model::Register::Values &Register : UsedRegisters)
+  for (const RegisterType &Register : UsedRegisters)
     if (llvm::count(AllowedGenericRegisters, Register.Location) != 1)
       return std::nullopt;
 
@@ -386,7 +386,7 @@ model::TypePath ABI<V>::defaultPrototype(model::Binary &TheBinary) {
     T.ReturnValues.insert(ReturnValue);
   }
 
-  for (model::Register::Values &Register : Convention::CalleeSavedRegisters)
+  for (const auto &Register : Convention::CalleeSavedRegisters)
     T.PreservedRegisters.insert(Register);
 
   return TypePath;
