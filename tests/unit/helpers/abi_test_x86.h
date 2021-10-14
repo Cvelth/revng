@@ -655,7 +655,7 @@ ImportedDynamicFunctions: []
 )";
 
 inline const SortedVector<size_t> SystemV_x86_IDs{
-  1000000001, 1000000011,
+  1000000001, 1000000011, 1000000015,
 
   2000000001, 2000000002, 2000000003, 2000000004, 2000000005, 2000000006,
   2000000007, 2000000008, 2000000009, 2000000010, 2000000011, 2000000012,
@@ -676,6 +676,17 @@ Types:
     ID:              772
     PrimitiveKind:   PointerOrNumber
     Size:            4
+  - !Struct
+    Kind:            Struct
+    ID:              9000000015
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-772"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-772"
+        Offset:          4
+    Size:            8
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              1000000001
@@ -690,6 +701,409 @@ Types:
     ReturnType:
       UnqualifiedType: "/Types/Primitive-772"
     Arguments:       []
+  - !CABIFunctionType
+    Kind:            CABIFunctionType
+    ID:              1000000015
+    ABI:             SystemV_x86
+    ReturnType:
+      UnqualifiedType: "/Types/Struct-9000000015"
+    Arguments:       []
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000001
+    Arguments:       []
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000002
+    Arguments:       []
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000003
+    Arguments:       []
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000004
+    Arguments:       []
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000005
+    Arguments:       []
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000006
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000007
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000008
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000009
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000010
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000011
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            4
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000012
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            4
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000013
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            4
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000014
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            4
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000015
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            4
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000016
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000017
+    Arguments:       []
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000018
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000019
+    Arguments:       []
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000020
+    Arguments:       []
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000021
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000022
+    Arguments:       []
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Struct-9000000000"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            4
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000023
+    Arguments:       []
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000024
+    Arguments:       []
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000025
+    Arguments:       []
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000026
+    Arguments:       []
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+    FinalStackOffset: 0
 Segments:        []
 Functions:       []
 ImportedDynamicFunctions: []

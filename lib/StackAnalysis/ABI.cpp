@@ -28,7 +28,7 @@ verify(const RegisterArray<AllowedRegisterCount> &AllowedRegisters) {
       return false;
 
     // Check if there are any duplicates in allowed register container.
-    if (std::count(AllowedRegisters.begin(), AllowedRegisters.end(), Register) != 1)
+    if (llvm::count(AllowedRegisters, Register) != 1)
       return false;
   }
 
@@ -57,7 +57,7 @@ analyze(const SortedVector<RegisterType> &UsedRegisters,
 
   // Ensure all the used registers are allowed
   for (const RegisterType &Register : UsedRegisters) {
-    if (std::count(AllowedGenericRegisters.begin(), AllowedGenericRegisters.end(), Register.Location) != 1)
+    if (llvm::count(AllowedGenericRegisters, Register.Location) != 1)
       return std::nullopt;
   }
 
@@ -92,11 +92,11 @@ analyze(const SortedVector<RegisterType> &UsedRegisters,
 template<model::abi::Values V>
 bool ABI<V>::isCompatible(const model::RawFunctionType &Explicit) {
   static constexpr model::Architecture::Values A = getArchitecture(V);
+  using CC = CallingConvention;
   auto ArgumentAnalysis = analyze<A>(Explicit.Arguments,
-                                     Convention::GenericArgumentRegisters);
-  auto
-    ReturnValueAnalysis = analyze<A>(Explicit.ReturnValues,
-                                     Convention::GenericReturnValueRegisters);
+                                     CC::GenericArgumentRegisters);
+  auto ReturnValueAnalysis = analyze<A>(Explicit.ReturnValues,
+                                        CC::GenericReturnValueRegisters);
   return ArgumentAnalysis.has_value() && ReturnValueAnalysis.has_value();
 }
 
@@ -118,11 +118,11 @@ std::optional<model::CABIFunctionType>
 ABI<V>::toCABI(model::Binary &TheBinary,
                const model::RawFunctionType &Explicit) {
   static constexpr model::Architecture::Values A = getArchitecture(V);
+  using CC = CallingConvention;
   auto AnalyzedArguments = analyze<A>(Explicit.Arguments,
-                                      Convention::GenericArgumentRegisters);
-  auto
-    AnalyzedReturnValues = analyze<A>(Explicit.ReturnValues,
-                                      Convention::GenericReturnValueRegisters);
+                                      CC::GenericArgumentRegisters);
+  auto AnalyzedReturnValues = analyze<A>(Explicit.ReturnValues,
+                                         CC::GenericReturnValueRegisters);
 
   if (!AnalyzedArguments.has_value() || !AnalyzedReturnValues.has_value())
     return std::nullopt;
@@ -138,11 +138,13 @@ ABI<V>::toCABI(model::Binary &TheBinary,
   } else if (AnalyzedReturnValues->size() == 1) {
     Result.ReturnType = buildType(AnalyzedReturnValues->front(), TheBinary);
   } else {
-    if constexpr (!Convention::AllowAnArgumentToOccupySubsequentRegisters) {
-      // Maybe this should be a softer fail, like `return std::nullopt`.
-      revng_abort("There shouldn't be more than one register used for "
-                  "returning values when ABI doesn't allow splitting "
-                  "arguments between multiple registers.");
+    if constexpr (!CC::AggregateArgumentsCanOccupySubsequentRegisters) {
+      if constexpr (!CC::PrimitiveArgumentsCanOccupySubsequentRegisters) {
+        // Maybe this should be a softer fail, like `return std::nullopt`.
+        revng_abort("There shouldn't be more than a single register used for "
+                    "returning values when ABI doesn't allow splitting "
+                    "arguments between multiple registers.");
+      }
     }
 
     size_t Offset = 0;
@@ -198,14 +200,14 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
     size_t ConsideredRegisterCounter = UsedGenericRegisterCounter;
     auto HasRunOutOfRegisters = [&ConsideredRegisterCounter]() {
       constexpr auto RegisterCount = CallConv::GenericArgumentRegisters.size();
-      return ConsideredRegisterCounter >= RegisterCount - 1;
+      return !RegisterCount || ConsideredRegisterCounter >= RegisterCount - 1;
     };
 
     size_t SizeCounter = 0;
-    do {
-      auto Rg = CallConv::GenericArgumentRegisters[++ConsideredRegisterCounter];
+    while (SizeCounter < Size && !HasRunOutOfRegisters()) {
+      auto Rg = CallConv::GenericArgumentRegisters[ConsideredRegisterCounter++];
       SizeCounter += model::Register::getSize(Rg);
-    } while (SizeCounter < Size && !HasRunOutOfRegisters());
+    }
 
     llvm::SmallVector<model::Register::Values, 8> Result;
     if (SizeCounter >= Size) {
@@ -221,7 +223,8 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
     std::optional<uint64_t> MaybeSize = Argument.Type.size();
     revng_assert(MaybeSize);
 
-    if constexpr (CallConv::AllowAnArgumentToOccupySubsequentRegisters) {
+    if constexpr (CallConv::AggregateArgumentsCanOccupySubsequentRegisters
+                  || CallConv::PrimitiveArgumentsCanOccupySubsequentRegisters) {
       auto Registers = GetGenericRegisters(*MaybeSize);
       if (Registers.empty()) {
         Result.Stack.insert(Argument.Index);
@@ -280,7 +283,7 @@ template<model::abi::Values V>
 std::optional<model::RawFunctionType>
 ABI<V>::toRaw(model::Binary &TheBinary,
               const model::CABIFunctionType &Original) {
-  auto Arguments = allocateRegisters<Convention>(Original.Arguments);
+  auto Arguments = allocateRegisters<CallingConvention>(Original.Arguments);
   if (!Arguments.has_value())
     return std::nullopt;
   auto [RegisterArguments, StackArguments] = *Arguments;
@@ -312,46 +315,53 @@ ABI<V>::toRaw(model::Binary &TheBinary,
 
   // Allocate return values
   if (!Original.ReturnType.isVoid()) {
-    if (Convention::GenericReturnValueRegisters.empty())
+    if (CallingConvention::GenericReturnValueRegisters.empty())
       return std::nullopt;
 
     auto MaybeReturnValueSize = Original.ReturnType.size();
     revng_assert(MaybeReturnValueSize.has_value());
+    using CC = CallingConvention;
     auto Capacity = countCapacity(*MaybeReturnValueSize,
-                                  Convention::GenericReturnValueRegisters);
+                                  CC::GenericReturnValueRegisters);
 
-    if constexpr (Convention::AllowAnArgumentToOccupySubsequentRegisters) {
-      constexpr size_t
-        AvailableRegisterCount = Convention::GenericReturnValueRegisters.size();
+    constexpr bool A = CC::AggregateArgumentsCanOccupySubsequentRegisters;
+    constexpr bool P = CC::PrimitiveArgumentsCanOccupySubsequentRegisters;
+    bool IsScalar = Original.ReturnType.isScalar();
+    bool AreSubsequentRegistersAllowed = (IsScalar && P) || (!IsScalar && A);
+    if (AreSubsequentRegistersAllowed) {
+      constexpr auto &AvailableRegisters = CC::GenericReturnValueRegisters;
+      constexpr size_t AvailableRegisterCount = AvailableRegisters.size();
 
-      if (!Original.ReturnType.isScalar()) {
-        if (Original.ReturnType.size() > Capacity.MaximumSizePossible) {
-          revng_assert(AvailableRegisterCount != 0);
-          auto ReturnValueRegister = Convention::GenericReturnValueRegisters[0];
+      if (Original.ReturnType.size() > Capacity.MaximumSizePossible) {
+        revng_assert(AvailableRegisterCount != 0);
+        auto ReturnValueRegister = AvailableRegisters[0];
 
-          model::QualifiedType ReturnType = Original.ReturnType;
-          ReturnType.Qualifiers.emplace_back(PointerQualifier);
+        const model::Type *Pointer = Original.ReturnType.UnqualifiedType.get();
+        const model::Type::Key &ReturnTypeKey = Pointer->key();
+        if (TheBinary.Types.find(ReturnTypeKey) == TheBinary.Types.end())
+          TheBinary.recordNewType(Original.ReturnType);
 
-          model::TypedRegister ReturnPointer(ReturnValueRegister);
-          ReturnPointer.Type = std::move(ReturnType);
-          Result.ReturnValues.insert(std::move(ReturnPointer));
-        } else {
-          revng_assert(Capacity.NeededRegisterCount <= AvailableRegisterCount);
-          for (size_t Index = 0; Index < Capacity.NeededRegisterCount;
-               ++Index) {
-            auto Register = Convention::GenericReturnValueRegisters[Index];
-            model::QualifiedType Type = buildType(Register, TheBinary);
+        model::QualifiedType ReturnType = Original.ReturnType;
+        ReturnType.Qualifiers.emplace_back(PointerQualifier);
 
-            model::TypedRegister ReturnPointer(Register);
-            ReturnPointer.Type = std::move(Type);
-            Result.ReturnValues.insert(ReturnPointer);
-          }
+        model::TypedRegister ReturnPointer(ReturnValueRegister);
+        ReturnPointer.Type = std::move(ReturnType);
+        Result.ReturnValues.insert(std::move(ReturnPointer));
+      } else {
+        revng_assert(Capacity.NeededRegisterCount <= AvailableRegisterCount);
+        for (size_t Index = 0; Index < Capacity.NeededRegisterCount; ++Index) {
+          auto Register = AvailableRegisters[Index];
+          model::QualifiedType Type = buildType(Register, TheBinary);
+
+          model::TypedRegister ReturnPointer(Register);
+          ReturnPointer.Type = std::move(Type);
+          Result.ReturnValues.insert(ReturnPointer);
         }
       }
     }
 
     if (Result.ReturnValues.empty()) {
-      auto ReturnRegister = Convention::GenericReturnValueRegisters[0];
+      auto ReturnRegister = CallingConvention::GenericReturnValueRegisters[0];
       auto RegisterSize = model::Register::getSize(ReturnRegister);
       if (*MaybeReturnValueSize > RegisterSize)
         return std::nullopt;
@@ -363,7 +373,8 @@ ABI<V>::toRaw(model::Binary &TheBinary,
   }
 
   // Populate the list of preserved registers
-  for (model::Register::Values Register : Convention::CalleeSavedRegisters)
+  using CC = CallingConvention;
+  for (model::Register::Values Register : CC::CalleeSavedRegisters)
     Result.PreservedRegisters.insert(Register);
 
   return Result;
@@ -375,19 +386,19 @@ model::TypePath ABI<V>::defaultPrototype(model::Binary &TheBinary) {
   model::TypePath TypePath = TheBinary.recordNewType(std::move(NewType));
   auto &T = *llvm::cast<model::RawFunctionType>(TypePath.get());
 
-  for (const auto &Register : Convention::GenericArgumentRegisters) {
+  for (const auto &Register : CallingConvention::GenericArgumentRegisters) {
     model::NamedTypedRegister Argument(Register);
     Argument.Type = buildType(Register, TheBinary);
     T.Arguments.insert(Argument);
   }
 
-  for (const auto &Register : Convention::GenericReturnValueRegisters) {
+  for (const auto &Register : CallingConvention::GenericReturnValueRegisters) {
     model::TypedRegister ReturnValue(Register);
     ReturnValue.Type = buildType(Register, TheBinary);
     T.ReturnValues.insert(ReturnValue);
   }
 
-  for (const auto &Register : Convention::CalleeSavedRegisters)
+  for (const auto &Register : CallingConvention::CalleeSavedRegisters)
     T.PreservedRegisters.insert(Register);
 
   return TypePath;
@@ -398,12 +409,13 @@ template<model::abi::Values V>
 void ABI<V>::applyDeductions(RegisterStateMap &Prototype) {
   static_cast<void>(Prototype);
   // using namespace model::RegisterState;
+  // using CC = CallingConvention;
 
   // // Find the highest-indexed YesOrDead argument, and mark YesOrDead all
   // those
   // // before it. Same for return values.
   // bool ArgumentMatch = false;
-  // for (auto Register : llvm::reverse(Convention::GenericArgumentRegisters))
+  // for (auto Register : llvm::reverse(CC::GenericArgumentRegisters))
   // {
   //   auto State = getOrDefault(Prototype,
   //                             Register,
@@ -421,7 +433,7 @@ void ABI<V>::applyDeductions(RegisterStateMap &Prototype) {
 
   // bool ReturnValueMatch = false;
   // for (auto Register :
-  // llvm::reverse(Convention::GenericReturnValueRegisters)) {
+  // llvm::reverse(CC::GenericReturnValueRegisters)) {
   //   auto State = getOrDefault(Prototype,
   //                             Register,
   //                             { model::RegisterState::Invalid,

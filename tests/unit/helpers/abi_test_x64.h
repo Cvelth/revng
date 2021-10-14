@@ -1319,9 +1319,6 @@ Types:
       - Location:        r8_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
-      - Location:        r9_x86_64
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -1335,9 +1332,6 @@ Types:
     Kind:            RawFunctionType
     ID:              2000000008
     Arguments:
-      - Location:        rax_x86_64
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
       - Location:        rcx_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
@@ -1351,9 +1345,6 @@ Types:
         Type:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        r8_x86_64
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
-      - Location:        r9_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:    []
@@ -1525,9 +1516,6 @@ Types:
       - Location:        r8_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
-      - Location:        r9_x86_64
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
       - Location:        rax_x86_64
         Type:
@@ -1544,9 +1532,6 @@ Types:
     Kind:            RawFunctionType
     ID:              2000000016
     Arguments:
-      - Location:        rax_x86_64
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
       - Location:        rcx_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
@@ -1560,9 +1545,6 @@ Types:
         Type:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        r8_x86_64
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
-      - Location:        r9_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
@@ -1755,9 +1737,6 @@ Types:
       - Location:        r8_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
-      - Location:        r9_x86_64
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
       - Location:        rax_x86_64
         Type:
@@ -1777,9 +1756,6 @@ Types:
     Kind:            RawFunctionType
     ID:              2000000024
     Arguments:
-      - Location:        rax_x86_64
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
       - Location:        rcx_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
@@ -1793,9 +1769,6 @@ Types:
         Type:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        r8_x86_64
-        Type:
-          UnqualifiedType: "/Types/Primitive-776"
-      - Location:        r9_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:

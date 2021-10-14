@@ -18,7 +18,7 @@ using RegisterStateMap = std::map<model::Register::Values,
 template<model::abi::Values V>
 class ABI {
 private:
-  using Convention = CallingConventionTrait<V>;
+  using CallingConvention = CallingConventionTrait<V>;
 
 public:
   static bool isCompatible(const model::RawFunctionType &Explicit);

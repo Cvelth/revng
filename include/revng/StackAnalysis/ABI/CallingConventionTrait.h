@@ -20,11 +20,17 @@ struct CallingConventionTrait {
   /// For example of `true` see Microsoft x64, for `false` - SystemV x64 ABI.
   static constexpr bool RegistersArePositionBased = false;
 
-  /// States whether specified ABI supports splitting a single parameter among
-  /// a couple of subsequent registers.
+  /// States whether specified ABI supports splitting a single aggregate
+  /// parameter accross a couple of subsequent registers.
   /// For example of `true` calling ABIs see SystemV x64 one, for `false` -
   /// see Microsoft x64 ABI.
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = false;
+
+  /// States whether specified ABI supports splitting a single primitive
+  /// parameter accross a couple of subsequent registers.
+  /// For example of `true` calling ABIs see SystemV x64 one, for `false` -
+  /// see SystemV x86 ABI.
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = false;
 
   /// States who is responsible for cleaning the stack when returning from
   /// a function, if `true` - the Callee is responsible, otherwise, the Caller.
@@ -40,7 +46,7 @@ struct CallingConventionTrait {
 
   /// Stores the list of generic registers allowed to be used for return
   /// values in order they are used.
-  /// \note: if `AllowAnArgumentToOccupySubsequentRegisters` is `false`,
+  /// \note: if `AggregateArgumentsCanOccupySubsequentRegisters` is `false`,
   /// the size of this list must not exceed 1.
   static constexpr std::array<model::Register::Values, 0>
     GenericReturnValueRegisters = {};
@@ -52,7 +58,7 @@ struct CallingConventionTrait {
 
   /// Stores the list of vector registers allowed to be used for return
   /// values in order they are used.
-  /// \note: if `AllowAnArgumentToOccupySubsequentRegisters` is `false`,
+  /// \note: if `AggregateArgumentsCanOccupySubsequentRegisters` is `false`,
   /// the size of this list must not exceed 1.
   static constexpr std::array<model::Register::Values, 0>
     VectorReturnValueRegisters = {};
@@ -69,7 +75,8 @@ struct CallingConventionTrait {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_64> {
   static constexpr bool RegistersArePositionBased = false;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = true;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr size_t StackAlignment = 16;
@@ -107,7 +114,8 @@ struct CallingConventionTrait<model::abi::SystemV_x86_64> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64> {
   static constexpr bool RegistersArePositionBased = true;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = false;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr size_t StackAlignment = 16;
@@ -146,7 +154,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x64> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64_vectorcall> {
   static constexpr bool RegistersArePositionBased = true;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = false;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr size_t StackAlignment = 16;
@@ -189,7 +198,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_vectorcall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
   static constexpr bool RegistersArePositionBased = false;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = false;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr std::array<model::Register::Values, 0>
@@ -217,7 +227,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86> {
   static constexpr bool RegistersArePositionBased = false;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = true;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr size_t StackAlignment = 16;
@@ -225,13 +236,21 @@ struct CallingConventionTrait<model::abi::SystemV_x86> {
   static constexpr std::array<model::Register::Values, 0>
     GenericArgumentRegisters = {};
   static constexpr std::array GenericReturnValueRegisters = {
-    model::Register::eax_x86
+    model::Register::eax_x86,
+    model::Register::edx_x86
   };
 
   static constexpr std::array<model::Register::Values, 0>
-    VectorArgumentRegisters = {};
+    VectorArgumentRegisters = {
+      // model::Register::xmm0_x86,
+      // model::Register::xmm1_x86,
+      // model::Register::xmm2_x86
+    };
   static constexpr std::array<model::Register::Values, 0>
-    VectorReturnValueRegisters = {};
+    VectorReturnValueRegisters = {
+      // model::Register::st0_x86,
+      // model::Register::xmm0_x86,
+    };
 
   static constexpr std::array CalleeSavedRegisters = {
     model::Register::ebx_x86,
@@ -247,7 +266,8 @@ struct CallingConventionTrait<model::abi::SystemV_x86> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
   static constexpr bool RegistersArePositionBased = false;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = true;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr size_t StackAlignment = 16;
@@ -256,13 +276,21 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
     model::Register::eax_x86
   };
   static constexpr std::array GenericReturnValueRegisters = {
-    model::Register::eax_x86
+    model::Register::eax_x86,
+    model::Register::edx_x86
   };
 
   static constexpr std::array<model::Register::Values, 0>
-    VectorArgumentRegisters = {};
+    VectorArgumentRegisters = {
+      // model::Register::xmm0_x86,
+      // model::Register::xmm1_x86,
+      // model::Register::xmm2_x86
+    };
   static constexpr std::array<model::Register::Values, 0>
-    VectorReturnValueRegisters = {};
+    VectorReturnValueRegisters = {
+      // model::Register::st0_x86,
+      // model::Register::xmm0_x86,
+    };
 
   static constexpr std::array CalleeSavedRegisters = {
     model::Register::ebx_x86,
@@ -278,7 +306,8 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
   static constexpr bool RegistersArePositionBased = false;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = true;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr size_t StackAlignment = 16;
@@ -288,13 +317,21 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
     model::Register::edx_x86
   };
   static constexpr std::array GenericReturnValueRegisters = {
-    model::Register::eax_x86
+    model::Register::eax_x86,
+    model::Register::edx_x86
   };
 
   static constexpr std::array<model::Register::Values, 0>
-    VectorArgumentRegisters = {};
+    VectorArgumentRegisters = {
+      // model::Register::xmm0_x86,
+      // model::Register::xmm1_x86,
+      // model::Register::xmm2_x86
+    };
   static constexpr std::array<model::Register::Values, 0>
-    VectorReturnValueRegisters = {};
+    VectorReturnValueRegisters = {
+      // model::Register::st0_x86,
+      // model::Register::xmm0_x86,
+    };
 
   static constexpr std::array CalleeSavedRegisters = {
     model::Register::ebx_x86,
@@ -310,7 +347,8 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
   static constexpr bool RegistersArePositionBased = false;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = true;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr size_t StackAlignment = 16;
@@ -321,13 +359,21 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
     model::Register::ecx_x86
   };
   static constexpr std::array GenericReturnValueRegisters = {
-    model::Register::eax_x86
+    model::Register::eax_x86,
+    model::Register::edx_x86
   };
 
   static constexpr std::array<model::Register::Values, 0>
-    VectorArgumentRegisters = {};
+    VectorArgumentRegisters = {
+      // model::Register::xmm0_x86,
+      // model::Register::xmm1_x86,
+      // model::Register::xmm2_x86
+    };
   static constexpr std::array<model::Register::Values, 0>
-    VectorReturnValueRegisters = {};
+    VectorReturnValueRegisters = {
+      // model::Register::st0_x86,
+      // model::Register::xmm0_x86,
+    };
 
   static constexpr std::array CalleeSavedRegisters = {
     model::Register::ebx_x86,
@@ -343,7 +389,8 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
   static constexpr bool RegistersArePositionBased = false;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = true;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr size_t StackAlignment = 4;
@@ -374,7 +421,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
   static constexpr bool RegistersArePositionBased = false;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = true;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = true;
 
   static constexpr size_t StackAlignment = 4;
@@ -405,7 +453,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
   static constexpr bool RegistersArePositionBased = false;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = true;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = true;
 
   static constexpr size_t StackAlignment = 4;
@@ -439,7 +488,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
   static constexpr bool RegistersArePositionBased = false;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = true;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = true;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = true;
 
   static constexpr size_t StackAlignment = 4;
@@ -476,7 +526,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_clrcall> {
   static constexpr bool RegistersArePositionBased = false;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = false;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr std::array<model::Register::Values, 0>
@@ -503,7 +554,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_clrcall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_vectorcall> {
   static constexpr bool RegistersArePositionBased = true;
-  static constexpr bool AllowAnArgumentToOccupySubsequentRegisters = false;
+  static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = false;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = false;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr size_t StackAlignment = 16;
