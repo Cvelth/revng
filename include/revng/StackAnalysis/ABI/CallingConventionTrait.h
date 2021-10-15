@@ -390,7 +390,7 @@ template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
   static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = true;
-  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = false;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
 
   static constexpr size_t StackAlignment = 4;
@@ -422,7 +422,7 @@ template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
   static constexpr bool RegistersArePositionBased = false;
   static constexpr bool AggregateArgumentsCanOccupySubsequentRegisters = true;
-  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = false;
+  static constexpr bool PrimitiveArgumentsCanOccupySubsequentRegisters = true;
   static constexpr bool CalleeIsResponsibleForStackCleanup = true;
 
   static constexpr size_t StackAlignment = 4;

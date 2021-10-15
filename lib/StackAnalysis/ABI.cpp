@@ -46,10 +46,13 @@ static bool verify(const SortedVector<RegisterType> &UsedRegisters) {
   return true;
 }
 
+template<size_t Size>
+using ChosenRegisters = llvm::SmallVector<model::Register::Values, Size>;
+
 template<model::Architecture::Values Architecture,
          typename RegisterType,
          size_t RegisterCount>
-static std::optional<llvm::SmallVector<model::Register::Values, RegisterCount>>
+static std::optional<ChosenRegisters<RegisterCount>>
 analyze(const SortedVector<RegisterType> &UsedRegisters,
         const RegisterArray<RegisterCount> &AllowedGenericRegisters) {
   revng_assert(verify<Architecture>(UsedRegisters));
@@ -61,7 +64,7 @@ analyze(const SortedVector<RegisterType> &UsedRegisters,
       return std::nullopt;
   }
 
-  llvm::SmallVector<model::Register::Values, RegisterCount> Result;
+  ChosenRegisters<RegisterCount> Result;
 
   // Ensure the register usage continuity, e. g. if the register for the second
   // parameter is used, the register for the first one must be used as well.
@@ -113,6 +116,67 @@ buildType(model::Register::Values Register, model::Binary &TheBinary) {
   return model::QualifiedType{ TheBinary.getPrimitiveType(Kind, Size) };
 }
 
+static std::optional<model::QualifiedType>
+buildDoubleType(model::Register::Values UpperRegister,
+                model::Register::Values LowerRegister,
+                model::Binary &TheBinary) {
+  model::PrimitiveTypeKind::Values UpperKind = selectTypeKind(UpperRegister);
+  model::PrimitiveTypeKind::Values LowerKind = selectTypeKind(LowerRegister);
+  if (UpperKind != LowerKind)
+    return std::nullopt;
+
+  size_t UpperSize = model::Register::getSize(UpperRegister);
+  size_t LowerSize = model::Register::getSize(LowerRegister);
+  if (UpperSize != LowerSize)
+    return std::nullopt;
+  return model::QualifiedType{ TheBinary.getPrimitiveType(UpperKind,
+                                                          UpperSize * 2) };
+}
+
+template<typename CallingConvention, unsigned AvailableRegisterCount>
+static std::optional<model::QualifiedType>
+buildReturnType(const ChosenRegisters<AvailableRegisterCount> &Registers,
+                model::Binary &Binary) {
+  using CC = CallingConvention;
+
+  if (Registers.size() == 0) {
+    return model::QualifiedType{
+      Binary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0)
+    };
+  } else if (Registers.size() == 1) {
+    return buildType(Registers.front(), Binary);
+  } else {
+    if constexpr (CC::PrimitiveArgumentsCanOccupySubsequentRegisters)
+      if (Registers.size() == 2)
+        if (auto MaybeType = buildDoubleType(Registers.front(),
+                                             Registers.back(),
+                                             Binary))
+          return *MaybeType;
+
+    if constexpr (CC::AggregateArgumentsCanOccupySubsequentRegisters) {
+      size_t Offset = 0;
+      model::UpcastableType NewType = model::makeType<model::StructType>();
+      auto *MultipleReturnValues = llvm::cast<model::StructType>(NewType.get());
+      for (const model::Register::Values &Register : Registers) {
+        model::StructField NewField;
+        NewField.Offset = Offset;
+        NewField.Type = buildType(Register, Binary);
+        MultipleReturnValues->Fields.insert(std::move(NewField));
+
+        Offset += model::Register::getSize(Register);
+      }
+      MultipleReturnValues->Size = Offset;
+
+      return model::QualifiedType{ Binary.recordNewType(std::move(NewType)) };
+    }
+
+    // Maybe this should be a softer fail, like `return std::nullopt`.
+    revng_abort("There shouldn't be more than a single register used for "
+                "returning values when ABI doesn't allow splitting "
+                "arguments between multiple registers.");
+  }
+}
+
 template<model::abi::Values V>
 std::optional<model::CABIFunctionType>
 ABI<V>::toCABI(model::Binary &TheBinary,
@@ -130,38 +194,10 @@ ABI<V>::toCABI(model::Binary &TheBinary,
   model::CABIFunctionType Result;
   Result.ABI = V;
 
-  // Build return type
-  if (AnalyzedReturnValues->size() == 0) {
-    Result.ReturnType = model::QualifiedType{
-      TheBinary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0)
-    };
-  } else if (AnalyzedReturnValues->size() == 1) {
-    Result.ReturnType = buildType(AnalyzedReturnValues->front(), TheBinary);
-  } else {
-    if constexpr (!CC::AggregateArgumentsCanOccupySubsequentRegisters) {
-      if constexpr (!CC::PrimitiveArgumentsCanOccupySubsequentRegisters) {
-        // Maybe this should be a softer fail, like `return std::nullopt`.
-        revng_abort("There shouldn't be more than a single register used for "
-                    "returning values when ABI doesn't allow splitting "
-                    "arguments between multiple registers.");
-      }
-    }
-
-    size_t Offset = 0;
-    model::UpcastableType NewType = model::makeType<model::StructType>();
-    auto *MultipleReturnValues = llvm::cast<model::StructType>(NewType.get());
-    for (model::Register::Values &Register : AnalyzedReturnValues.value()) {
-      model::StructField NewField;
-      NewField.Offset = Offset;
-      NewField.Type = buildType(Register, TheBinary);
-      MultipleReturnValues->Fields.insert(std::move(NewField));
-
-      Offset += model::Register::getSize(Register);
-    }
-    MultipleReturnValues->Size = Offset;
-
-    Result.ReturnType = { TheBinary.recordNewType(std::move(NewType)), {} };
-  }
+  if (auto MaybeType = buildReturnType<CC>(*AnalyzedReturnValues, TheBinary))
+    Result.ReturnType = *MaybeType;
+  else
+    return std::nullopt;
 
   // Build argument list
   for (size_t Index = 0; auto Register : AnalyzedArguments.value()) {
@@ -335,11 +371,6 @@ ABI<V>::toRaw(model::Binary &TheBinary,
       if (Original.ReturnType.size() > Capacity.MaximumSizePossible) {
         revng_assert(AvailableRegisterCount != 0);
         auto ReturnValueRegister = AvailableRegisters[0];
-
-        const model::Type *Pointer = Original.ReturnType.UnqualifiedType.get();
-        const model::Type::Key &ReturnTypeKey = Pointer->key();
-        if (TheBinary.Types.find(ReturnTypeKey) == TheBinary.Types.end())
-          TheBinary.recordNewType(Original.ReturnType);
 
         model::QualifiedType ReturnType = Original.ReturnType;
         ReturnType.Qualifiers.emplace_back(PointerQualifier);

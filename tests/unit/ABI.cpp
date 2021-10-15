@@ -12,11 +12,16 @@ bool init_unit_test();
 #include "llvm/ADT/DenseMap.h"
 
 #include "revng/Model/Binary.h"
+#include "revng/Model/Processing.h"
 #include "revng/Model/TupleTreeDiff.h"
 #include "revng/StackAnalysis/ABI.h"
 
 #include "helpers/abi_test_x64.h"
 #include "helpers/abi_test_x86.h"
+
+///////////////////////
+#include <iostream>
+///////////////////////
 
 template<DerivesFrom<model::Type> DerivedType>
 static std::vector<DerivedType *>
@@ -26,6 +31,16 @@ chooseTypes(SortedVector<UpcastablePointer<model::Type>> &Types) {
     if (auto *Upscaled = llvm::dyn_cast<DerivedType>(Type.get()))
       Result.emplace_back(Upscaled);
   return Result;
+}
+
+static auto removeFunctions(TupleTree<model::Binary> &Binary) {
+  std::set<const model::Type *> Functions;
+  for (model::UpcastableType &Type : Binary->Types)
+    if (Type->Kind == model::TypeKind::RawFunctionType
+        || Type->Kind == model::TypeKind::CABIFunctionType)
+      Functions.emplace(Type.get());
+
+  return model::dropTypesDependingOnTypes(Binary, Functions);
 }
 
 template<model::abi::Values ABI>
@@ -38,10 +53,18 @@ tryConvertToCABI(const model::RawFunctionType *Function,
   if (Result.has_value()) {
     Result->ID = Function->ID;
     auto *ReturnValueType = Result->ReturnType.UnqualifiedType.get();
-    if (ReturnValueType->Kind == model::TypeKind::Struct)
-      ReturnValueType->ID = 8000000000 + Function->ID;
-    auto NewReturnTypePath = Binary->getTypePath(ReturnValueType);
-    Result->ReturnType.UnqualifiedType = NewReturnTypePath;
+    auto TypeIterator = Binary->Types.find(ReturnValueType->key());
+    revng_assert(TypeIterator != Binary->Types.end());
+    //if (TypeIterator != Binary->Types.end()) {
+      if (ReturnValueType->Kind == model::TypeKind::Struct)
+        TypeIterator->get()->ID = 4000000000 + Function->ID;
+      model::TypePath TypePath = Binary->getTypePath(TypeIterator->get());
+      Result->ReturnType.UnqualifiedType = TypePath;
+    //} else
+    //if (ReturnValueType->Kind == model::TypeKind::Struct)
+    //  ReturnValueType->ID = 4000000000 + Function->ID;
+    //auto NewReturnTypePath = Binary->getTypePath(ReturnValueType);
+    //Result->ReturnType.UnqualifiedType = NewReturnTypePath;
     BOOST_CHECK_MESSAGE(Iterator != SuccessfulIDs.end(),
                         "Converting a function (with ID="
                           << Function->ID
@@ -99,9 +122,6 @@ bool testImpl(std::string_view Input,
                         "Input model tuple tree verification failed on "
                           << model::abi::getName(ABI).data());
   model::Binary &ModelBinary = **Deserialized;
-  BOOST_REQUIRE_MESSAGE(ModelBinary.verify(),
-                        "Input model verification failed on "
-                          << model::abi::getName(ABI).data());
 
   constexpr auto Architecture = model::abi::getArchitecture(ABI);
   BOOST_REQUIRE_MESSAGE(ModelBinary.Architecture == Architecture,
@@ -109,35 +129,22 @@ bool testImpl(std::string_view Input,
                         "the ABI on "
                           << model::abi::getName(ABI).data());
 
-  auto PrimitiveTypes = chooseTypes<model::PrimitiveType>(ModelBinary.Types);
-  BOOST_TEST_LAZY_MSG("Input Primitive count: " << PrimitiveTypes.size());
-
-  auto StructTypes = chooseTypes<model::StructType>(ModelBinary.Types);
-  BOOST_TEST_LAZY_MSG("Input Struct count: " << StructTypes.size());
-
   auto RawFunctions = chooseTypes<model::RawFunctionType>(ModelBinary.Types);
   BOOST_TEST_LAZY_MSG("Input Raw function count: " << RawFunctions.size());
-
   auto CABIFunctions = chooseTypes<model::CABIFunctionType>(ModelBinary.Types);
   BOOST_TEST_LAZY_MSG("Input CABI function count: " << CABIFunctions.size());
 
-  TupleTree<model::Binary> Result;
-  Result->Architecture = ModelBinary.Architecture;
+  for (auto *Function : CABIFunctions)
+    Function->ABI = ABI;
 
-  // for (model::PrimitiveType *Primitive : PrimitiveTypes) {
-  //  auto P = model::UpcastableType::make<model::PrimitiveType>(*Primitive);
-  //  Result->recordNewType(std::move(P));
-  //}
-  // for (model::StructType *Struct : StructTypes) {
-  //  auto P = model::UpcastableType::make<model::StructType>(*Struct);
-  //  // auto P = model::UpcastableType::make<model::StructType>(Struct->ID);
-  //  // auto *SP = llvm::cast<model::StructType>(P.get());
-  //  // SP->CustomName = Struct->CustomName;
-  //  // SP->Size = Struct->Size;
-  //  // for (auto &Field : Struct->Fields)
-  //  //   SP->Fields.insert(Field);
-  //  Result->recordNewType(std::move(P));
-  //}
+  BOOST_REQUIRE_MESSAGE(ModelBinary.verify(),
+                        "Input model verification failed on "
+                          << model::abi::getName(ABI).data());
+
+  TupleTree<model::Binary> Result = Deserialized->clone({});
+
+  auto FunctionCount = removeFunctions(Result);
+  BOOST_REQUIRE(FunctionCount == RawFunctions.size() + CABIFunctions.size());
 
   for (model::RawFunctionType *Function : RawFunctions)
     if (auto P = tryConvertToCABI<ABI>(Function, Result, SuccessfulIDs))
@@ -150,6 +157,8 @@ bool testImpl(std::string_view Input,
 
   std::string Serialized;
   Result.serialize(Serialized);
+  if (!Result->verify())
+    std::cout << Serialized << std::endl;
   BOOST_REQUIRE_MESSAGE(Result->verify(true),
                         "Result model verification failed on "
                           << model::abi::getName(ABI).data() << ":\n"
