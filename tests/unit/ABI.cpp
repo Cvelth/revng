@@ -55,16 +55,15 @@ tryConvertToCABI(const model::RawFunctionType *Function,
     auto *ReturnValueType = Result->ReturnType.UnqualifiedType.get();
     auto TypeIterator = Binary->Types.find(ReturnValueType->key());
     revng_assert(TypeIterator != Binary->Types.end());
-    //if (TypeIterator != Binary->Types.end()) {
-      if (ReturnValueType->Kind == model::TypeKind::Struct)
-        TypeIterator->get()->ID = 4000000000 + Function->ID;
-      model::TypePath TypePath = Binary->getTypePath(TypeIterator->get());
-      Result->ReturnType.UnqualifiedType = TypePath;
-    //} else
-    //if (ReturnValueType->Kind == model::TypeKind::Struct)
+    // if (TypeIterator != Binary->Types.end()) {
+    if (ReturnValueType->Kind == model::TypeKind::Struct)
+      TypeIterator->get()->ID = 4000000000 + Function->ID;
+    model::TypePath TypePath = Binary->getTypePath(TypeIterator->get());
+    Result->ReturnType.UnqualifiedType = TypePath;
+    //} else if (ReturnValueType->Kind == model::TypeKind::Struct)
     //  ReturnValueType->ID = 4000000000 + Function->ID;
-    //auto NewReturnTypePath = Binary->getTypePath(ReturnValueType);
-    //Result->ReturnType.UnqualifiedType = NewReturnTypePath;
+    // auto NewReturnTypePath = Binary->getTypePath(ReturnValueType);
+    // Result->ReturnType.UnqualifiedType = NewReturnTypePath;
     BOOST_CHECK_MESSAGE(Iterator != SuccessfulIDs.end(),
                         "Converting a function (with ID="
                           << Function->ID
@@ -133,7 +132,6 @@ bool testImpl(std::string_view Input,
   BOOST_TEST_LAZY_MSG("Input Raw function count: " << RawFunctions.size());
   auto CABIFunctions = chooseTypes<model::CABIFunctionType>(ModelBinary.Types);
   BOOST_TEST_LAZY_MSG("Input CABI function count: " << CABIFunctions.size());
-
   for (auto *Function : CABIFunctions)
     Function->ABI = ABI;
 
@@ -142,6 +140,12 @@ bool testImpl(std::string_view Input,
                           << model::abi::getName(ABI).data());
 
   TupleTree<model::Binary> Result = Deserialized->clone({});
+  std::string PreSerialized;
+  Result.serialize(PreSerialized);
+  BOOST_REQUIRE_MESSAGE(Result->verify(true),
+                        "Result model verification failed on "
+                          << model::abi::getName(ABI).data() << ":\n"
+                          << PreSerialized);
 
   auto FunctionCount = removeFunctions(Result);
   BOOST_REQUIRE(FunctionCount == RawFunctions.size() + CABIFunctions.size());
@@ -209,15 +213,15 @@ BOOST_AUTO_TEST_CASE(x86_ABIs) {
   testImpl<SystemV_x86>(ABI_TEST::Input_x86,
                         ABI_TEST::SystemV_x86,
                         ABI_TEST::SystemV_x86_IDs);
-  // testImpl<SystemV_x86_regparm_1>(ABI_TEST::Input_x86,
-  //                                 ABI_TEST::SystemV_x86_regparm_1,
-  //                                 ABI_TEST::SystemV_x86_regparm_1_IDs);
-  // testImpl<SystemV_x86_regparm_2>(ABI_TEST::Input_x86,
-  //                                 ABI_TEST::SystemV_x86_regparm_2,
-  //                                 ABI_TEST::SystemV_x86_regparm_2_IDs);
-  // testImpl<SystemV_x86_regparm_3>(ABI_TEST::Input_x86,
-  //                                 ABI_TEST::SystemV_x86_regparm_3,
-  //                                 ABI_TEST::SystemV_x86_regparm_3_IDs);
+  testImpl<SystemV_x86_regparm_1>(ABI_TEST::Input_x86,
+                                  ABI_TEST::SystemV_x86_regparm_1,
+                                  ABI_TEST::SystemV_x86_regparm_1_IDs);
+  testImpl<SystemV_x86_regparm_2>(ABI_TEST::Input_x86,
+                                  ABI_TEST::SystemV_x86_regparm_2,
+                                  ABI_TEST::SystemV_x86_regparm_2_IDs);
+  testImpl<SystemV_x86_regparm_3>(ABI_TEST::Input_x86,
+                                  ABI_TEST::SystemV_x86_regparm_3,
+                                  ABI_TEST::SystemV_x86_regparm_3_IDs);
   // testImpl<Microsoft_x86_cdecl>(ABI_TEST::Input_x86,
   //                               ABI_TEST::Microsoft_x86_cdecl,
   //                               ABI_TEST::Microsoft_x86_cdecl_IDs);

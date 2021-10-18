@@ -146,14 +146,14 @@ buildReturnType(const ChosenRegisters<AvailableRegisterCount> &Registers,
   } else if (Registers.size() == 1) {
     return buildType(Registers.front(), Binary);
   } else {
-    if constexpr (CC::PrimitiveArgumentsCanOccupySubsequentRegisters)
+    if constexpr (CC::GenericRegistersUsedPerAggregateReturnValue >= 2)
       if (Registers.size() == 2)
         if (auto MaybeType = buildDoubleType(Registers.front(),
                                              Registers.back(),
                                              Binary))
           return *MaybeType;
 
-    if constexpr (CC::AggregateArgumentsCanOccupySubsequentRegisters) {
+    if constexpr (CC::AllowPassingAggregatesInRegisters) {
       size_t Offset = 0;
       model::UpcastableType NewType = model::makeType<model::StructType>();
       auto *MultipleReturnValues = llvm::cast<model::StructType>(NewType.get());
@@ -223,14 +223,6 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
   InternalArguments Result;
   size_t UsedGenericRegisterCounter = 0;
 
-  using OR = std::optional<model::Register::Values>;
-  auto GetTheNextGenericRegister = [&UsedGenericRegisterCounter]() -> OR {
-    if (UsedGenericRegisterCounter < CallConv::GenericArgumentRegisters.size())
-      return CallConv::GenericArgumentRegisters[UsedGenericRegisterCounter];
-    else
-      return std::nullopt;
-  };
-
   using RV = llvm::SmallVector<model::Register::Values, 8>;
   auto GetGenericRegisters = [&UsedGenericRegisterCounter](size_t Size) -> RV {
     size_t ConsideredRegisterCounter = UsedGenericRegisterCounter;
@@ -255,37 +247,42 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
     return Result;
   };
 
+  using IndexType = decltype(model::Argument::Index);
+  constexpr auto Limit = CallConv::GenericRegistersUsedPerAggregateArgument;
+  auto AppendRegisters = [&](IndexType Index, uint64_t Size) -> size_t {
+    auto Registers = GetGenericRegisters(Size);
+    if (!Registers.empty() && Registers.size() <= Limit) {
+      abi::MultiRegister &Container = Result.Registers[Index];
+      for (model::Register::Values &Register : Registers)
+        Container.emplace_back(Register);
+      return Registers.size();
+    }
+    return 0;
+  };
+
   for (const model::Argument &Argument : Arguments) {
     std::optional<uint64_t> MaybeSize = Argument.Type.size();
     revng_assert(MaybeSize);
 
-    if constexpr (CallConv::AggregateArgumentsCanOccupySubsequentRegisters
-                  || CallConv::PrimitiveArgumentsCanOccupySubsequentRegisters) {
-      auto Registers = GetGenericRegisters(*MaybeSize);
-      if (Registers.empty()) {
-        Result.Stack.insert(Argument.Index);
-        continue;
+    if (Argument.Type.isScalar()) {
+      if (!Argument.Type.isFloat()) {
+        if (auto RegisterCount = AppendRegisters(Argument.Index, *MaybeSize)) {
+          UsedGenericRegisterCounter += RegisterCount;
+          continue;
+        }
       } else {
-        abi::MultiRegister &Container = Result.Registers[Argument.Index];
-        for (model::Register::Values &Register : Registers)
-          Container.emplace_back(Register);
-        UsedGenericRegisterCounter += Registers.size();
+        // TODO: handle floating point arguments.
+        return std::nullopt;
       }
-    } else {
-      auto NextRegister = GetTheNextGenericRegister();
-      if (!NextRegister.has_value()) {
-        Result.Stack.insert(Argument.Index);
+    } else if constexpr (CallConv::AllowPassingAggregatesInRegisters) {
+      // TODO: verify structs for eligibility.
+      if (auto RegisterCount = AppendRegisters(Argument.Index, *MaybeSize)) {
+        UsedGenericRegisterCounter += RegisterCount;
         continue;
-      }
-
-      size_t NextSize = model::Register::getSize(*NextRegister);
-      if (*MaybeSize > NextSize) {
-        Result.Stack.insert(Argument.Index);
-      } else {
-        Result.Registers[Argument.Index].emplace_back(*NextRegister);
-        ++UsedGenericRegisterCounter;
       }
     }
+
+    Result.Stack.insert(Argument.Index);
   }
 
   return Result;
@@ -363,7 +360,8 @@ ABI<V>::toRaw(model::Binary &TheBinary,
     constexpr bool A = CC::AggregateArgumentsCanOccupySubsequentRegisters;
     constexpr bool P = CC::PrimitiveArgumentsCanOccupySubsequentRegisters;
     bool IsScalar = Original.ReturnType.isScalar();
-    bool AreSubsequentRegistersAllowed = (IsScalar && P) || (!IsScalar && A);
+    bool AreNonScalarsAllowed = CC::AllowPassingAggregatesInRegisters;
+    bool AreSubsequentRegistersAllowed = (!IsScalar != AreNonScalarsAllowed);
     if (AreSubsequentRegistersAllowed) {
       constexpr auto &AvailableRegisters = CC::GenericReturnValueRegisters;
       constexpr size_t AvailableRegisterCount = AvailableRegisters.size();

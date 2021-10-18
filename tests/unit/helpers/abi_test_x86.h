@@ -673,20 +673,76 @@ Types:
     Size:            0
   - !Primitive
     Kind:            Primitive
+    ID:              516
+    PrimitiveKind:   Generic
+    Size:            4
+  - !Primitive
+    Kind:            Primitive
     ID:              772
     PrimitiveKind:   PointerOrNumber
     Size:            4
+  - !Primitive
+    Kind:            Primitive
+    ID:              776
+    PrimitiveKind:   PointerOrNumber
+    Size:            8
   - !Struct
     Kind:            Struct
-    ID:              9000000015
+    ID:              9000000000
     Fields:
       - Type:
-          UnqualifiedType: "/Types/Primitive-772"
+          UnqualifiedType: "/Types/Primitive-776"
         Offset:          0
       - Type:
-          UnqualifiedType: "/Types/Primitive-772"
-        Offset:          4
-    Size:            8
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          8
+    Size:            16
+  - !Struct
+    Kind:            Struct
+    ID:              9000000019
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          8
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          16
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          24
+    Size:            32
+  - !Struct
+    Kind:            Struct
+    ID:              9000000022
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          8
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          16
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          24
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          32
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          40
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          48
+      - Type:
+          UnqualifiedType: "/Types/Primitive-776"
+        Offset:          56
+    Size:            64
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              1000000001
@@ -706,7 +762,7 @@ Types:
     ID:              1000000015
     ABI:             SystemV_x86
     ReturnType:
-      UnqualifiedType: "/Types/Struct-9000000015"
+      UnqualifiedType: "/Types/Primitive-776"
     Arguments:       []
   - !RawFunctionType
     Kind:            RawFunctionType
