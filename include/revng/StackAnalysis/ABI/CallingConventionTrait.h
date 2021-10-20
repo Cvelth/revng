@@ -271,7 +271,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = true;
+  static constexpr bool AllowPassingAggregatesInRegisters = false;
   static constexpr size_t GenericRegistersUsedPerAggregateArgument = 0;
   static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 2;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
@@ -310,7 +310,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = true;
+  static constexpr bool AllowPassingAggregatesInRegisters = false;
   static constexpr size_t GenericRegistersUsedPerAggregateArgument = 1;
   static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 2;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
@@ -350,7 +350,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = true;
+  static constexpr bool AllowPassingAggregatesInRegisters = false;
   static constexpr size_t GenericRegistersUsedPerAggregateArgument = 1;
   static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 2;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
@@ -391,7 +391,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = true;
+  static constexpr bool AllowPassingAggregatesInRegisters = false;
   static constexpr size_t GenericRegistersUsedPerAggregateArgument = 1;
   static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 2;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;

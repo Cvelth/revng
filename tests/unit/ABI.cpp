@@ -19,10 +19,6 @@ bool init_unit_test();
 #include "helpers/abi_test_x64.h"
 #include "helpers/abi_test_x86.h"
 
-///////////////////////
-#include <iostream>
-///////////////////////
-
 template<DerivesFrom<model::Type> DerivedType>
 static std::vector<DerivedType *>
 chooseTypes(SortedVector<UpcastablePointer<model::Type>> &Types) {
@@ -142,7 +138,7 @@ bool testImpl(std::string_view Input,
   TupleTree<model::Binary> Result = Deserialized->clone({});
   std::string PreSerialized;
   Result.serialize(PreSerialized);
-  BOOST_REQUIRE_MESSAGE(Result->verify(true),
+  BOOST_REQUIRE_MESSAGE(Result->verify(),
                         "Result model verification failed on "
                           << model::abi::getName(ABI).data() << ":\n"
                           << PreSerialized);
@@ -161,9 +157,7 @@ bool testImpl(std::string_view Input,
 
   std::string Serialized;
   Result.serialize(Serialized);
-  if (!Result->verify())
-    std::cout << Serialized << std::endl;
-  BOOST_REQUIRE_MESSAGE(Result->verify(true),
+  BOOST_REQUIRE_MESSAGE(Result->verify(),
                         "Result model verification failed on "
                           << model::abi::getName(ABI).data() << ":\n"
                           << Serialized);
@@ -213,31 +207,31 @@ BOOST_AUTO_TEST_CASE(x86_ABIs) {
   testImpl<SystemV_x86>(ABI_TEST::Input_x86,
                         ABI_TEST::SystemV_x86,
                         ABI_TEST::SystemV_x86_IDs);
-  // testImpl<SystemV_x86_regparm_1>(ABI_TEST::Input_x86,
-  //                                 ABI_TEST::SystemV_x86_regparm_1,
-  //                                 ABI_TEST::SystemV_x86_regparm_1_IDs);
-  // testImpl<SystemV_x86_regparm_2>(ABI_TEST::Input_x86,
-  //                                 ABI_TEST::SystemV_x86_regparm_2,
-  //                                 ABI_TEST::SystemV_x86_regparm_2_IDs);
-  // testImpl<SystemV_x86_regparm_3>(ABI_TEST::Input_x86,
-  //                                 ABI_TEST::SystemV_x86_regparm_3,
-  //                                 ABI_TEST::SystemV_x86_regparm_3_IDs);
-  // testImpl<Microsoft_x86_cdecl>(ABI_TEST::Input_x86,
-  //                               ABI_TEST::Microsoft_x86_cdecl,
-  //                               ABI_TEST::Microsoft_x86_cdecl_IDs);
-  // testImpl<Microsoft_x86_stdcall>(ABI_TEST::Input_x86,
-  //                                 ABI_TEST::Microsoft_x86_stdcall,
-  //                                 ABI_TEST::Microsoft_x86_stdcall_IDs);
-  // testImpl<Microsoft_x86_thiscall>(ABI_TEST::Input_x86,
-  //                                  ABI_TEST::Microsoft_x86_thiscall,
-  //                                  ABI_TEST::Microsoft_x86_thiscall_IDs);
-  // testImpl<Microsoft_x86_fastcall>(ABI_TEST::Input_x86,
-  //                                  ABI_TEST::Microsoft_x86_fastcall,
-  //                                  ABI_TEST::Microsoft_x86_fastcall_IDs);
-  // testImpl<Microsoft_x86_clrcall>(ABI_TEST::Input_x86,
-  //                                 ABI_TEST::Microsoft_x86_clrcall,
-  //                                 ABI_TEST::Microsoft_x86_clrcall_IDs);
-  // testImpl<Microsoft_x86_vectorcall>(ABI_TEST::Input_x86,
-  //                                    ABI_TEST::Microsoft_x86_vectorcall,
-  //                                    ABI_TEST::Microsoft_x86_vectorcall_IDs);
+  testImpl<SystemV_x86_regparm_1>(ABI_TEST::Input_x86,
+                                  ABI_TEST::SystemV_x86_regparm_1,
+                                  ABI_TEST::SystemV_x86_regparm_1_IDs);
+  testImpl<SystemV_x86_regparm_2>(ABI_TEST::Input_x86,
+                                  ABI_TEST::SystemV_x86_regparm_2,
+                                  ABI_TEST::SystemV_x86_regparm_2_IDs);
+  testImpl<SystemV_x86_regparm_3>(ABI_TEST::Input_x86,
+                                  ABI_TEST::SystemV_x86_regparm_3,
+                                  ABI_TEST::SystemV_x86_regparm_3_IDs);
+  testImpl<Microsoft_x86_cdecl>(ABI_TEST::Input_x86,
+                                ABI_TEST::Microsoft_x86_cdecl,
+                                ABI_TEST::Microsoft_x86_cdecl_IDs);
+  testImpl<Microsoft_x86_stdcall>(ABI_TEST::Input_x86,
+                                  ABI_TEST::Microsoft_x86_stdcall,
+                                  ABI_TEST::Microsoft_x86_stdcall_IDs);
+  testImpl<Microsoft_x86_thiscall>(ABI_TEST::Input_x86,
+                                   ABI_TEST::Microsoft_x86_thiscall,
+                                   ABI_TEST::Microsoft_x86_thiscall_IDs);
+  testImpl<Microsoft_x86_fastcall>(ABI_TEST::Input_x86,
+                                   ABI_TEST::Microsoft_x86_fastcall,
+                                   ABI_TEST::Microsoft_x86_fastcall_IDs);
+  testImpl<Microsoft_x86_clrcall>(ABI_TEST::Input_x86,
+                                  ABI_TEST::Microsoft_x86_clrcall,
+                                  ABI_TEST::Microsoft_x86_clrcall_IDs);
+  testImpl<Microsoft_x86_vectorcall>(ABI_TEST::Input_x86,
+                                     ABI_TEST::Microsoft_x86_vectorcall,
+                                     ABI_TEST::Microsoft_x86_vectorcall_IDs);
 }

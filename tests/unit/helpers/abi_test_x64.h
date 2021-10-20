@@ -2755,6 +2755,9 @@ Types:
       - Location:        r8_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -2767,7 +2770,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 16
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000007
@@ -2781,6 +2784,9 @@ Types:
       - Location:        r8_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -2793,10 +2799,314 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 32
+    FinalStackOffset: 16
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000008
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 16
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000009
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000010
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000011
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000012
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000013
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000014
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000015
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000016
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000017
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000018
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000019
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000020
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000021
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000022
     Arguments:
       - Location:        rcx_x86_64
         Type:
@@ -2819,249 +3129,23 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 32
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000009
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 32
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000010
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 64
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000011
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 16
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000012
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 16
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000013
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 16
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000014
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 16
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000015
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 16
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000016
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 16
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000017
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 32
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000018
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 32
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000019
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 32
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000020
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 64
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000021
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 80
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000022
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 64
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000023
-    Arguments:       []
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -3074,7 +3158,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 80
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000024
@@ -3181,7 +3265,10 @@ Types:
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000029
-    Arguments:       []
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
       - Location:        rax_x86_64
         Type:
@@ -3200,7 +3287,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 16
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000030
@@ -3212,6 +3299,9 @@ Types:
         Type:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
@@ -3229,7 +3319,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 16
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000031
@@ -3470,6 +3560,12 @@ Types:
       - Location:        rdx_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
       - Location:        rax_x86_64
         Type:
@@ -3488,7 +3584,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 64
+    FinalStackOffset: 16
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000042
@@ -3502,6 +3598,9 @@ Types:
       - Location:        r8_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
       - Location:        rax_x86_64
         Type:
@@ -3520,7 +3619,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 32
+    FinalStackOffset: 16
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000043
@@ -3529,6 +3628,12 @@ Types:
         Type:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
@@ -3549,7 +3654,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 48
+    FinalStackOffset: 16
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000044
@@ -3558,6 +3663,9 @@ Types:
         Type:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
@@ -3578,11 +3686,23 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 64
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000045
-    Arguments:       []
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
       - Location:        rax_x86_64
         Type:
@@ -3601,7 +3721,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 64
+    FinalStackOffset: 0
 Segments:        []
 Functions:       []
 ImportedDynamicFunctions: []
@@ -3997,6 +4117,9 @@ Types:
       - Location:        r8_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -4009,7 +4132,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 16
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000007
@@ -4023,6 +4146,9 @@ Types:
       - Location:        r8_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -4035,10 +4161,314 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 32
+    FinalStackOffset: 16
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000008
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 16
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000009
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000010
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000011
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000012
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000013
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000014
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000015
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000016
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000017
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000018
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000019
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000020
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000021
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - rsi_x86_64
+      - rdi_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+      - xmm6_x86_64
+      - xmm7_x86_64
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000022
     Arguments:
       - Location:        rcx_x86_64
         Type:
@@ -4061,249 +4491,23 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 32
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000009
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 32
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000010
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 64
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000011
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 16
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000012
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 16
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000013
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 16
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000014
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 16
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000015
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 16
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000016
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 16
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000017
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 32
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000018
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 32
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000019
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 32
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000020
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 64
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000021
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 80
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000022
-    Arguments:       []
-    ReturnValues:    []
-    PreservedRegisters:
-      - rbx_x86_64
-      - rbp_x86_64
-      - rsi_x86_64
-      - rdi_x86_64
-      - r12_x86_64
-      - r13_x86_64
-      - r14_x86_64
-      - r15_x86_64
-      - xmm6_x86_64
-      - xmm7_x86_64
-    FinalStackOffset: 64
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000023
-    Arguments:       []
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -4316,7 +4520,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 80
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000024
@@ -4423,7 +4627,10 @@ Types:
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000029
-    Arguments:       []
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
       - Location:        rax_x86_64
         Type:
@@ -4442,7 +4649,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 16
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000030
@@ -4454,6 +4661,9 @@ Types:
         Type:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
@@ -4471,7 +4681,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 16
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000031
@@ -4712,6 +4922,12 @@ Types:
       - Location:        rdx_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
       - Location:        rax_x86_64
         Type:
@@ -4730,7 +4946,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 64
+    FinalStackOffset: 16
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000042
@@ -4744,6 +4960,9 @@ Types:
       - Location:        r8_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
       - Location:        rax_x86_64
         Type:
@@ -4762,7 +4981,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 32
+    FinalStackOffset: 16
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000043
@@ -4771,6 +4990,12 @@ Types:
         Type:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
@@ -4791,7 +5016,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 48
+    FinalStackOffset: 16
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000044
@@ -4800,6 +5025,9 @@ Types:
         Type:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
@@ -4820,11 +5048,23 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 64
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000045
-    Arguments:       []
+    Arguments:
+      - Location:        rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
     ReturnValues:
       - Location:        rax_x86_64
         Type:
@@ -4843,7 +5083,7 @@ Types:
       - r15_x86_64
       - xmm6_x86_64
       - xmm7_x86_64
-    FinalStackOffset: 64
+    FinalStackOffset: 0
 Segments:        []
 Functions:       []
 ImportedDynamicFunctions: []

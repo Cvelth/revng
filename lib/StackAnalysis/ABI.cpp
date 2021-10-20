@@ -219,7 +219,7 @@ struct InternalArguments {
 };
 template<typename CallConv>
 static std::optional<InternalArguments>
-allocateRegisters(const SortedVector<model::Argument> &Arguments) {
+allocateRegistersFreely(const SortedVector<model::Argument> &Arguments) {
   InternalArguments Result;
   size_t UsedGenericRegisterCounter = 0;
 
@@ -286,6 +286,32 @@ allocateRegisters(const SortedVector<model::Argument> &Arguments) {
   }
 
   return Result;
+}
+
+template<typename CallConv>
+static std::optional<InternalArguments>
+allocatePositionBasedRegisters(const SortedVector<model::Argument> &Arguments) {
+  InternalArguments Result;
+
+  for (const model::Argument &Argument : Arguments) {
+    if (Argument.Index < CallConv::GenericArgumentRegisters.size()) {
+      auto Register = CallConv::GenericArgumentRegisters[Argument.Index];
+      Result.Registers[Argument.Index].emplace_back(Register);
+    } else {
+      Result.Stack.insert(Argument.Index);
+    }
+  }
+
+  return Result;
+}
+
+template<typename CallConv>
+static std::optional<InternalArguments>
+allocateRegisters(const SortedVector<model::Argument> &Arguments) {
+  if constexpr (CallConv::ArgumentsArePositionBased)
+    return allocatePositionBasedRegisters<CallConv>(Arguments);
+  else
+    return allocateRegistersFreely<CallConv>(Arguments);
 }
 
 template<size_t AvailableRegisterCount>
@@ -371,6 +397,8 @@ ABI<V>::toRaw(model::Binary &TheBinary,
   if (!Original.ReturnType.isVoid()) {
     if (CallingConvention::GenericReturnValueRegisters.empty())
       return std::nullopt;
+    auto ReturnRegister = CallingConvention::GenericReturnValueRegisters[0];
+    auto RegisterSize = model::Register::getSize(ReturnRegister);
 
     auto MaybeReturnValueSize = Original.ReturnType.size();
     revng_assert(MaybeReturnValueSize.has_value());
@@ -383,21 +411,12 @@ ABI<V>::toRaw(model::Binary &TheBinary,
     if constexpr (!CC::AllowPassingAggregatesInRegisters)
       if (!Original.ReturnType.isScalar())
         AreSubsequentRegistersAllowed = false;
-    if (AreSubsequentRegistersAllowed) {
-      constexpr auto &AvailableRegisters = CC::GenericReturnValueRegisters;
-      constexpr size_t AvailableRegisterCount = AvailableRegisters.size();
 
-      if (Original.ReturnType.size() > Capacity.MaximumSizePossible) {
-        revng_assert(AvailableRegisterCount != 0);
-        auto ReturnValueRegister = AvailableRegisters[0];
+    if (*MaybeReturnValueSize <= Capacity.MaximumSizePossible) {
+      if (AreSubsequentRegistersAllowed) {
+        constexpr auto &AvailableRegisters = CC::GenericReturnValueRegisters;
+        constexpr size_t AvailableRegisterCount = AvailableRegisters.size();
 
-        model::QualifiedType ReturnType = Original.ReturnType;
-        ReturnType.Qualifiers.emplace_back(PointerQualifier);
-
-        model::TypedRegister ReturnPointer(ReturnValueRegister);
-        ReturnPointer.Type = std::move(ReturnType);
-        Result.ReturnValues.insert(std::move(ReturnPointer));
-      } else {
         revng_assert(Capacity.NeededRegisterCount <= AvailableRegisterCount);
         for (size_t Index = 0; Index < Capacity.NeededRegisterCount; ++Index) {
           auto Register = AvailableRegisters[Index];
@@ -410,29 +429,20 @@ ABI<V>::toRaw(model::Binary &TheBinary,
       }
     }
 
-    if constexpr (CallingConvention::ArgumentsArePositionBased) {
-      if (Result.ReturnValues.empty()) {
-        revng_assert(CC::GenericReturnValueRegisters.size() != 0);
-        auto ReturnValueRegister = CC::GenericReturnValueRegisters[0];
-
+    if (Result.ReturnValues.empty()) {
+      if (*MaybeReturnValueSize <= RegisterSize
+          && AreSubsequentRegistersAllowed) {
+        model::TypedRegister Argument(ReturnRegister);
+        Argument.Type = buildType(ReturnRegister, TheBinary);
+        Result.ReturnValues.insert(Argument);
+      } else {
         model::QualifiedType ReturnType = Original.ReturnType;
         ReturnType.Qualifiers.emplace_back(PointerQualifier);
 
-        model::TypedRegister ReturnPointer(ReturnValueRegister);
+        model::TypedRegister ReturnPointer(ReturnRegister);
         ReturnPointer.Type = std::move(ReturnType);
         Result.ReturnValues.insert(std::move(ReturnPointer));
       }
-    }
-
-    if (Result.ReturnValues.empty()) {
-      auto ReturnRegister = CallingConvention::GenericReturnValueRegisters[0];
-      auto RegisterSize = model::Register::getSize(ReturnRegister);
-      if (*MaybeReturnValueSize > RegisterSize)
-        return std::nullopt;
-
-      model::TypedRegister Argument(ReturnRegister);
-      Argument.Type = buildType(ReturnRegister, TheBinary);
-      Result.ReturnValues.insert(Argument);
     }
   }
 
