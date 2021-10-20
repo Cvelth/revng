@@ -213,15 +213,15 @@ BOOST_AUTO_TEST_CASE(x86_ABIs) {
   testImpl<SystemV_x86>(ABI_TEST::Input_x86,
                         ABI_TEST::SystemV_x86,
                         ABI_TEST::SystemV_x86_IDs);
-  testImpl<SystemV_x86_regparm_1>(ABI_TEST::Input_x86,
-                                  ABI_TEST::SystemV_x86_regparm_1,
-                                  ABI_TEST::SystemV_x86_regparm_1_IDs);
-  testImpl<SystemV_x86_regparm_2>(ABI_TEST::Input_x86,
-                                  ABI_TEST::SystemV_x86_regparm_2,
-                                  ABI_TEST::SystemV_x86_regparm_2_IDs);
-  testImpl<SystemV_x86_regparm_3>(ABI_TEST::Input_x86,
-                                  ABI_TEST::SystemV_x86_regparm_3,
-                                  ABI_TEST::SystemV_x86_regparm_3_IDs);
+  // testImpl<SystemV_x86_regparm_1>(ABI_TEST::Input_x86,
+  //                                 ABI_TEST::SystemV_x86_regparm_1,
+  //                                 ABI_TEST::SystemV_x86_regparm_1_IDs);
+  // testImpl<SystemV_x86_regparm_2>(ABI_TEST::Input_x86,
+  //                                 ABI_TEST::SystemV_x86_regparm_2,
+  //                                 ABI_TEST::SystemV_x86_regparm_2_IDs);
+  // testImpl<SystemV_x86_regparm_3>(ABI_TEST::Input_x86,
+  //                                 ABI_TEST::SystemV_x86_regparm_3,
+  //                                 ABI_TEST::SystemV_x86_regparm_3_IDs);
   // testImpl<Microsoft_x86_cdecl>(ABI_TEST::Input_x86,
   //                               ABI_TEST::Microsoft_x86_cdecl,
   //                               ABI_TEST::Microsoft_x86_cdecl_IDs);

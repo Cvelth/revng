@@ -157,8 +157,8 @@ template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64> {
   static constexpr bool ArgumentsArePositionBased = true;
   static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 0;
-  static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 0;
+  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 1;
+  static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 1;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
 
@@ -197,8 +197,8 @@ template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64_vectorcall> {
   static constexpr bool ArgumentsArePositionBased = true;
   static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 0;
-  static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 0;
+  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 1;
+  static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 1;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
 
@@ -241,8 +241,8 @@ template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 0;
-  static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 0;
+  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 1;
+  static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 1;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
 
@@ -311,7 +311,7 @@ template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool AllowPassingAggregatesInRegisters = true;
-  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 0;
+  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 1;
   static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 2;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
@@ -351,7 +351,7 @@ template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool AllowPassingAggregatesInRegisters = true;
-  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 0;
+  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 1;
   static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 2;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
@@ -392,7 +392,7 @@ template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool AllowPassingAggregatesInRegisters = true;
-  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 0;
+  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 1;
   static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 2;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
@@ -498,7 +498,7 @@ template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 0;
+  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 1;
   static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 2;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 4;
@@ -533,7 +533,7 @@ template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 0;
+  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 1;
   static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 2;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 4;
@@ -604,8 +604,8 @@ template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_vectorcall> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 0;
-  static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 0;
+  static constexpr size_t GenericRegistersUsedPerAggregateArgument = 1;
+  static constexpr size_t GenericRegistersUsedPerAggregateReturnValue = 1;
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 4;
 

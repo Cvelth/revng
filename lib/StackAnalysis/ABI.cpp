@@ -294,7 +294,7 @@ struct Capacity {
   const size_t MaximumSizePossible;
 };
 
-template<size_t Size>
+template<size_t AllowedRegisterLimit, size_t Size>
 Capacity<Size>
 countCapacity(size_t ValueSize, const RegisterArray<Size> &Registers) {
   size_t RegisterCounter = 0;
@@ -305,6 +305,8 @@ countCapacity(size_t ValueSize, const RegisterArray<Size> &Registers) {
     if (SizeCounter < ValueSize)
       ++RegisterCounter;
     SizeCounter += RegisterSize;
+    if (RegisterCounter >= AllowedRegisterLimit)
+      break;
   }
   if (SizeCounter < ValueSize)
     ++RegisterCounter;
@@ -336,10 +338,29 @@ ABI<V>::toRaw(model::Binary &TheBinary,
       Result.Arguments.insert(Argument);
     }
   }
+
+  // I'm not sure if this assert is required.
+  revng_assert(Result.FinalStackOffset == 0);
+
   for (auto ArgumentIndex : StackArguments) {
-    // TODO: handle stack arguments.
+    // Get the argument.
+    auto ArgumentIterator = Original.Arguments.find(ArgumentIndex);
+    revng_assert(ArgumentIterator != Original.Arguments.end());
+    const model::Argument &Argument = *ArgumentIterator;
+
+    // Get it's size.
+    auto MaybeSize = Argument.Type.size();
+    revng_assert(MaybeSize.has_value());
+    size_t Size = *MaybeSize;
+
+    // TODO: handle stack arguments properly.
     // \note: different ABIs could use different stack types.
     // \see: `clrcall` ABI.
+
+    // Compute aligned size.
+    constexpr size_t Alignment = CallingConvention::StackAlignment;
+    size_t Aligned = Size + Alignment - 1 - (Size + Alignment - 1) % Alignment;
+    Result.FinalStackOffset += Aligned;
   }
 
   constexpr model::Architecture::Values Arch = model::abi::getArchitecture(V);
@@ -354,14 +375,14 @@ ABI<V>::toRaw(model::Binary &TheBinary,
     auto MaybeReturnValueSize = Original.ReturnType.size();
     revng_assert(MaybeReturnValueSize.has_value());
     using CC = CallingConvention;
-    auto Capacity = countCapacity(*MaybeReturnValueSize,
-                                  CC::GenericReturnValueRegisters);
+    constexpr size_t L = CC::GenericRegistersUsedPerAggregateReturnValue;
+    auto Capacity = countCapacity<L>(*MaybeReturnValueSize,
+                                     CC::GenericReturnValueRegisters);
 
-    constexpr bool A = CC::AggregateArgumentsCanOccupySubsequentRegisters;
-    constexpr bool P = CC::PrimitiveArgumentsCanOccupySubsequentRegisters;
-    bool IsScalar = Original.ReturnType.isScalar();
-    bool AreNonScalarsAllowed = CC::AllowPassingAggregatesInRegisters;
-    bool AreSubsequentRegistersAllowed = (!IsScalar != AreNonScalarsAllowed);
+    bool AreSubsequentRegistersAllowed = true;
+    if constexpr (!CC::AllowPassingAggregatesInRegisters)
+      if (!Original.ReturnType.isScalar())
+        AreSubsequentRegistersAllowed = false;
     if (AreSubsequentRegistersAllowed) {
       constexpr auto &AvailableRegisters = CC::GenericReturnValueRegisters;
       constexpr size_t AvailableRegisterCount = AvailableRegisters.size();
@@ -386,6 +407,20 @@ ABI<V>::toRaw(model::Binary &TheBinary,
           ReturnPointer.Type = std::move(Type);
           Result.ReturnValues.insert(ReturnPointer);
         }
+      }
+    }
+
+    if constexpr (CallingConvention::ArgumentsArePositionBased) {
+      if (Result.ReturnValues.empty()) {
+        revng_assert(CC::GenericReturnValueRegisters.size() != 0);
+        auto ReturnValueRegister = CC::GenericReturnValueRegisters[0];
+
+        model::QualifiedType ReturnType = Original.ReturnType;
+        ReturnType.Qualifiers.emplace_back(PointerQualifier);
+
+        model::TypedRegister ReturnPointer(ReturnValueRegister);
+        ReturnPointer.Type = std::move(ReturnType);
+        Result.ReturnValues.insert(std::move(ReturnPointer));
       }
     }
 
