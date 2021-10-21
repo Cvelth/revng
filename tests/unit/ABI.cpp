@@ -51,15 +51,10 @@ tryConvertToCABI(const model::RawFunctionType *Function,
     auto *ReturnValueType = Result->ReturnType.UnqualifiedType.get();
     auto TypeIterator = Binary->Types.find(ReturnValueType->key());
     revng_assert(TypeIterator != Binary->Types.end());
-    // if (TypeIterator != Binary->Types.end()) {
     if (ReturnValueType->Kind == model::TypeKind::Struct)
       TypeIterator->get()->ID = 4000000000 + Function->ID;
     model::TypePath TypePath = Binary->getTypePath(TypeIterator->get());
     Result->ReturnType.UnqualifiedType = TypePath;
-    //} else if (ReturnValueType->Kind == model::TypeKind::Struct)
-    //  ReturnValueType->ID = 4000000000 + Function->ID;
-    // auto NewReturnTypePath = Binary->getTypePath(ReturnValueType);
-    // Result->ReturnType.UnqualifiedType = NewReturnTypePath;
     BOOST_CHECK_MESSAGE(Iterator != SuccessfulIDs.end(),
                         "Converting a function (with ID="
                           << Function->ID
