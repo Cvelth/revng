@@ -485,7 +485,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
   static constexpr bool AllowPassingAggregatesInRegisters = false;
   static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 0;
   static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 2;
-  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = true;
   static constexpr size_t StackAlignment = 4;
 
   static constexpr std::array<model::Register::Values, 0>
@@ -517,7 +517,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
   static constexpr bool AllowPassingAggregatesInRegisters = false;
   static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 1;
   static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 2;
-  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = true;
   static constexpr size_t StackAlignment = 4;
 
   static constexpr std::array GeneralPurposeArgumentRegisters = {
@@ -552,7 +552,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
   static constexpr bool AllowPassingAggregatesInRegisters = false;
   static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 1;
   static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 2;
-  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = true;
   static constexpr size_t StackAlignment = 4;
 
   static constexpr std::array GeneralPurposeArgumentRegisters = {
@@ -623,7 +623,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_vectorcall> {
   static constexpr bool AllowPassingAggregatesInRegisters = false;
   static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 1;
   static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 1;
-  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
+  static constexpr bool CalleeIsResponsibleForStackCleanup = true;
   static constexpr size_t StackAlignment = 4;
 
   static constexpr std::array GeneralPurposeArgumentRegisters = {
