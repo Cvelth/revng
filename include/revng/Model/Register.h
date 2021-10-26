@@ -23,6 +23,14 @@ enum Values {
   edi_x86,
   ebp_x86,
   esp_x86,
+  xmm0_x86,
+  xmm1_x86,
+  xmm2_x86,
+  xmm3_x86,
+  xmm4_x86,
+  xmm5_x86,
+  xmm6_x86,
+  xmm7_x86,
   // x86-64 registers
   rax_x86_64,
   rbx_x86_64,
@@ -48,6 +56,7 @@ enum Values {
   xmm5_x86_64,
   xmm6_x86_64,
   xmm7_x86_64,
+  fs_x86_64,
   // ARM registers
   r0_arm,
   r1_arm,
@@ -179,6 +188,22 @@ inline llvm::StringRef getName(Values V) {
     return "ebp_x86";
   case esp_x86:
     return "esp_x86";
+  case xmm0_x86:
+    return "xmm0_x86";
+  case xmm1_x86:
+    return "xmm1_x86";
+  case xmm2_x86:
+    return "xmm2_x86";
+  case xmm3_x86:
+    return "xmm3_x86";
+  case xmm4_x86:
+    return "xmm4_x86";
+  case xmm5_x86:
+    return "xmm5_x86";
+  case xmm6_x86:
+    return "xmm6_x86";
+  case xmm7_x86:
+    return "xmm7_x86";
   case rax_x86_64:
     return "rax_x86_64";
   case rbx_x86_64:
@@ -227,6 +252,8 @@ inline llvm::StringRef getName(Values V) {
     return "xmm6_x86_64";
   case xmm7_x86_64:
     return "xmm7_x86_64";
+  case fs_x86_64:
+    return "fs_x86_64";
   case r0_arm:
     return "r0_arm";
   case r1_arm:
@@ -445,6 +472,22 @@ inline Values fromName(llvm::StringRef Name) {
     return ebp_x86;
   else if (Name == "esp_x86")
     return esp_x86;
+  else if (Name == "xmm0_x86")
+    return xmm0_x86;
+  else if (Name == "xmm1_x86")
+    return xmm1_x86;
+  else if (Name == "xmm2_x86")
+    return xmm2_x86;
+  else if (Name == "xmm3_x86")
+    return xmm3_x86;
+  else if (Name == "xmm4_x86")
+    return xmm4_x86;
+  else if (Name == "xmm5_x86")
+    return xmm5_x86;
+  else if (Name == "xmm6_x86")
+    return xmm6_x86;
+  else if (Name == "xmm7_x86")
+    return xmm7_x86;
   else if (Name == "rax_x86_64")
     return rax_x86_64;
   else if (Name == "rbx_x86_64")
@@ -493,6 +536,8 @@ inline Values fromName(llvm::StringRef Name) {
     return xmm6_x86_64;
   else if (Name == "xmm7_x86_64")
     return xmm7_x86_64;
+  else if (Name == "fs_x86_64")
+    return fs_x86_64;
   else if (Name == "r0_arm")
     return r0_arm;
   else if (Name == "r1_arm")
@@ -701,6 +746,14 @@ constexpr inline model::Architecture::Values getArchitecture(Values V) {
   case edi_x86:
   case ebp_x86:
   case esp_x86:
+  case xmm0_x86:
+  case xmm1_x86:
+  case xmm2_x86:
+  case xmm3_x86:
+  case xmm4_x86:
+  case xmm5_x86:
+  case xmm6_x86:
+  case xmm7_x86:
     return model::Architecture::x86;
   case rax_x86_64:
   case rbx_x86_64:
@@ -726,6 +779,7 @@ constexpr inline model::Architecture::Values getArchitecture(Values V) {
   case xmm5_x86_64:
   case xmm6_x86_64:
   case xmm7_x86_64:
+  case fs_x86_64:
     return model::Architecture::x86_64;
   case r0_arm:
   case r1_arm:

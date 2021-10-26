@@ -163,8 +163,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_64> {
     model::Register::rbx_x86_64, model::Register::rbp_x86_64,
     model::Register::rsp_x86_64, model::Register::r12_x86_64,
     model::Register::r13_x86_64, model::Register::r14_x86_64,
-    model::Register::r15_x86_64
-    // model::Register::fs_x86_64
+    model::Register::r15_x86_64, model::Register::fs_x86_64
   };
 };
 
@@ -301,17 +300,15 @@ struct CallingConventionTrait<model::abi::SystemV_x86> {
     model::Register::edx_x86
   };
 
-  static constexpr std::array<model::Register::Values, 0>
-    VectorArgumentRegisters = {
-      // model::Register::xmm0_x86,
-      // model::Register::xmm1_x86,
-      // model::Register::xmm2_x86
-    };
-  static constexpr std::array<model::Register::Values, 0>
-    VectorReturnValueRegisters = {
-      // model::Register::st0_x86,
-      // model::Register::xmm0_x86,
-    };
+  static constexpr std::array VectorArgumentRegisters = {
+    model::Register::xmm0_x86,
+    model::Register::xmm1_x86,
+    model::Register::xmm2_x86
+  };
+  static constexpr std::array VectorReturnValueRegisters = {
+    // model::Register::st0_x86,
+    model::Register::xmm0_x86
+  };
 
   static constexpr std::array CalleeSavedRegisters = {
     model::Register::ebx_x86,
@@ -342,16 +339,13 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
   };
 
   static constexpr std::array<model::Register::Values, 0>
-    VectorArgumentRegisters = {
-      // model::Register::xmm0_x86,
-      // model::Register::xmm1_x86,
-      // model::Register::xmm2_x86
-    };
-  static constexpr std::array<model::Register::Values, 0>
-    VectorReturnValueRegisters = {
-      // model::Register::st0_x86,
-      // model::Register::xmm0_x86,
-    };
+    VectorArgumentRegisters = { model::Register::xmm0_x86,
+                                model::Register::xmm1_x86,
+                                model::Register::xmm2_x86 };
+  static constexpr std::array VectorReturnValueRegisters = {
+    // model::Register::st0_x86,
+    model::Register::xmm0_x86
+  };
 
   static constexpr std::array CalleeSavedRegisters = {
     model::Register::ebx_x86,
@@ -382,17 +376,15 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
     model::Register::edx_x86
   };
 
-  static constexpr std::array<model::Register::Values, 0>
-    VectorArgumentRegisters = {
-      // model::Register::xmm0_x86,
-      // model::Register::xmm1_x86,
-      // model::Register::xmm2_x86
-    };
-  static constexpr std::array<model::Register::Values, 0>
-    VectorReturnValueRegisters = {
-      // model::Register::st0_x86,
-      // model::Register::xmm0_x86,
-    };
+  static constexpr std::array VectorArgumentRegisters = {
+    model::Register::xmm0_x86,
+    model::Register::xmm1_x86,
+    model::Register::xmm2_x86
+  };
+  static constexpr std::array VectorReturnValueRegisters = {
+    // model::Register::st0_x86,
+    model::Register::xmm0_x86
+  };
 
   static constexpr std::array CalleeSavedRegisters = {
     model::Register::ebx_x86,
@@ -424,17 +416,15 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
     model::Register::edx_x86
   };
 
-  static constexpr std::array<model::Register::Values, 0>
-    VectorArgumentRegisters = {
-      // model::Register::xmm0_x86,
-      // model::Register::xmm1_x86,
-      // model::Register::xmm2_x86
-    };
-  static constexpr std::array<model::Register::Values, 0>
-    VectorReturnValueRegisters = {
-      // model::Register::st0_x86,
-      // model::Register::xmm0_x86,
-    };
+  static constexpr std::array VectorArgumentRegisters = {
+    model::Register::xmm0_x86,
+    model::Register::xmm1_x86,
+    model::Register::xmm2_x86
+  };
+  static constexpr std::array VectorReturnValueRegisters = {
+    // model::Register::st0_x86,
+    model::Register::xmm0_x86
+  };
 
   static constexpr std::array CalleeSavedRegisters = {
     model::Register::ebx_x86,
@@ -634,28 +624,20 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_vectorcall> {
     model::Register::eax_x86
   };
 
-  static constexpr std::array<model::Register::Values, 0>
-    VectorArgumentRegisters = {
-      // model::Register::xmm0_x86,
-      // model::Register::xmm1_x86,
-      // model::Register::xmm2_x86,
-      // model::Register::xmm3_x86,
-      // model::Register::xmm4_x86,
-      // model::Register::xmm5_x86
-    };
-  static constexpr std::array<model::Register::Values, 0>
-    VectorReturnValueRegisters = {
-      // model::Register::xmm0_x86
-    };
+  static constexpr std::array VectorArgumentRegisters = {
+    model::Register::xmm0_x86, model::Register::xmm1_x86,
+    model::Register::xmm2_x86, model::Register::xmm3_x86,
+    model::Register::xmm4_x86, model::Register::xmm5_x86
+  };
+  static constexpr std::array VectorReturnValueRegisters = {
+    model::Register::xmm0_x86
+  };
 
   static constexpr std::array CalleeSavedRegisters = {
-    model::Register::ebx_x86,
-    model::Register::ebp_x86,
-    model::Register::esp_x86,
-    model::Register::edi_x86,
-    model::Register::esi_x86
-    // model::Register::xmm6_x86,
-    // model::Register::xmm7_x86
+    model::Register::ebx_x86, model::Register::ebp_x86,
+    model::Register::esp_x86, model::Register::edi_x86,
+    model::Register::esi_x86, model::Register::xmm6_x86,
+    model::Register::xmm7_x86
   };
 };
 

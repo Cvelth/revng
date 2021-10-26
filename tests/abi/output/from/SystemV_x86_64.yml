@@ -180,6 +180,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -197,6 +198,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -217,6 +219,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -237,6 +240,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -260,6 +264,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -286,6 +291,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -315,6 +321,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 16
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -341,6 +348,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 16
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -367,6 +375,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -393,6 +402,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 32
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -410,6 +420,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -427,6 +438,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -444,6 +456,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -461,6 +474,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -478,6 +492,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -498,6 +513,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -524,6 +540,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -550,6 +567,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -576,6 +594,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -590,6 +609,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 64
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -607,6 +627,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 64
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -636,6 +657,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 16
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -662,6 +684,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 32
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -679,6 +702,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -696,6 +720,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -713,6 +738,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -730,6 +756,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -750,6 +777,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -776,6 +804,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -805,6 +834,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -822,6 +852,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -839,6 +870,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -856,6 +888,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -873,6 +906,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -890,6 +924,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -910,6 +945,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -930,6 +966,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -950,6 +987,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -970,6 +1008,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -990,6 +1029,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -1025,6 +1065,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 48
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -1060,6 +1101,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -1089,6 +1131,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 16
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -1115,6 +1158,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 64
   - !RawFunctionType
     Kind:            RawFunctionType
@@ -1147,6 +1191,7 @@ Types:
       - r13_x86_64
       - r14_x86_64
       - r15_x86_64
+      - fs_x86_64
     FinalStackOffset: 0
 Segments:        []
 Functions:       []
