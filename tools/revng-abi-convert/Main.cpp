@@ -18,8 +18,7 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Signals.h"
 
-#include "revng/Model/Binary.h"
-#include "revng/Model/TupleTreeDiff.h"
+#include "Convert.h"
 
 namespace Options {
 
@@ -88,51 +87,19 @@ auto TaV = values(clEnumVal(SystemV_x86_64, "64-bit SystemV x86 abi"),
                             "function argument passing"));
 
 using ABI = model::abi::Values;
-opt<ABI> TargetABI("abi", Required, desc("<target ABI>"), TaV, cat(Category));
+constexpr const char *TrgDesc = "The ABI of the input/output binaries.";
+opt<ABI> TargetABI("abi", Required, desc(TrgDesc), TaV, cat(Category));
 
 constexpr const char *FnDesc = "<input file name>";
 opt<std::string> Filename(Positional, Required, desc(FnDesc), cat(Category));
 
-/// TODO: "Shortify" into "o" after the llvm is updated.
-opt<std::string> Output("output-path",
+opt<std::string> Output("o",
                         desc("Optional output filename, if not specified, the "
                              "output is dumped to `stdout`"),
-                        value_desc("path-to-a-file"),
+                        value_desc("path"),
                         cat(Category));
-constexpr const char *ODesc = "same as -output-path";
-alias ShortOutput("o", NotHidden, desc(ODesc), aliasopt(Output), cat(Category));
 
 } // namespace Options
-
-// static std::optional<std::string> getInput(std::string_view Filename) {
-//   using Iterator = std::istreambuf_iterator<std::ifstream::char_type>;
-//     std::cerr << ">: " << Filename << std::endl;
-//   std::ifstream Stream(Filename);
-//   if (!Stream.good()) {
-//     auto Output = std::string(Iterator(Stream), Iterator());
-//     std::cerr << "!: " << Output << std::endl;
-//     return Output;
-//   } else {
-//     std::cerr << "!sad" << std::endl;
-//   }
-//
-//   return std::nullopt;
-// }
-
-static int convertToCABI(model::Binary &Binary,
-                         model::abi::Values ABI,
-                         llvm::raw_fd_ostream &OutputStream) {
-  OutputStream << "doing conversion to CABI with abi = "
-               << model::abi::getName(ABI) << " (" << ABI << ")\n";
-  return 0;
-}
-static int convertToRaw(model::Binary &Binary,
-                        model::abi::Values ABI,
-                        llvm::raw_fd_ostream &OutputStream) {
-  OutputStream << "doing conversion to Raw with abi = "
-               << model::abi::getName(ABI) << " (" << ABI << ")\n";
-  return 0;
-}
 
 int main(int argc, const char *argv[]) {
   // Enable LLVM stack trace
@@ -176,7 +143,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (Options::Operation == Options::ToCABI)
-    return convertToCABI(**Deserialized, Options::TargetABI, *OutputStreamPtr);
+    return convertToCABI(*Deserialized, Options::TargetABI, *OutputStreamPtr);
   else
-    return convertToRaw(**Deserialized, Options::TargetABI, *OutputStreamPtr);
+    return convertToRaw(*Deserialized, Options::TargetABI, *OutputStreamPtr);
 }

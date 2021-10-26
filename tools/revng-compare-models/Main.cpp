@@ -1,6 +1,6 @@
 /// \file Main.cpp
 /// \brief This tool is an interface on top of `TupleTreeDiff` used for easy
-/// comparison between two serialized models. It returns 0 if models are 
+/// comparison between two serialized models. It returns 0 if models are
 /// equivalent and 255 if they are not. Other error codes like 65 or 128 (when
 /// opening one of the files fails) could also be returned alongside an error
 /// message to `stderr`.
@@ -29,7 +29,7 @@ opt<std::string> FirstFile(Positional,
                            llvm::cl::desc("<first file>"),
                            cat(Category));
 opt<std::string> SecondFile(Positional,
-                            Required,
+                            Optional,
                             llvm::cl::desc("<second file>"),
                             cat(Category));
 
@@ -61,7 +61,10 @@ int main(int argc, const char *argv[]) {
   }
   model::Binary &FirstModel = **FirstDeserialized;
 
-  auto SecondBuffer = llvm::MemoryBuffer::getFileOrSTDIN(Options::SecondFile);
+  std::string_view InputFileName = "-";
+  if (Options::SecondFile.hasArgStr())
+    InputFileName = Options::SecondFile;
+  auto SecondBuffer = llvm::MemoryBuffer::getFileOrSTDIN(InputFileName.data());
   if (!SecondBuffer) {
     llvm::errs() << "Unable to open a file: '" << Options::SecondFile << "'.\n";
     return 128;
@@ -81,7 +84,7 @@ int main(int argc, const char *argv[]) {
   model::Binary &SecondModel = **SecondDeserialized;
 
   // todo: use `diff(model::Binary &, model::Binary &)::dump` for output
-  // generation is fixed after it's back in working order.
+  // generation after it's back in working order.
   if (!diff(FirstModel, SecondModel).Changes.empty()) {
     llvm::errs() << "Models are not equivalent: \n"
                  << FirstYml << "\nand\n"

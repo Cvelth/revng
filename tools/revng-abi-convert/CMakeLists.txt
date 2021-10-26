@@ -3,9 +3,11 @@
 #
 
 revng_add_executable(revng-abi-convert
+  Convert.cpp
   Main.cpp)
 
 target_link_libraries(revng-abi-convert
   revngModel
+  revngStackAnalysis
   revngSupport
   ${LLVM_LIBRARIES})
