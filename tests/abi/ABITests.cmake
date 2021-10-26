@@ -20,6 +20,20 @@ macro(add_abi_tests ARCHITECTURE ABI_NAME)
   set_tests_properties("test_conversion_to_${ABI_NAME}" PROPERTIES LABELS "abi")
 endmacro()
 
-add_abi_tests("x64" "SystemV_x86_64")
-add_abi_tests("x64" "Microsoft_x64")
+add_abi_tests("x86_64" "SystemV_x86_64")
+add_abi_tests("x86_64" "Microsoft_x64")
+add_abi_tests("x86_64" "Microsoft_x64_vectorcall")
+add_abi_tests("x86_64" "Microsoft_x64_clrcall")
+
 add_abi_tests("x86" "SystemV_x86")
+add_abi_tests("x86" "SystemV_x86_regparm_3")
+add_abi_tests("x86" "SystemV_x86_regparm_2")
+add_abi_tests("x86" "SystemV_x86_regparm_1")
+add_abi_tests("x86" "Microsoft_x86_cdecl")
+add_abi_tests("x86" "Microsoft_x86_stdcall")
+add_abi_tests("x86" "Microsoft_x86_thiscall")
+add_abi_tests("x86" "Microsoft_x86_fastcall")
+add_abi_tests("x86" "Microsoft_x86_clrcall")
+add_abi_tests("x86" "Microsoft_x86_vectorcall")
+
+# More architectures and ABIs are to come.

@@ -36,11 +36,6 @@ Types:
     ID:              772
     PrimitiveKind:   PointerOrNumber
     Size:            4
-  - !Primitive
-    Kind:            Primitive
-    ID:              776
-    PrimitiveKind:   PointerOrNumber
-    Size:            8
   - !Struct
     Kind:            Struct
     ID:              7000000001
@@ -172,102 +167,6 @@ Types:
           UnqualifiedType: "/Types/Primitive-528"
         Offset:          48
     Size:            64
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000001
-    ABI:             SystemV_x86_regparm_3
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-256"
-    Arguments:       []
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000002
-    ABI:             SystemV_x86_regparm_3
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-256"
-    Arguments:
-      - Index:           0
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000006
-    ABI:             SystemV_x86_regparm_3
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-256"
-    Arguments:
-      - Index:           0
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
-      - Index:           1
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000007
-    ABI:             SystemV_x86_regparm_3
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-256"
-    Arguments:
-      - Index:           0
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
-      - Index:           1
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000010
-    ABI:             SystemV_x86_regparm_3
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-256"
-    Arguments:
-      - Index:           0
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
-      - Index:           1
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
-      - Index:           2
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000011
-    ABI:             SystemV_x86_regparm_3
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-772"
-    Arguments:       []
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000015
-    ABI:             SystemV_x86_regparm_3
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-776"
-    Arguments:       []
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000017
-    ABI:             SystemV_x86_regparm_3
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-776"
-    Arguments:
-      - Index:           0
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
-      - Index:           1
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000019
-    ABI:             SystemV_x86_regparm_3
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-772"
-    Arguments:
-      - Index:           0
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000001

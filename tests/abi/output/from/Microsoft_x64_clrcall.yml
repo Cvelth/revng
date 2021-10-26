@@ -162,13 +162,6 @@ Types:
           UnqualifiedType: "/Types/Primitive-528"
         Offset:          48
     Size:            64
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000001
-    ABI:             Microsoft_x64_clrcall
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-256"
-    Arguments:       []
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000001

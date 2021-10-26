@@ -167,43 +167,6 @@ Types:
           UnqualifiedType: "/Types/Primitive-528"
         Offset:          48
     Size:            64
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000001
-    ABI:             Microsoft_x86_vectorcall
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-256"
-    Arguments:       []
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000004
-    ABI:             Microsoft_x86_vectorcall
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-256"
-    Arguments:
-      - Index:           0
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000011
-    ABI:             Microsoft_x86_vectorcall
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-772"
-    Arguments:       []
-  - !CABIFunctionType
-    Kind:            CABIFunctionType
-    ID:              1000000018
-    ABI:             Microsoft_x86_vectorcall
-    ReturnType:
-      UnqualifiedType: "/Types/Primitive-772"
-    Arguments:
-      - Index:           0
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
-      - Index:           1
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000001

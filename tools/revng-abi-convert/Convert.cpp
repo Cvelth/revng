@@ -75,6 +75,9 @@ int convertToCABI(TupleTree<model::Binary> &Binary,
   }
 
   auto RawFunctions = chooseTypes<model::RawFunctionType>(Binary->Types);
+  auto CABIFunctions = chooseTypes<model::CABIFunctionType>(Binary->Types);
+  for (auto *Function : CABIFunctions)
+    Function->ABI = ABI;
   if (!Binary.verify()) {
     llvm::errs() << "Input model verification has failed (on "
                  << model::abi::getName(ABI).data() << ")\n";
@@ -91,7 +94,13 @@ int convertToCABI(TupleTree<model::Binary> &Binary,
     return 7;
   }
 
-  removeFunctions(Result);
+  auto RemovedFunctionCount = removeFunctions(Result);
+  if (RemovedFunctionCount != RawFunctions.size() + CABIFunctions.size()) {
+    llvm::errs() << "Function count is inconsistent, it should be "
+                 << (RawFunctions.size() + CABIFunctions.size()) << " but "
+                 << RemovedFunctionCount << " was found instead.\n";
+    return 8;
+  }
 
   for (model::RawFunctionType *Function : RawFunctions)
     if (auto P = tryConvertToCABI(Function, ABI, Result))
@@ -103,7 +112,7 @@ int convertToCABI(TupleTree<model::Binary> &Binary,
     llvm::errs() << "Result model verification failed (on "
                  << model::abi::getName(ABI).data() << "):\n"
                  << Serialized;
-    return 8;
+    return 9;
   }
 
   OutputStream << Serialized;
@@ -120,6 +129,7 @@ int convertToRaw(TupleTree<model::Binary> &Binary,
     return 33;
   }
 
+  auto RawFunctions = chooseTypes<model::RawFunctionType>(Binary->Types);
   auto CABIFunctions = chooseTypes<model::CABIFunctionType>(Binary->Types);
   for (auto *Function : CABIFunctions)
     Function->ABI = ABI;
@@ -139,12 +149,17 @@ int convertToRaw(TupleTree<model::Binary> &Binary,
     return 35;
   }
 
-  removeFunctions(Result);
-  for (model::CABIFunctionType *Function : CABIFunctions) {
-    Function->ABI = ABI;
+  auto RemovedFunctionCount = removeFunctions(Result);
+  if (RemovedFunctionCount != RawFunctions.size() + CABIFunctions.size()) {
+    llvm::errs() << "Function count is inconsistent, it should be "
+                 << (RawFunctions.size() + CABIFunctions.size()) << " but "
+                 << RemovedFunctionCount << " was found instead.\n";
+    return 36;
+  }
+
+  for (model::CABIFunctionType *Function : CABIFunctions)
     if (auto P = tryConvertToRaw(Function, ABI, Result))
       Result->recordNewType(std::move(P.value()));
-  }
 
   std::string Serialized;
   Result.serialize(Serialized);
@@ -152,7 +167,7 @@ int convertToRaw(TupleTree<model::Binary> &Binary,
     llvm::errs() << "Result model verification failed (on "
                  << model::abi::getName(ABI).data() << "):\n"
                  << Serialized;
-    return 36;
+    return 37;
   }
 
   OutputStream << Serialized;
