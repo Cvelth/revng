@@ -69,8 +69,8 @@ int convertToCABI(TupleTree<model::Binary> &Binary,
                   llvm::raw_fd_ostream &OutputStream) {
   auto Architecture = model::abi::getArchitecture(ABI);
   if (Architecture != Binary->Architecture) {
-    llvm::errs() << "Input model architecture is not supported by the ABI (on "
-                 << model::abi::getName(ABI).data() << ")\n";
+    dbg << "Input model architecture is not supported by the ABI (on "
+        << model::abi::getName(ABI).data() << ")\n";
     return 5;
   }
 
@@ -79,8 +79,8 @@ int convertToCABI(TupleTree<model::Binary> &Binary,
   for (auto *Function : CABIFunctions)
     Function->ABI = ABI;
   if (!Binary.verify()) {
-    llvm::errs() << "Input model verification has failed (on "
-                 << model::abi::getName(ABI).data() << ")\n";
+    dbg << "Input model verification has failed (on "
+        << model::abi::getName(ABI).data() << ")\n";
     return 6;
   }
 
@@ -88,17 +88,17 @@ int convertToCABI(TupleTree<model::Binary> &Binary,
   if (!Result->verify()) {
     std::string Serialized;
     Result.serialize(Serialized);
-    llvm::errs() << "Result model verification failed (on "
-                 << model::abi::getName(ABI).data() << "):\n"
-                 << Serialized;
+    dbg << "Result model verification failed (on "
+        << model::abi::getName(ABI).data() << "):\n"
+        << Serialized;
     return 7;
   }
 
   auto RemovedFunctionCount = removeFunctions(Result);
   if (RemovedFunctionCount != RawFunctions.size() + CABIFunctions.size()) {
-    llvm::errs() << "Function count is inconsistent, it should be "
-                 << (RawFunctions.size() + CABIFunctions.size()) << " but "
-                 << RemovedFunctionCount << " was found instead.\n";
+    dbg << "Function count is inconsistent, it should be "
+        << (RawFunctions.size() + CABIFunctions.size()) << " but "
+        << RemovedFunctionCount << " was found instead.\n";
     return 8;
   }
 
@@ -109,9 +109,9 @@ int convertToCABI(TupleTree<model::Binary> &Binary,
   std::string Serialized;
   Result.serialize(Serialized);
   if (!Result->verify()) {
-    llvm::errs() << "Result model verification failed (on "
-                 << model::abi::getName(ABI).data() << "):\n"
-                 << Serialized;
+    dbg << "Result model verification failed (on "
+        << model::abi::getName(ABI).data() << "):\n"
+        << Serialized;
     return 9;
   }
 
@@ -124,8 +124,8 @@ int convertToRaw(TupleTree<model::Binary> &Binary,
                  llvm::raw_fd_ostream &OutputStream) {
   auto Architecture = model::abi::getArchitecture(ABI);
   if (Architecture != Binary->Architecture) {
-    llvm::errs() << "Input model architecture is not supported by the ABI ("
-                 << model::abi::getName(ABI).data() << ")\n";
+    dbg << "Input model architecture is not supported by the ABI ("
+        << model::abi::getName(ABI).data() << ")\n";
     return 33;
   }
 
@@ -134,8 +134,8 @@ int convertToRaw(TupleTree<model::Binary> &Binary,
   for (auto *Function : CABIFunctions)
     Function->ABI = ABI;
   if (!Binary.verify()) {
-    llvm::errs() << "Input model verification has failed (on "
-                 << model::abi::getName(ABI).data() << ")\n";
+    dbg << "Input model verification has failed (on "
+        << model::abi::getName(ABI).data() << ")\n";
     return 34;
   }
 
@@ -143,17 +143,17 @@ int convertToRaw(TupleTree<model::Binary> &Binary,
   if (!Result->verify()) {
     std::string Serialized;
     Result.serialize(Serialized);
-    llvm::errs() << "Result model verification failed (on "
-                 << model::abi::getName(ABI).data() << "):\n"
-                 << Serialized;
+    dbg << "Result model verification failed (on "
+        << model::abi::getName(ABI).data() << "):\n"
+        << Serialized;
     return 35;
   }
 
   auto RemovedFunctionCount = removeFunctions(Result);
   if (RemovedFunctionCount != RawFunctions.size() + CABIFunctions.size()) {
-    llvm::errs() << "Function count is inconsistent, it should be "
-                 << (RawFunctions.size() + CABIFunctions.size()) << " but "
-                 << RemovedFunctionCount << " was found instead.\n";
+    dbg << "Function count is inconsistent, it should be "
+        << (RawFunctions.size() + CABIFunctions.size()) << " but "
+        << RemovedFunctionCount << " was found instead.\n";
     return 36;
   }
 
@@ -164,9 +164,9 @@ int convertToRaw(TupleTree<model::Binary> &Binary,
   std::string Serialized;
   Result.serialize(Serialized);
   if (!Result->verify()) {
-    llvm::errs() << "Result model verification failed (on "
-                 << model::abi::getName(ABI).data() << "):\n"
-                 << Serialized;
+    dbg << "Result model verification failed (on "
+        << model::abi::getName(ABI).data() << "):\n"
+        << Serialized;
     return 37;
   }
 

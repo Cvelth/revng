@@ -44,19 +44,17 @@ int main(int argc, const char *argv[]) {
 
   auto FirstBuffer = llvm::MemoryBuffer::getFileOrSTDIN(Options::FirstFile);
   if (!FirstBuffer) {
-    llvm::errs() << "Unable to open a file: '" << Options::FirstFile << "'.\n";
+    dbg << "Unable to open a file: '" << Options::FirstFile << "'.\n";
     return 65;
   }
   llvm::StringRef FirstYml = (*FirstBuffer)->getBuffer();
   auto FirstDeserialized = TupleTree<model::Binary>::deserialize(FirstYml);
   if (!FirstDeserialized) {
-    llvm::errs() << "Unable to deserialize the model: '" << Options::FirstFile
-                 << "'.\n";
+    dbg << "Unable to deserialize the model: '" << Options::FirstFile << "'.\n";
     return 66;
   }
   if (!FirstDeserialized->verify()) {
-    llvm::errs() << "Model verification failed: '" << Options::FirstFile
-                 << "'.\n";
+    dbg << "Model verification failed: '" << Options::FirstFile << "'.\n";
     return 67;
   }
   model::Binary &FirstModel = **FirstDeserialized;
@@ -66,19 +64,18 @@ int main(int argc, const char *argv[]) {
     InputFileName = Options::SecondFile;
   auto SecondBuffer = llvm::MemoryBuffer::getFileOrSTDIN(InputFileName.data());
   if (!SecondBuffer) {
-    llvm::errs() << "Unable to open a file: '" << Options::SecondFile << "'.\n";
+    dbg << "Unable to open a file: '" << Options::SecondFile << "'.\n";
     return 128;
   }
   llvm::StringRef SecondYml = (*SecondBuffer)->getBuffer();
   auto SecondDeserialized = TupleTree<model::Binary>::deserialize(SecondYml);
   if (!SecondDeserialized) {
-    llvm::errs() << "Unable to deserialize the model: '" << Options::SecondFile
-                 << "'.\n";
+    dbg << "Unable to deserialize the model: '" << Options::SecondFile
+        << "'.\n";
     return 129;
   }
   if (!SecondDeserialized->verify()) {
-    llvm::errs() << "Model verification failed: '" << Options::SecondFile
-                 << "'.\n";
+    dbg << "Model verification failed: '" << Options::SecondFile << "'.\n";
     return 130;
   }
   model::Binary &SecondModel = **SecondDeserialized;
@@ -86,9 +83,9 @@ int main(int argc, const char *argv[]) {
   // todo: use `diff(model::Binary &, model::Binary &)::dump` for output
   // generation after it's back in working order.
   if (!diff(FirstModel, SecondModel).Changes.empty()) {
-    llvm::errs() << "Models are not equivalent: \n"
-                 << FirstYml << "\nand\n"
-                 << SecondYml << "\n\n";
+    dbg << "Models are not equivalent: \n"
+        << std::string_view(FirstYml) << "\nand\n"
+        << std::string_view(SecondYml) << "\n\n";
     return 255;
   }
 

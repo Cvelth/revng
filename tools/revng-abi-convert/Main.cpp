@@ -115,8 +115,7 @@ int main(int argc, const char *argv[]) {
     std::error_code EC;
     static llvm::raw_fd_ostream OutputStream(Options::Output, EC);
     if (!EC || OutputStream.has_error()) {
-      llvm::errs() << "Unable to open an output file: '" << Options::Output
-                   << "'.\n";
+      dbg << "Unable to open an output file: '" << Options::Output << "'.\n";
       return 1;
     }
     OutputStreamPtr = &OutputStream;
@@ -124,21 +123,18 @@ int main(int argc, const char *argv[]) {
 
   auto BufferOrError = llvm::MemoryBuffer::getFileOrSTDIN(Options::Filename);
   if (!BufferOrError) {
-    llvm::errs() << "Unable to open an input file: '" << Options::Filename
-                 << "'.\n";
+    dbg << "Unable to open an input file: '" << Options::Filename << "'.\n";
     return 2;
   }
   llvm::StringRef InputText = (*BufferOrError)->getBuffer();
 
   auto Deserialized = TupleTree<model::Binary>::deserialize(InputText);
   if (!Deserialized) {
-    llvm::errs() << "Unable to deserialize the model: '" << Options::Filename
-                 << "'.\n";
+    dbg << "Unable to deserialize the model: '" << Options::Filename << "'.\n";
     return 3;
   }
   if (!Deserialized->verify()) {
-    llvm::errs() << "Model verification failed: '" << Options::Filename
-                 << "'.\n";
+    dbg << "Model verification failed: '" << Options::Filename << "'.\n";
     return 4;
   }
 
