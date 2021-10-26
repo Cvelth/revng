@@ -560,4 +560,82 @@ template class ABI<model::abi::Microsoft_x86_fastcall>;
 template class ABI<model::abi::Microsoft_x86_thiscall>;
 // More specializations are to come
 
+std::optional<model::CABIFunctionType>
+convertToCABI(model::abi::Values RuntimeABI,
+              model::Binary &TheBinary,
+              const model::RawFunctionType &Explicit) {
+  using namespace model::abi;
+  switch (RuntimeABI) {
+  case SystemV_x86_64:
+    return ABI<SystemV_x86_64>::toCABI(TheBinary, Explicit);
+  case SystemV_x86:
+    return ABI<SystemV_x86>::toCABI(TheBinary, Explicit);
+  case SystemV_x86_regparm_3:
+    return ABI<SystemV_x86_regparm_3>::toCABI(TheBinary, Explicit);
+  case SystemV_x86_regparm_2:
+    return ABI<SystemV_x86_regparm_2>::toCABI(TheBinary, Explicit);
+  case SystemV_x86_regparm_1:
+    return ABI<SystemV_x86_regparm_1>::toCABI(TheBinary, Explicit);
+  case Microsoft_x64:
+    return ABI<Microsoft_x64>::toCABI(TheBinary, Explicit);
+  case Microsoft_x64_vectorcall:
+    return ABI<Microsoft_x64_vectorcall>::toCABI(TheBinary, Explicit);
+  case Microsoft_x64_clrcall:
+    return ABI<Microsoft_x64_clrcall>::toCABI(TheBinary, Explicit);
+  case Microsoft_x86_cdecl:
+    return ABI<Microsoft_x86_cdecl>::toCABI(TheBinary, Explicit);
+  case Microsoft_x86_stdcall:
+    return ABI<Microsoft_x86_stdcall>::toCABI(TheBinary, Explicit);
+  case Microsoft_x86_thiscall:
+    return ABI<Microsoft_x86_thiscall>::toCABI(TheBinary, Explicit);
+  case Microsoft_x86_fastcall:
+    return ABI<Microsoft_x86_fastcall>::toCABI(TheBinary, Explicit);
+  case Microsoft_x86_clrcall:
+    return ABI<Microsoft_x86_clrcall>::toCABI(TheBinary, Explicit);
+  case Microsoft_x86_vectorcall:
+    return ABI<Microsoft_x86_vectorcall>::toCABI(TheBinary, Explicit);
+  default:
+    return ABI<Invalid>::toCABI(TheBinary, Explicit);
+  };
+}
+
+std::optional<model::RawFunctionType>
+convertToRaw(model::abi::Values RuntimeABI,
+             model::Binary &TheBinary,
+             const model::CABIFunctionType &Original) {
+  using namespace model::abi;
+  switch (RuntimeABI) {
+  case SystemV_x86_64:
+    return ABI<SystemV_x86_64>::toRaw(TheBinary, Original);
+  case SystemV_x86:
+    return ABI<SystemV_x86>::toRaw(TheBinary, Original);
+  case SystemV_x86_regparm_3:
+    return ABI<SystemV_x86_regparm_3>::toRaw(TheBinary, Original);
+  case SystemV_x86_regparm_2:
+    return ABI<SystemV_x86_regparm_2>::toRaw(TheBinary, Original);
+  case SystemV_x86_regparm_1:
+    return ABI<SystemV_x86_regparm_1>::toRaw(TheBinary, Original);
+  case Microsoft_x64:
+    return ABI<Microsoft_x64>::toRaw(TheBinary, Original);
+  case Microsoft_x64_vectorcall:
+    return ABI<Microsoft_x64_vectorcall>::toRaw(TheBinary, Original);
+  case Microsoft_x64_clrcall:
+    return ABI<Microsoft_x64_clrcall>::toRaw(TheBinary, Original);
+  case Microsoft_x86_cdecl:
+    return ABI<Microsoft_x86_cdecl>::toRaw(TheBinary, Original);
+  case Microsoft_x86_stdcall:
+    return ABI<Microsoft_x86_stdcall>::toRaw(TheBinary, Original);
+  case Microsoft_x86_thiscall:
+    return ABI<Microsoft_x86_thiscall>::toRaw(TheBinary, Original);
+  case Microsoft_x86_fastcall:
+    return ABI<Microsoft_x86_fastcall>::toRaw(TheBinary, Original);
+  case Microsoft_x86_clrcall:
+    return ABI<Microsoft_x86_clrcall>::toRaw(TheBinary, Original);
+  case Microsoft_x86_vectorcall:
+    return ABI<Microsoft_x86_vectorcall>::toRaw(TheBinary, Original);
+  default:
+    return ABI<Invalid>::toRaw(TheBinary, Original);
+  };
+}
+
 } // namespace abi

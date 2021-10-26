@@ -146,4 +146,13 @@ getRawFunctionTypeOrDefault(model::Binary &TheBinary, const model::Type *T) {
   }
 }
 
+std::optional<model::CABIFunctionType>
+convertToCABI(model::abi::Values ABI,
+              model::Binary &TheBinary,
+              const model::RawFunctionType &Explicit);
+std::optional<model::RawFunctionType>
+convertToRaw(model::abi::Values ABI,
+             model::Binary &TheBinary,
+             const model::CABIFunctionType &Original);
+
 } // namespace abi
