@@ -20,6 +20,67 @@
 
 #include "Convert.h"
 
+#define clABIDescription(name) clEnumVal(name, getABIDescription(name))
+inline constexpr std::string_view getABIDescription(model::abi::Values V) {
+  switch (V) {
+  case model::abi::SystemV_x86_64:
+    return "64-bit SystemV x86 abi";
+  case model::abi::Microsoft_x64:
+    return "64-bit Microsoft x86 abi";
+  case model::abi::Microsoft_x64_clrcall:
+    return "64-bit Microsoft x86 abi that uses CLR expression "
+           "stack for passing function arguments";
+  case model::abi::Microsoft_x64_vectorcall:
+    return "64-bit Microsoft x86 abi with extra vector "
+           "registers designited for passing function "
+           "arguments";
+
+  case model::abi::SystemV_x86:
+    return "32-bit SystemV x86 abi";
+  case model::abi::SystemV_x86_regparm_3:
+    return "32-bit SystemV x86 abi that allows the first three GPR-sized "
+           "primitive arguments to be passed using the registers";
+  case model::abi::SystemV_x86_regparm_2:
+    return "32-bit SystemV x86 abi that allows the first two "
+           "GPR-sized primitive arguments to be passed using "
+           "the registers";
+  case model::abi::SystemV_x86_regparm_1:
+    return "32-bit SystemV x86 abi that allows the first "
+           "GPR-sized primitive argument to be passed using "
+           "the registers";
+  case model::abi::Microsoft_x86_clrcall:
+    return "32-bit Microsoft x86 abi that uses CLR expression "
+           "stack for function argument passing";
+  case model::abi::Microsoft_x86_vectorcall:
+    return "64-bit Microsoft x86 abi, it extends `fastcall` "
+           "by allowing extra vector registers to be used for "
+           "function argument passing";
+  case model::abi::Microsoft_x86_cdecl:
+    return "32-bit Microsoft x86 abi that was intended to "
+           "mimic 32-bit SystemV x86 abi but has minor "
+           "differences";
+  case model::abi::Microsoft_x86_stdcall:
+    return "32-bit Microsoft x86 abi, it is a modification of "
+           "`stdcall` that's different in a sense that the "
+           "callee is responsible for stack cleanup instead "
+           "of the caller";
+  case model::abi::Microsoft_x86_fastcall:
+    return "32-bit Microsoft x86 abi, it extends `stdcall` by "
+           "allowing two first GRP-sized function arguments "
+           "to be passed using the registers";
+  case model::abi::Microsoft_x86_thiscall:
+    return "32-bit Microsoft x86 abi, it extends `stdcall` by "
+           "allowing `this` pointer in method-style calls to "
+           "be passed using a register. It is never used for "
+           "'free' functions";
+
+  case model::abi::Count:
+  case model::abi::Invalid:
+  default:
+    return "Unknown and/or unsupported ABI";
+  }
+}
+
 namespace Options {
 
 using namespace llvm::cl;
@@ -38,56 +99,22 @@ using CT = ConvertionType;
 opt<CT> Operation("op", desc("Operation"), OpV, init(ToRaw), cat(Category));
 
 using namespace model::abi;
-auto TaV = values(clEnumVal(SystemV_x86_64, "64-bit SystemV x86 abi"),
-                  clEnumVal(SystemV_x86, "32-bit SystemV x86 abi"),
-                  clEnumVal(SystemV_x86_regparm_3,
-                            "32-bit SystemV x86 abi that allows the first "
-                            "three GPR-sized primitive arguments to be passed "
-                            "using the registers"),
-                  clEnumVal(SystemV_x86_regparm_2,
-                            "32-bit SystemV x86 abi that allows the first two "
-                            "GPR-sized primitive arguments to be passed using "
-                            "the registers"),
-                  clEnumVal(SystemV_x86_regparm_1,
-                            "32-bit SystemV x86 abi that allows the first "
-                            "GPR-sized primitive argument to be passed using "
-                            "the registers"),
-                  clEnumVal(Microsoft_x64, "64-bit Microsoft x86 abi"),
-                  clEnumVal(Microsoft_x64_vectorcall,
-                            "64-bit Microsoft x86 abi with extra vector "
-                            "registers designited for passing function "
-                            "arguments"),
-                  clEnumVal(Microsoft_x64_clrcall,
-                            "64-bit Microsoft x86 abi that uses CLR expression "
-                            "stack for passing function arguments"),
-                  clEnumVal(Microsoft_x86_cdecl,
-                            "32-bit Microsoft x86 abi that was intended to "
-                            "mimic 32-bit SystemV x86 abi but has minor "
-                            "differences"),
-                  clEnumVal(Microsoft_x86_stdcall,
-                            "32-bit Microsoft x86 abi, it is a modification of "
-                            "`stdcall` that's different in a sense that the "
-                            "callee is responsible for stack cleanup instead "
-                            "of the caller"),
-                  clEnumVal(Microsoft_x86_thiscall,
-                            "32-bit Microsoft x86 abi, it extends `stdcall` by "
-                            "allowing `this` pointer in method-style calls to "
-                            "be passed using a register. It is never used for "
-                            "'free' functions"),
-                  clEnumVal(Microsoft_x86_fastcall,
-                            "32-bit Microsoft x86 abi, it extends `stdcall` by "
-                            "allowing two first GRP-sized function arguments "
-                            "to be passed using the registers"),
-                  clEnumVal(Microsoft_x86_clrcall,
-                            "32-bit Microsoft x86 abi that uses CLR expression "
-                            "stack for function argument passing"),
-                  clEnumVal(Microsoft_x86_vectorcall,
-                            "64-bit Microsoft x86 abi, it extends `fastcall` "
-                            "by allowing extra vector registers to be used for "
-                            "function argument passing"));
-
 using ABI = model::abi::Values;
 constexpr const char *TrgDesc = "The ABI of the input/output binaries.";
+auto TaV = values(clABIDescription(SystemV_x86_64),
+                  clABIDescription(SystemV_x86),
+                  clABIDescription(SystemV_x86_regparm_3),
+                  clABIDescription(SystemV_x86_regparm_2),
+                  clABIDescription(SystemV_x86_regparm_1),
+                  clABIDescription(Microsoft_x64),
+                  clABIDescription(Microsoft_x64_vectorcall),
+                  clABIDescription(Microsoft_x64_clrcall),
+                  clABIDescription(Microsoft_x86_cdecl),
+                  clABIDescription(Microsoft_x86_stdcall),
+                  clABIDescription(Microsoft_x86_thiscall),
+                  clABIDescription(Microsoft_x86_fastcall),
+                  clABIDescription(Microsoft_x86_clrcall),
+                  clABIDescription(Microsoft_x86_vectorcall));
 opt<ABI> TargetABI("abi", Required, desc(TrgDesc), TaV, cat(Category));
 
 constexpr const char *FnDesc = "<input file name>";
