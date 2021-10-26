@@ -328,22 +328,3 @@ target_link_libraries(test_model_type
   ${LLVM_LIBRARIES})
 add_test(NAME test_model_type COMMAND ./bin/test_model_type)
 set_tests_properties(test_model_type PROPERTIES LABELS "unit")
-
-#
-# test_abi
-#
-
-revng_add_private_executable(test_abi "${SRC}/ABI.cpp")
-target_compile_definitions(test_abi
-  PRIVATE "BOOST_TEST_DYN_LINK=1")
-target_include_directories(test_abi
-  PRIVATE "${CMAKE_SOURCE_DIR}")
-target_link_libraries(test_abi
-  revngSupport
-  revngUnitTestHelpers
-  revngModel
-  revngStackAnalysis
-  Boost::unit_test_framework
-  ${LLVM_LIBRARIES})
-add_test(NAME test_abi COMMAND ./bin/test_abi)
-set_tests_properties(test_abi PROPERTIES LABELS "unit")
