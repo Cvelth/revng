@@ -325,6 +325,24 @@ inline llvm::StringRef getName(Values V) {
     return "r13_arm";
   case r14_arm:
     return "r14_arm";
+  case r15_arm:
+    return "r15_arm";
+  case q0_arm:
+    return "q0_arm";
+  case q1_arm:
+    return "q1_arm";
+  case q2_arm:
+    return "q2_arm";
+  case q3_arm:
+    return "q3_arm";
+  case q4_arm:
+    return "q4_arm";
+  case q5_arm:
+    return "q5_arm";
+  case q6_arm:
+    return "q6_arm";
+  case q7_arm:
+    return "q7_arm";
   case x0_aarch64:
     return "x0_aarch64";
   case x1_aarch64:
@@ -389,6 +407,70 @@ inline llvm::StringRef getName(Values V) {
     return "lr_aarch64";
   case sp_aarch64:
     return "sp_aarch64";
+  case v0_aarch64:
+    return "v0_aarch64";
+  case v1_aarch64:
+    return "v1_aarch64";
+  case v2_aarch64:
+    return "v2_aarch64";
+  case v3_aarch64:
+    return "v3_aarch64";
+  case v4_aarch64:
+    return "v4_aarch64";
+  case v5_aarch64:
+    return "v5_aarch64";
+  case v6_aarch64:
+    return "v6_aarch64";
+  case v7_aarch64:
+    return "v7_aarch64";
+  case v8_aarch64:
+    return "v8_aarch64";
+  case v9_aarch64:
+    return "v9_aarch64";
+  case v10_aarch64:
+    return "v10_aarch64";
+  case v11_aarch64:
+    return "v11_aarch64";
+  case v12_aarch64:
+    return "v12_aarch64";
+  case v13_aarch64:
+    return "v13_aarch64";
+  case v14_aarch64:
+    return "v14_aarch64";
+  case v15_aarch64:
+    return "v15_aarch64";
+  case v16_aarch64:
+    return "v16_aarch64";
+  case v17_aarch64:
+    return "v17_aarch64";
+  case v18_aarch64:
+    return "v18_aarch64";
+  case v19_aarch64:
+    return "v19_aarch64";
+  case v20_aarch64:
+    return "v20_aarch64";
+  case v21_aarch64:
+    return "v21_aarch64";
+  case v22_aarch64:
+    return "v22_aarch64";
+  case v23_aarch64:
+    return "v23_aarch64";
+  case v24_aarch64:
+    return "v24_aarch64";
+  case v25_aarch64:
+    return "v25_aarch64";
+  case v26_aarch64:
+    return "v26_aarch64";
+  case v27_aarch64:
+    return "v27_aarch64";
+  case v28_aarch64:
+    return "v28_aarch64";
+  case v29_aarch64:
+    return "v29_aarch64";
+  case v30_aarch64:
+    return "v30_aarch64";
+  case v31_aarch64:
+    return "v31_aarch64";
   case v0_mips:
     return "v0_mips";
   case v1_mips:
@@ -609,6 +691,24 @@ inline Values fromName(llvm::StringRef Name) {
     return r13_arm;
   else if (Name == "r14_arm")
     return r14_arm;
+  else if (Name == "r15_arm")
+    return r15_arm;
+  else if (Name == "q0_arm")
+    return q0_arm;
+  else if (Name == "q1_arm")
+    return q1_arm;
+  else if (Name == "q2_arm")
+    return q2_arm;
+  else if (Name == "q3_arm")
+    return q3_arm;
+  else if (Name == "q4_arm")
+    return q4_arm;
+  else if (Name == "q5_arm")
+    return q5_arm;
+  else if (Name == "q6_arm")
+    return q6_arm;
+  else if (Name == "q7_arm")
+    return q7_arm;
   else if (Name == "x0_aarch64")
     return x0_aarch64;
   else if (Name == "x1_aarch64")
@@ -673,6 +773,70 @@ inline Values fromName(llvm::StringRef Name) {
     return lr_aarch64;
   else if (Name == "sp_aarch64")
     return sp_aarch64;
+  else if (Name == "v0_aarch64")
+    return v0_aarch64;
+  else if (Name == "v1_aarch64")
+    return v1_aarch64;
+  else if (Name == "v2_aarch64")
+    return v2_aarch64;
+  else if (Name == "v3_aarch64")
+    return v3_aarch64;
+  else if (Name == "v4_aarch64")
+    return v4_aarch64;
+  else if (Name == "v5_aarch64")
+    return v5_aarch64;
+  else if (Name == "v6_aarch64")
+    return v6_aarch64;
+  else if (Name == "v7_aarch64")
+    return v7_aarch64;
+  else if (Name == "v8_aarch64")
+    return v8_aarch64;
+  else if (Name == "v9_aarch64")
+    return v9_aarch64;
+  else if (Name == "v10_aarch64")
+    return v10_aarch64;
+  else if (Name == "v11_aarch64")
+    return v11_aarch64;
+  else if (Name == "v12_aarch64")
+    return v12_aarch64;
+  else if (Name == "v13_aarch64")
+    return v13_aarch64;
+  else if (Name == "v14_aarch64")
+    return v14_aarch64;
+  else if (Name == "v15_aarch64")
+    return v15_aarch64;
+  else if (Name == "v16_aarch64")
+    return v16_aarch64;
+  else if (Name == "v17_aarch64")
+    return v17_aarch64;
+  else if (Name == "v18_aarch64")
+    return v18_aarch64;
+  else if (Name == "v19_aarch64")
+    return v19_aarch64;
+  else if (Name == "v20_aarch64")
+    return v20_aarch64;
+  else if (Name == "v21_aarch64")
+    return v21_aarch64;
+  else if (Name == "v22_aarch64")
+    return v22_aarch64;
+  else if (Name == "v23_aarch64")
+    return v23_aarch64;
+  else if (Name == "v24_aarch64")
+    return v24_aarch64;
+  else if (Name == "v25_aarch64")
+    return v25_aarch64;
+  else if (Name == "v26_aarch64")
+    return v26_aarch64;
+  else if (Name == "v27_aarch64")
+    return v27_aarch64;
+  else if (Name == "v28_aarch64")
+    return v28_aarch64;
+  else if (Name == "v29_aarch64")
+    return v29_aarch64;
+  else if (Name == "v30_aarch64")
+    return v30_aarch64;
+  else if (Name == "v31_aarch64")
+    return v31_aarch64;
   else if (Name == "v0_mips")
     return v0_mips;
   else if (Name == "v1_mips")
@@ -837,6 +1001,15 @@ constexpr inline model::Architecture::Values getArchitecture(Values V) {
   case r12_arm:
   case r13_arm:
   case r14_arm:
+  case r15_arm:
+  case q0_arm:
+  case q1_arm:
+  case q2_arm:
+  case q3_arm:
+  case q4_arm:
+  case q5_arm:
+  case q6_arm:
+  case q7_arm:
     return model::Architecture::arm;
   case x0_aarch64:
   case x1_aarch64:
@@ -870,6 +1043,38 @@ constexpr inline model::Architecture::Values getArchitecture(Values V) {
   case x29_aarch64:
   case lr_aarch64:
   case sp_aarch64:
+  case v0_aarch64:
+  case v1_aarch64:
+  case v2_aarch64:
+  case v3_aarch64:
+  case v4_aarch64:
+  case v5_aarch64:
+  case v6_aarch64:
+  case v7_aarch64:
+  case v8_aarch64:
+  case v9_aarch64:
+  case v10_aarch64:
+  case v11_aarch64:
+  case v12_aarch64:
+  case v13_aarch64:
+  case v14_aarch64:
+  case v15_aarch64:
+  case v16_aarch64:
+  case v17_aarch64:
+  case v18_aarch64:
+  case v19_aarch64:
+  case v20_aarch64:
+  case v21_aarch64:
+  case v22_aarch64:
+  case v23_aarch64:
+  case v24_aarch64:
+  case v25_aarch64:
+  case v26_aarch64:
+  case v27_aarch64:
+  case v28_aarch64:
+  case v29_aarch64:
+  case v30_aarch64:
+  case v31_aarch64:
     return model::Architecture::aarch64;
   case v0_mips:
   case v1_mips:

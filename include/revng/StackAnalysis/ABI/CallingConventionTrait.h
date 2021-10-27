@@ -35,11 +35,11 @@ struct CallingConventionTrait {
   /// on a system with 32-bit wide general purpose registers would lead to
   /// the first argument being placed in the first argument register (say `r0`),
   /// but then, because the second register is double-GRP-sized, its location
-  /// depends on this parameter. If `OnlyStartDoubleArgumentFromAnEvenRegister`
+  /// depends on this parameter. If `OnlyStartDoubleArgumentsFromAnEvenRegister`
   /// is true, the argument is passed using a pair of registers starting from
   /// the next one with an even index (`r2` and `r3` in this example),
   /// otherwise, the next pair of registers is used (`r1` and `r2` here).
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
 
   /// States whether specified ABI allows splitting a single big (with size
   /// exceeding the size of a single register) between the register and the
@@ -181,7 +181,7 @@ struct CallingConventionTrait {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_64> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 8;
@@ -226,7 +226,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_64> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64> {
   static constexpr bool ArgumentsArePositionBased = true;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
@@ -271,7 +271,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x64> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64_vectorcall> {
   static constexpr bool ArgumentsArePositionBased = true;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
@@ -320,7 +320,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_vectorcall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
@@ -356,7 +356,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
@@ -398,7 +398,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
@@ -440,7 +440,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
@@ -484,7 +484,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
@@ -529,7 +529,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
@@ -566,7 +566,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
@@ -603,7 +603,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
@@ -643,7 +643,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
@@ -685,7 +685,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_clrcall> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
@@ -723,7 +723,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_clrcall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_vectorcall> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
@@ -764,7 +764,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_vectorcall> {
 template<>
 struct CallingConventionTrait<model::abi::Aarch64> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = true;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = true;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = true;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 2;
@@ -820,7 +820,7 @@ struct CallingConventionTrait<model::abi::Aarch64> {
 template<>
 struct CallingConventionTrait<model::abi::Aarch32> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = true;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = true;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = true;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 4;

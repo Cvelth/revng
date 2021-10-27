@@ -21,7 +21,7 @@ private:
   using CallingConvention = CallingConventionTrait<V>;
 
 public:
-  static bool isCompatible(const model::RawFunctionType &Explicit);
+  // static bool isCompatible(const model::RawFunctionType &Explicit);
 
   static std::optional<model::CABIFunctionType>
   toCABI(model::Binary &TheBinary, const model::RawFunctionType &Explicit);
@@ -29,16 +29,16 @@ public:
   toRaw(model::Binary &TheBinary, const model::CABIFunctionType &Original);
 
   static model::TypePath defaultPrototype(model::Binary &TheBinary);
-  void applyDeductions(RegisterStateMap &Prototype);
+  // void applyDeductions(RegisterStateMap &Prototype);
 };
 
 /// Asserting specialization for the `Invalid` ABI.
 template<>
 class ABI<model::abi::Invalid> {
 public:
-  static bool isCompatible(const model::RawFunctionType &Explicit) {
-    revng_abort();
-  }
+  // static bool isCompatible(const model::RawFunctionType &Explicit) {
+  //   revng_abort();
+  // }
 
   static std::optional<model::CABIFunctionType>
   toCABI(model::Binary &TheBinary, const model::RawFunctionType &Explicit) {
@@ -53,16 +53,16 @@ public:
     auto Void = TheBinary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0);
     return TheBinary.recordNewType(model::makeType<model::RawFunctionType>());
   }
-  void applyDeductions(RegisterStateMap &Prototype) { revng_abort(); }
+  // void applyDeductions(RegisterStateMap &Prototype) { revng_abort(); }
 };
 
 /// Asserting specialization for the `Count` ABI.
 template<>
 class ABI<model::abi::Count> {
 public:
-  static bool isCompatible(const model::RawFunctionType &Explicit) {
-    revng_abort();
-  }
+  // static bool isCompatible(const model::RawFunctionType &Explicit) {
+  //   revng_abort();
+  // }
 
   static std::optional<model::CABIFunctionType>
   toCABI(model::Binary &TheBinary, const model::RawFunctionType &Explicit) {
@@ -77,8 +77,17 @@ public:
     auto Void = TheBinary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0);
     return TheBinary.recordNewType(model::makeType<model::RawFunctionType>());
   }
-  void applyDeductions(RegisterStateMap &Prototype) { revng_abort(); }
+  // void applyDeductions(RegisterStateMap &Prototype) { revng_abort(); }
 };
+
+std::optional<model::CABIFunctionType>
+convertToCABI(model::abi::Values ABI,
+              model::Binary &TheBinary,
+              const model::RawFunctionType &Explicit);
+std::optional<model::RawFunctionType>
+convertToRaw(model::abi::Values ABI,
+             model::Binary &TheBinary,
+             const model::CABIFunctionType &Original);
 
 // TODO: make this as much reusable as possible
 // TODO: test
@@ -145,14 +154,5 @@ getRawFunctionTypeOrDefault(model::Binary &TheBinary, const model::Type *T) {
     revng_abort("getRawFunctionType with non-function type");
   }
 }
-
-std::optional<model::CABIFunctionType>
-convertToCABI(model::abi::Values ABI,
-              model::Binary &TheBinary,
-              const model::RawFunctionType &Explicit);
-std::optional<model::RawFunctionType>
-convertToRaw(model::abi::Values ABI,
-             model::Binary &TheBinary,
-             const model::CABIFunctionType &Original);
 
 } // namespace abi
