@@ -26,63 +26,116 @@ struct CallingConventionTrait {
   /// documentation, for one without - see SystemV x64 documentation.
   static constexpr bool ArgumentsArePositionBased = false;
 
-  /// States whether aggregate objects (structs, unions, etc) are allowed to
-  /// be passed around in registers.
+  /// States whether double-GPR-sized objects (4-8 bytes on 32-bit systems and
+  /// 8-16 bytes on 64-bit systems) are only allowed to start from a register
+  /// with an even index. For example, the ABI for a function like
+  /// ```
+  /// void function(uint32_t, uint64_t);
+  /// ```
+  /// on a system with 32-bit wide general purpose registers would lead to
+  /// the first argument being placed in the first argument register (say `r0`),
+  /// but then, because the second register is double-GRP-sized, its location
+  /// depends on this parameter. If `OnlyStartDoubleArgumentFromAnEvenRegister`
+  /// is true, the argument is passed using a pair of registers starting from
+  /// the next one with an even index (`r2` and `r3` in this example),
+  /// otherwise, the next pair of registers is used (`r1` and `r2` here).
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+
+  /// States whether specified ABI allows splitting a single big (with size
+  /// exceeding the size of a single register) between the register and the
+  /// stack if there's not enough free registers to fit it
+  /// For example, let's say there's a big object of type `A` such that
+  /// `sizeof(A) == 16` bytes (on 32-bit architecture, that would mean that four
+  /// general purpose registers (`16 == 4 * 4`) are required to fit it).
+  /// And let's assume that the ABI in question has four GPRs available for
+  /// argument passing (`r0-r3`). Then, the ABI for a function like
+  /// ```
+  /// void function(uint32_t, A);
+  /// ```
+  /// would allocate the first argument into the `r0` register, but then
+  /// there would not be enough space to pass the second argument.
   ///
-  /// \note: When `AllowPassingAggregatesInRegisters` is false, but either
-  /// `MaximumGeneralPurposeRegistersPerArgument` or
-  /// `MaximumGeneralPurposeRegistersPerReturnValue` is non-zero, their
-  /// values are used for determining the maximum number of registers to use
-  /// for primitive values that are bigger than a general purpose registers but
-  /// don't use vector registers (for example `__int128`).
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
+  /// In that case, if `ArgumentsCanBeSplitBetweenRegistersAndStack` is true,
+  /// the first 12 bytes of the second argument would still be placed into
+  /// `r1-r3` and the last 4 bytes would go on the stack.
+  /// Otherwise, the entire object would go on the stack with the remaining
+  /// three registers unused.
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   /// States whether specified ABI allows accepting aggregate object arguments
   /// (structs, unions, etc) in the designated registers if they provide enough
-  /// space (including padding) and the maximum number of registers allowed per
-  /// aggregate argument.
+  /// space (including padding) and the maximum number of registers allowed for
+  /// each of the arguments.
   ///
-  /// `0` means that using registers for big (aggregate or otherwise) objects
-  /// is disallowed.
+  /// `0` means that using registers for ANY aggregate registers is disallowed,
+  /// even the object could fit into a single general purpose register.
   ///
-  /// `1` means that passing values are only allowed if their size (including
+  /// `1` means that passing values is only allowed if their size (including
   /// padding) doesn't exceed the size of a single general purpose register.
   ///
-  /// `2` means that passing aggregate values are only allowed if their size
+  /// `2` means that passing aggregate values is only allowed if their size
   /// (including padding) doesn't exceed the size of two general purpose
   /// registers.
   ///
-  /// ...
+  /// ... and so on.
   ///
   /// if `MaximumGeneralPurposeRegistersPerArgument` is greater than or
   /// equal to `GeneralPurposeArgumentRegisters.size()`, all the general purpose
   /// registers allowed to be used for function arguments could be used for
   /// a single aggregate argument.
   ///
-  /// All the non-conforming aggregate values are passed using the stack.
+  /// If the argument that doen't fit into the allowed register count it is
+  /// placed on the stack.
   ///
   /// \note: some special cases still apply. For example C++ abi doesn't allow
   /// structs and classes that are not 'trivial for the purposes of calls' to
-  /// be passed in such a fashion.
+  /// be passed in such a fashion. As such, object with irregular padding,
+  /// non-trivial construction/destruction, etc are only passed using the stack.
   /// (see https://itanium-cxx-abi.github.io/cxx-abi)
-  ///
-  /// \note: unaligned aggregate objects are always passed using stack.
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
 
-  /// States whether specified ABI allows returning aggregate objects (structs,
+  /// States whether specified ABI allows returning aggregate objects (structs
   /// unions, etc) in the designated registers if they provide enough space
-  /// (including padding) and the maximum number of registers allowed per
-  /// aggregate argument.
+  /// space (including padding) and the maximum number of registers allowed for
+  /// those values.
   ///
-  /// The rules from `MaximumGeneralPurposeRegistersPerArgument` apply,
+  /// The rules from `MaxGeneralPurposeRegistersPerAggregateArgument` apply,
   /// see relevant comment for additional information.
-  /// \see MaximumGeneralPurposeRegistersPerArgument
+  /// \see MaxGeneralPurposeRegistersPerAggregateArgument
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+
+  /// States whether specified ABI allows accepting primite object arguments
+  /// (`int`s, `long`s, `__int128`s, etc) in the designated registers if they
+  /// provide enough space (including padding) and the maximum number of
+  /// registers allowed per argument.
   ///
-  /// \note The value must either be `0` if using registers for aggregate
-  /// return values is not allowed, `1` if it's allowed for a single register
-  /// only or equal to the size of `GeneralPurposeReturnValueRegisters`
-  /// container.
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 0;
+  /// `0` means that using general purpose registers is not allowed.
+  ///
+  /// `1` means that passing values is only allowed if their size doesn't
+  /// exceed the size of a single general purpose register.
+  ///
+  /// `2` means that passing aggregate values is only allowed if their size
+  /// doesn't exceed the size of two general purpose registers.
+  ///
+  /// ... and so on.
+  ///
+  /// if `MaxGeneralPurposeRegistersPerPrimitiveArgument` is greater than or
+  /// equal to `GeneralPurposeArgumentRegisters.size()`, all the general purpose
+  /// registers allowed to be used for function arguments could be used for
+  /// a single aggregate argument.
+  ///
+  /// If the argument that doesn't fit into the allowed register count it is
+  /// placed on the stack.
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 0;
+
+  /// States whether specified ABI allows returning primitive objects (`int`s,
+  /// `long`s, `__int128`s, etc) in the designated registers if they provide
+  /// enough space and the maximum number of registers allowed per argument.
+  ///
+  /// The rules from `MaxGeneralPurposeRegistersPerPrimitiveArgument` apply,
+  /// see relevant comment for additional information.
+  /// \see MaxGeneralPurposeRegistersPerPrimitiveArgument
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 0;
 
   /// States who is responsible for cleaning the stack after the function call.
   /// `true` - callee, `false` - caller.
@@ -91,32 +144,28 @@ struct CallingConventionTrait {
   /// States the alignment of the stack in bytes.
   ///
   /// \note: states minimum value for abis supporting multiple different stack
-  /// alignment values.
+  /// alignment values, for example, if the ABI requires the stack to be aligned
+  /// on 4 bytes for internal calls but on 8 bytes for interfaces, the value of
+  /// `StackAlignment` should be equal to 4.
   static constexpr size_t StackAlignment = 1;
 
   /// Stores the list of general purpose registers allowed to be used for
-  /// argument passing in the order they are used.
+  /// passing arguments and the order they are to be used in.
   static constexpr std::array<model::Register::Values, 0>
     GeneralPurposeArgumentRegisters = {};
 
   /// Stores the list of general purpose registers allowed to be used for
-  /// return values in order they are used.
-  ///
-  /// \note: if `MaximumGeneralPurposeRegistersPerReturnValue` is not
-  /// equal to either `0` or `1`, the size of this list must not exceed its
-  /// value.
+  /// returning values and the order they are to be used in.
   static constexpr std::array<model::Register::Values, 0>
     GeneralPurposeReturnValueRegisters = {};
 
-  /// Stores the list of vector registers allowed to be used for argument
-  /// passing in the order they are used.
+  /// Stores the list of vector registers allowed to be used for passing
+  /// arguments and the order they are to be used in.
   static constexpr std::array<model::Register::Values, 0>
     VectorArgumentRegisters = {};
 
-  /// Stores the list of vector registers allowed to be used for return
-  /// values in order they are used.
-  /// \note: if `AggregateArgumentsCanOccupySubsequentRegisters` is `false`,
-  /// the size of this list must not exceed 1.
+  /// Stores the list of vector registers allowed to be used for returning
+  /// values and the order they are to be used in.
   static constexpr std::array<model::Register::Values, 0>
     VectorReturnValueRegisters = {};
 
@@ -132,9 +181,14 @@ struct CallingConventionTrait {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_64> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = true;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 8;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 2;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 8;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 2;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 8;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 2;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
 
@@ -172,9 +226,14 @@ struct CallingConventionTrait<model::abi::SystemV_x86_64> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64> {
   static constexpr bool ArgumentsArePositionBased = true;
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 1;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 1;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 1;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 1;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
 
@@ -212,9 +271,14 @@ struct CallingConventionTrait<model::abi::Microsoft_x64> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64_vectorcall> {
   static constexpr bool ArgumentsArePositionBased = true;
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 1;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 1;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 1;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 1;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
 
@@ -256,9 +320,14 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_vectorcall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 1;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 1;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 0;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
 
@@ -287,9 +356,14 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 0;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 2;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 2;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
 
@@ -324,9 +398,14 @@ struct CallingConventionTrait<model::abi::SystemV_x86> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 1;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 2;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 1;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 2;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
 
@@ -361,9 +440,14 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 1;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 2;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 1;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 2;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
 
@@ -400,9 +484,14 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
 template<>
 struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 1;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 2;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 1;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 2;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 16;
 
@@ -440,9 +529,14 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 0;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 2;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 2;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 4;
 
@@ -472,9 +566,14 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 0;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 2;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 2;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = true;
   static constexpr size_t StackAlignment = 4;
 
@@ -504,9 +603,14 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 1;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 2;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 1;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 2;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = true;
   static constexpr size_t StackAlignment = 4;
 
@@ -539,11 +643,15 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 1;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 2;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 1;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 2;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = true;
-  static constexpr size_t StackAlignment = 4;
 
   static constexpr std::array GeneralPurposeArgumentRegisters = {
     model::Register::ecx_x86
@@ -577,9 +685,14 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_clrcall> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 0;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 0;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 0;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = false;
   static constexpr size_t StackAlignment = 4;
 
@@ -610,9 +723,14 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_clrcall> {
 template<>
 struct CallingConventionTrait<model::abi::Microsoft_x86_vectorcall> {
   static constexpr bool ArgumentsArePositionBased = false;
-  static constexpr bool AllowPassingAggregatesInRegisters = false;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerArgument = 1;
-  static constexpr size_t MaximumGeneralPurposeRegistersPerReturnValue = 1;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = false;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 1;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 1;
+
   static constexpr bool CalleeIsResponsibleForStackCleanup = true;
   static constexpr size_t StackAlignment = 4;
 
@@ -638,6 +756,115 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_vectorcall> {
     model::Register::esp_x86, model::Register::edi_x86,
     model::Register::esi_x86, model::Register::xmm6_x86,
     model::Register::xmm7_x86
+  };
+};
+
+/// The Aarch64 (ARM) ABI.
+/// Function arguments are passed using both stack and specified registers.
+template<>
+struct CallingConventionTrait<model::abi::Aarch64> {
+  static constexpr bool ArgumentsArePositionBased = false;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = true;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = true;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 2;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 2;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 2;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 2;
+
+  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
+  static constexpr size_t StackAlignment = 16;
+
+  static constexpr std::array GeneralPurposeArgumentRegisters = {
+    model::Register::x0_aarch64, model::Register::x1_aarch64,
+    model::Register::x2_aarch64, model::Register::x3_aarch64,
+    model::Register::x4_aarch64, model::Register::x5_aarch64,
+    model::Register::x6_aarch64, model::Register::x7_aarch64
+  };
+  static constexpr std::array GeneralPurposeReturnValueRegisters = {
+    model::Register::x0_aarch64, model::Register::x1_aarch64,
+    model::Register::x2_aarch64, model::Register::x3_aarch64,
+    model::Register::x4_aarch64, model::Register::x5_aarch64,
+    model::Register::x6_aarch64, model::Register::x7_aarch64
+  };
+
+  static constexpr std::array VectorArgumentRegisters = {
+    model::Register::v0_aarch64, model::Register::v1_aarch64,
+    model::Register::v2_aarch64, model::Register::v3_aarch64,
+    model::Register::v4_aarch64, model::Register::v5_aarch64,
+    model::Register::v6_aarch64, model::Register::v7_aarch64
+  };
+  static constexpr std::array VectorReturnValueRegisters = {
+    model::Register::v0_aarch64, model::Register::v1_aarch64,
+    model::Register::v2_aarch64, model::Register::v3_aarch64,
+    model::Register::v4_aarch64, model::Register::v5_aarch64,
+    model::Register::v6_aarch64, model::Register::v7_aarch64
+  };
+
+  static constexpr std::array CalleeSavedRegisters = {
+    model::Register::x19_aarch64, model::Register::x20_aarch64,
+    model::Register::x21_aarch64, model::Register::x22_aarch64,
+    model::Register::x23_aarch64, model::Register::x24_aarch64,
+    model::Register::x25_aarch64, model::Register::x26_aarch64,
+    model::Register::x27_aarch64, model::Register::x28_aarch64,
+    model::Register::x29_aarch64, model::Register::sp_aarch64,
+    model::Register::v8_aarch64,  model::Register::v9_aarch64,
+    model::Register::v10_aarch64, model::Register::v11_aarch64,
+    model::Register::v12_aarch64, model::Register::v13_aarch64,
+    model::Register::v14_aarch64, model::Register::v15_aarch64
+  };
+};
+
+/// The Aarch32 (ARM) ABI.
+/// Function arguments are passed using both stack and specified registers.
+template<>
+struct CallingConventionTrait<model::abi::Aarch32> {
+  static constexpr bool ArgumentsArePositionBased = false;
+  static constexpr bool OnlyStartDoubleArgumentFromAnEvenRegister = true;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = true;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 4;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 1;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 4;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 4;
+
+  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
+  static constexpr size_t StackAlignment = 4;
+  // \note: the stack must be double-aligned (8 bytes) in public interfaces.
+
+  static constexpr std::array GeneralPurposeArgumentRegisters = {
+    model::Register::r0_arm,
+    model::Register::r1_arm,
+    model::Register::r2_arm,
+    model::Register::r3_arm
+  };
+  static constexpr std::array GeneralPurposeReturnValueRegisters = {
+    model::Register::r0_arm,
+    model::Register::r1_arm,
+    model::Register::r2_arm,
+    model::Register::r3_arm
+  };
+
+  static constexpr std::array VectorArgumentRegisters = {
+    model::Register::q0_arm,
+    model::Register::q1_arm,
+    model::Register::q2_arm,
+    model::Register::q3_arm
+  };
+  static constexpr std::array VectorReturnValueRegisters = {
+    model::Register::q0_arm,
+    model::Register::q1_arm,
+    model::Register::q2_arm,
+    model::Register::q3_arm
+  };
+
+  static constexpr std::array CalleeSavedRegisters = {
+    model::Register::r4_arm,  model::Register::r5_arm,
+    model::Register::r6_arm,  model::Register::r7_arm,
+    model::Register::r8_arm,  model::Register::r10_arm,
+    model::Register::r11_arm, model::Register::r13_arm,
+    model::Register::q4_arm,  model::Register::q5_arm,
+    model::Register::q6_arm,  model::Register::q7_arm
   };
 };
 

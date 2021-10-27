@@ -102,6 +102,16 @@ enum Values {
   /// [here](https://docs.microsoft.com/en-us/cpp/cpp/vectorcall)
   Microsoft_x86_vectorcall,
 
+  /// The ABI for Aarch64 (ARM) processor architecure.
+  /// The latest version of the documentation can be found
+  /// [here](https://github.com/ARM-software/abi-aa/releases)
+  Aarch64,
+
+  /// The ABI for Aarch32 (ARM) processor architecure.
+  /// The latest version of the documentation can be found
+  /// [here](https://github.com/ARM-software/abi-aa/releases)
+  Aarch32,
+
   Count
 };
 
@@ -141,6 +151,11 @@ inline constexpr llvm::StringRef getName(Values V) {
   case Microsoft_x86_vectorcall:
     return "Microsoft_x86_vectorcall";
 
+  case Aarch64:
+    return "Aarch64";
+  case Aarch32:
+    return "Aarch32";
+
   default:
     revng_abort();
   }
@@ -165,6 +180,11 @@ inline constexpr model::Architecture::Values getArchitecture(Values V) {
   case Microsoft_x86_fastcall:
   case Microsoft_x86_thiscall:
     return model::Architecture::x86;
+
+  case Aarch64:
+    return model::Architecture::aarch64;
+  case Aarch32:
+    return model::Architecture::arm;
 
   case Count:
   case Invalid:
