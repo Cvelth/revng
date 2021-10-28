@@ -585,102 +585,52 @@ template class ABI<model::abi::MIPS_o32>;
 // Dynamic convertion.
 //
 
+template<typename T>
+constexpr static bool AlwaysFalseT = false;
+
+template<typename T, size_t Index = 0>
+constexpr inline auto enumSwitch(T Value, const auto &F) {
+  constexpr std::decay_t<T> Current = static_cast<std::decay_t<T>>(Index);
+  if (Current == Value)
+    return F.template operator()<Current>();
+  else if constexpr (Index + 1 < static_cast<size_t>(std::decay_t<T>::Count))
+    return enumSwitch<T, Index + 1>(Value, F);
+  else
+    revng_abort("Unknown and/or unsupported model::abi value was encountered");
+}
+
+template<size_t SkippedCount, typename T1, typename T2>
+constexpr inline auto skippingEnumSwitch(T1 &&Value, T2 &&F) {
+  return enumSwitch<T1, SkippedCount>(std::forward<T1>(Value),
+                                      std::forward<T2>(F));
+}
+
 std::optional<model::CABIFunctionType>
 convertToCABI(model::abi::Values RuntimeABI,
               model::Binary &TheBinary,
               const model::RawFunctionType &Explicit) {
-  using namespace model::abi;
-  switch (RuntimeABI) {
-  case SystemV_x86_64:
-    return ABI<SystemV_x86_64>::toCABI(TheBinary, Explicit);
-  case SystemV_x86:
-    return ABI<SystemV_x86>::toCABI(TheBinary, Explicit);
-  case SystemV_x86_regparm_3:
-    return ABI<SystemV_x86_regparm_3>::toCABI(TheBinary, Explicit);
-  case SystemV_x86_regparm_2:
-    return ABI<SystemV_x86_regparm_2>::toCABI(TheBinary, Explicit);
-  case SystemV_x86_regparm_1:
-    return ABI<SystemV_x86_regparm_1>::toCABI(TheBinary, Explicit);
-
-  case Microsoft_x64:
-    return ABI<Microsoft_x64>::toCABI(TheBinary, Explicit);
-  case Microsoft_x64_vectorcall:
-    return ABI<Microsoft_x64_vectorcall>::toCABI(TheBinary, Explicit);
-  case Microsoft_x64_clrcall:
-    return ABI<Microsoft_x64_clrcall>::toCABI(TheBinary, Explicit);
-  case Microsoft_x86_cdecl:
-    return ABI<Microsoft_x86_cdecl>::toCABI(TheBinary, Explicit);
-  case Microsoft_x86_stdcall:
-    return ABI<Microsoft_x86_stdcall>::toCABI(TheBinary, Explicit);
-  case Microsoft_x86_thiscall:
-    return ABI<Microsoft_x86_thiscall>::toCABI(TheBinary, Explicit);
-  case Microsoft_x86_fastcall:
-    return ABI<Microsoft_x86_fastcall>::toCABI(TheBinary, Explicit);
-  case Microsoft_x86_clrcall:
-    return ABI<Microsoft_x86_clrcall>::toCABI(TheBinary, Explicit);
-  case Microsoft_x86_vectorcall:
-    return ABI<Microsoft_x86_vectorcall>::toCABI(TheBinary, Explicit);
-
-  case Aarch64:
-    return ABI<Aarch64>::toCABI(TheBinary, Explicit);
-  case Aarch32:
-    return ABI<Aarch32>::toCABI(TheBinary, Explicit);
-
-  case MIPS_o32:
-    return ABI<MIPS_o32>::toCABI(TheBinary, Explicit);
-
-  default:
-    return ABI<Invalid>::toCABI(TheBinary, Explicit);
-  };
+  revng_assert(RuntimeABI != model::abi::Invalid);
+  return skippingEnumSwitch<1>(RuntimeABI, [&]<model::abi::Values A>() {
+    return ABI<A>::toCABI(TheBinary, Explicit);
+  });
 }
 
 std::optional<model::RawFunctionType>
 convertToRaw(model::abi::Values RuntimeABI,
              model::Binary &TheBinary,
              const model::CABIFunctionType &Original) {
-  using namespace model::abi;
-  switch (RuntimeABI) {
-  case SystemV_x86_64:
-    return ABI<SystemV_x86_64>::toRaw(TheBinary, Original);
-  case SystemV_x86:
-    return ABI<SystemV_x86>::toRaw(TheBinary, Original);
-  case SystemV_x86_regparm_3:
-    return ABI<SystemV_x86_regparm_3>::toRaw(TheBinary, Original);
-  case SystemV_x86_regparm_2:
-    return ABI<SystemV_x86_regparm_2>::toRaw(TheBinary, Original);
-  case SystemV_x86_regparm_1:
-    return ABI<SystemV_x86_regparm_1>::toRaw(TheBinary, Original);
+  revng_assert(RuntimeABI != model::abi::Invalid);
+  return skippingEnumSwitch<1>(RuntimeABI, [&]<model::abi::Values A>() {
+    return ABI<A>::toRaw(TheBinary, Original);
+  });
+}
 
-  case Microsoft_x64:
-    return ABI<Microsoft_x64>::toRaw(TheBinary, Original);
-  case Microsoft_x64_vectorcall:
-    return ABI<Microsoft_x64_vectorcall>::toRaw(TheBinary, Original);
-  case Microsoft_x64_clrcall:
-    return ABI<Microsoft_x64_clrcall>::toRaw(TheBinary, Original);
-  case Microsoft_x86_cdecl:
-    return ABI<Microsoft_x86_cdecl>::toRaw(TheBinary, Original);
-  case Microsoft_x86_stdcall:
-    return ABI<Microsoft_x86_stdcall>::toRaw(TheBinary, Original);
-  case Microsoft_x86_thiscall:
-    return ABI<Microsoft_x86_thiscall>::toRaw(TheBinary, Original);
-  case Microsoft_x86_fastcall:
-    return ABI<Microsoft_x86_fastcall>::toRaw(TheBinary, Original);
-  case Microsoft_x86_clrcall:
-    return ABI<Microsoft_x86_clrcall>::toRaw(TheBinary, Original);
-  case Microsoft_x86_vectorcall:
-    return ABI<Microsoft_x86_vectorcall>::toRaw(TheBinary, Original);
-
-  case Aarch64:
-    return ABI<Aarch64>::toRaw(TheBinary, Original);
-  case Aarch32:
-    return ABI<Aarch32>::toRaw(TheBinary, Original);
-
-  case MIPS_o32:
-    return ABI<MIPS_o32>::toRaw(TheBinary, Original);
-
-  default:
-    return ABI<Invalid>::toRaw(TheBinary, Original);
-  };
+model::TypePath
+defaultPrototype(model::abi::Values RuntimeABI, model::Binary &TheBinary) {
+  revng_assert(RuntimeABI != model::abi::Invalid);
+  return skippingEnumSwitch<1>(RuntimeABI, [&]<model::abi::Values A>() {
+    return ABI<A>::defaultPrototype(TheBinary);
+  });
 }
 
 } // namespace abi

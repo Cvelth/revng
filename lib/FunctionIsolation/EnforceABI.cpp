@@ -134,7 +134,7 @@ void EnforceABIImpl::run() {
     const auto *Type = FunctionModel.Prototype.get();
     revng_assert(Type != nullptr);
 
-    auto Prototype = abi::getRawFunctionTypeOrDefault(Binary, Type);
+    auto Prototype = abi::convertToRawOrDefault(Binary, Type);
     Function *NewFunction = recreateFunction(*OldFunction, Prototype);
     FunctionTags::DynamicFunction.addTo(NewFunction);
 
@@ -396,8 +396,8 @@ void EnforceABIImpl::generateCall(IRBuilder<> &Builder,
   llvm::SmallVector<GlobalVariable *, 8> ReturnCSVs;
 
   model::TypePath PrototypePath = getPrototype(Binary, CallSite);
-  const auto &Prototype = abi::getRawFunctionTypeOrDefault(Binary,
-                                                           PrototypePath.get());
+  const auto &Prototype = abi::convertToRawOrDefault(Binary,
+                                                     PrototypePath.get());
 
   bool IsIndirect = (Callee.getCallee() == FunctionDispatcher);
   if (IsIndirect) {

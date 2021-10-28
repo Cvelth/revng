@@ -11,17 +11,17 @@
 
 namespace abi {
 
-using RegisterState = model::RegisterState::Values;
-using RegisterStateMap = std::map<model::Register::Values,
-                                  std::pair<RegisterState, RegisterState>>;
+// using RegisterState = model::RegisterState::Values;
+// using RegisterStateMap = std::map<model::Register::Values,
+//                                   std::pair<RegisterState, RegisterState>>;
 
 template<model::abi::Values V>
 class ABI {
-private:
-  using CallingConvention = CallingConventionTrait<V>;
+  static_assert(V != model::abi::Invalid);
+  static_assert(V != model::abi::Count);
 
 public:
-  // static bool isCompatible(const model::RawFunctionType &Explicit);
+  using CallingConvention = CallingConventionTrait<V>;
 
   static std::optional<model::CABIFunctionType>
   toCABI(model::Binary &TheBinary, const model::RawFunctionType &Explicit);
@@ -29,130 +29,44 @@ public:
   toRaw(model::Binary &TheBinary, const model::CABIFunctionType &Original);
 
   static model::TypePath defaultPrototype(model::Binary &TheBinary);
+
+  // static bool isCompatible(const model::RawFunctionType &Explicit);
   // void applyDeductions(RegisterStateMap &Prototype);
 };
 
-/// Asserting specialization for the `Invalid` ABI.
-template<>
-class ABI<model::abi::Invalid> {
-public:
-  // static bool isCompatible(const model::RawFunctionType &Explicit) {
-  //   revng_abort();
-  // }
-
-  static std::optional<model::CABIFunctionType>
-  toCABI(model::Binary &TheBinary, const model::RawFunctionType &Explicit) {
-    revng_abort();
-  }
-  static std::optional<model::RawFunctionType>
-  toRaw(model::Binary &TheBinary, const model::CABIFunctionType &Original) {
-    revng_abort();
-  }
-
-  static model::TypePath defaultPrototype(model::Binary &TheBinary) {
-    auto Void = TheBinary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0);
-    return TheBinary.recordNewType(model::makeType<model::RawFunctionType>());
-  }
-  // void applyDeductions(RegisterStateMap &Prototype) { revng_abort(); }
-};
-
-/// Asserting specialization for the `Count` ABI.
-template<>
-class ABI<model::abi::Count> {
-public:
-  // static bool isCompatible(const model::RawFunctionType &Explicit) {
-  //   revng_abort();
-  // }
-
-  static std::optional<model::CABIFunctionType>
-  toCABI(model::Binary &TheBinary, const model::RawFunctionType &Explicit) {
-    revng_abort();
-  }
-  static std::optional<model::RawFunctionType>
-  toRaw(model::Binary &TheBinary, const model::CABIFunctionType &Original) {
-    revng_abort();
-  }
-
-  static model::TypePath defaultPrototype(model::Binary &TheBinary) {
-    auto Void = TheBinary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0);
-    return TheBinary.recordNewType(model::makeType<model::RawFunctionType>());
-  }
-  // void applyDeductions(RegisterStateMap &Prototype) { revng_abort(); }
-};
-
 std::optional<model::CABIFunctionType>
-convertToCABI(model::abi::Values ABI,
-              model::Binary &TheBinary,
-              const model::RawFunctionType &Explicit);
+convertToCABI(model::abi::Values,
+              model::Binary &,
+              const model::RawFunctionType &);
 std::optional<model::RawFunctionType>
-convertToRaw(model::abi::Values ABI,
-             model::Binary &TheBinary,
-             const model::CABIFunctionType &Original);
-
-// TODO: make this as much reusable as possible
-// TODO: test
-
-template<typename T, size_t Index = 0>
-auto polyswitch(T Value, const auto &F) {
-  constexpr T Current = static_cast<T>(Index);
-  if constexpr (Index < static_cast<size_t>(T::Count)) {
-    if (Current == Value) {
-      return F.template operator()<Current>();
-    } else {
-      return polyswitch<T, Index + 1>(Value, F);
-    }
-  } else {
-    revng_abort();
-    return F.template operator()<T::Count>();
-  }
-}
+convertToRaw(model::abi::Values,
+             model::Binary &,
+             const model::CABIFunctionType &);
+model::TypePath defaultPrototype(model::abi::Values, model::Binary &);
 
 inline std::optional<model::RawFunctionType>
-getRawFunctionType(model::Binary &TheBinary,
-                   const model::CABIFunctionType *CABI) {
-  revng_assert(CABI != nullptr);
-
-  return polyswitch(CABI->ABI, [&]<model::abi::Values A>() {
-    return ABI<A>::toRaw(TheBinary, *CABI);
-  });
-}
-
-inline std::optional<model::RawFunctionType>
-getRawFunctionType(model::Binary &TheBinary, const model::Type *T) {
+convertToRaw(model::Binary &TheBinary, const model::Type *T) {
   revng_assert(T != nullptr);
 
   using namespace llvm;
   if (auto *Raw = dyn_cast<model::RawFunctionType>(T)) {
     return *Raw;
   } else if (auto *CABI = dyn_cast<model::CABIFunctionType>(T)) {
-    return getRawFunctionType(TheBinary, CABI);
+    return convertToRaw(CABI->ABI, TheBinary, *CABI);
   } else {
     revng_abort("getRawFunctionType with non-function type");
   }
 }
 
 inline model::RawFunctionType
-getRawFunctionTypeOrDefault(model::Binary &TheBinary, const model::Type *T) {
-  revng_assert(T != nullptr);
-
-  using namespace llvm;
-  if (auto *Raw = dyn_cast<model::RawFunctionType>(T)) {
-    return *Raw;
-  } else if (auto *CABI = dyn_cast<model::CABIFunctionType>(T)) {
-    auto MaybeResult = getRawFunctionType(TheBinary, CABI);
-    if (MaybeResult) {
-      return *MaybeResult;
-    } else {
-      auto GetDefaultPrototype = [&]<model::abi::Values A>() {
-        return ABI<A>::defaultPrototype(TheBinary);
-      };
-      model::TypePath Result = polyswitch(CABI->ABI, GetDefaultPrototype);
-
-      return *cast<model::RawFunctionType>(Result.get());
-    }
-  } else {
+convertToRawOrDefault(model::Binary &TheBinary, const model::Type *T) {
+  using RFT = model::RawFunctionType;
+  if (auto MaybeResult = convertToRaw(TheBinary, T))
+    return *MaybeResult;
+  else if (auto *CABI = llvm::dyn_cast<model::CABIFunctionType>(T))
+    return *llvm::cast<RFT>(defaultPrototype(CABI->ABI, TheBinary).get());
+  else
     revng_abort("getRawFunctionType with non-function type");
-  }
 }
 
 } // namespace abi
