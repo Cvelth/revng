@@ -82,6 +82,9 @@ inline constexpr std::string_view getABIDescription(model::abi::Values V) {
   case model::abi::MIPS_o32:
     return "The \"old\" 32-bit MIPS abi";
 
+  case model::abi::SystemZ_s390x:
+    return "The s390x SystemZ ABI";
+
   case model::abi::Count:
   case model::abi::Invalid:
   default:
@@ -125,7 +128,8 @@ auto TaV = values(clABIDescription(SystemV_x86_64),
                   clABIDescription(Microsoft_x86_vectorcall),
                   clABIDescription(Aarch64),
                   clABIDescription(Aarch32),
-                  clABIDescription(MIPS_o32));
+                  clABIDescription(MIPS_o32),
+                  clABIDescription(SystemZ_s390x));
 opt<ABI> TargetABI("abi", Required, desc(TrgDesc), TaV, cat(Category));
 
 constexpr const char *FnDesc = "<input file name>";

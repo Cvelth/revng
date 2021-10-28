@@ -41,4 +41,6 @@ add_abi_tests("arm" "Aarch32")
 
 add_abi_tests("mips" "MIPS_o32")
 
+add_abi_tests("systemz" "SystemZ_s390x")
+
 # More architectures and ABIs are to come.

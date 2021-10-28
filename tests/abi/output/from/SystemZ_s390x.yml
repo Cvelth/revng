@@ -1,0 +1,1622 @@
+---
+Architecture:    systemz
+Types:
+  - !Primitive
+    Kind:            Primitive
+    ID:              256
+    PrimitiveKind:   Void
+    Size:            0
+  - !Primitive
+    Kind:            Primitive
+    ID:              513
+    PrimitiveKind:   Generic
+    Size:            1
+  - !Primitive
+    Kind:            Primitive
+    ID:              514
+    PrimitiveKind:   Generic
+    Size:            2
+  - !Primitive
+    Kind:            Primitive
+    ID:              516
+    PrimitiveKind:   Generic
+    Size:            4
+  - !Primitive
+    Kind:            Primitive
+    ID:              520
+    PrimitiveKind:   Generic
+    Size:            8
+  - !Primitive
+    Kind:            Primitive
+    ID:              528
+    PrimitiveKind:   Generic
+    Size:            16
+  - !Primitive
+    Kind:            Primitive
+    ID:              776
+    PrimitiveKind:   PointerOrNumber
+    Size:            8
+  - !Struct
+    Kind:            Struct
+    ID:              7000000001
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-513"
+        Offset:          0
+    Size:            8
+  - !Struct
+    Kind:            Struct
+    ID:              7000000002
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-513"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-513"
+        Offset:          1
+    Size:            8
+  - !Struct
+    Kind:            Struct
+    ID:              7000000003
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-514"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-513"
+        Offset:          2
+    Size:            8
+  - !Struct
+    Kind:            Struct
+    ID:              7000000004
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-513"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-514"
+        Offset:          2
+    Size:            8
+  - !Struct
+    Kind:            Struct
+    ID:              7000000005
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-516"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-516"
+        Offset:          4
+    Size:            8
+  - !Struct
+    Kind:            Struct
+    ID:              7000000006
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-516"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-516"
+        Offset:          4
+      - Type:
+          UnqualifiedType: "/Types/Primitive-513"
+        Offset:          8
+    Size:            16
+  - !Struct
+    Kind:            Struct
+    ID:              7000000007
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-516"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-516"
+        Offset:          4
+      - Type:
+          UnqualifiedType: "/Types/Primitive-513"
+        Offset:          8
+      - Type:
+          UnqualifiedType: "/Types/Primitive-520"
+        Offset:          16
+    Size:            32
+  - !Struct
+    Kind:            Struct
+    ID:              7000000008
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-516"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-516"
+        Offset:          4
+      - Type:
+          UnqualifiedType: "/Types/Primitive-513"
+        Offset:          8
+      - Type:
+          UnqualifiedType: "/Types/Primitive-520"
+        Offset:          12
+      - Type:
+          UnqualifiedType: "/Types/Primitive-520"
+        Offset:          20
+    Size:            32
+  - !Struct
+    Kind:            Struct
+    ID:              7000000009
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-528"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-528"
+        Offset:          16
+    Size:            32
+  - !Struct
+    Kind:            Struct
+    ID:              7000000010
+    Fields:
+      - Type:
+          UnqualifiedType: "/Types/Primitive-528"
+        Offset:          0
+      - Type:
+          UnqualifiedType: "/Types/Primitive-528"
+        Offset:          16
+      - Type:
+          UnqualifiedType: "/Types/Primitive-528"
+        Offset:          32
+      - Type:
+          UnqualifiedType: "/Types/Primitive-528"
+        Offset:          48
+    Size:            64
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000001
+    Arguments:       []
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000002
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000003
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000004
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000005
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r4_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000006
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r4_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r5_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000007
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r4_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r5_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r6_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000008
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r4_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r5_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r6_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000009
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000010
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r4_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r5_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000011
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000001"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000012
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000002"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000013
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000003"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000014
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000004"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000015
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000005"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000016
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000006"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000017
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000007"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000018
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000008"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000019
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000009"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000020
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000010"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000021
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000005"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000010"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000022
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000007"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000001"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r4_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000002"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000023
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000003"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000006"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r4_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000004"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r5_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000009"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:    []
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000024
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000025
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000026
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000027
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000028
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-528"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000029
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-528"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000030
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r4_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r5_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000031
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000032
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000033
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000034
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000035
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000036
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000006"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000037
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000007"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000038
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000008"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000039
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000009"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000040
+    Arguments:       []
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000010"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000041
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000008"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r4_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r5_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000001"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r6_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000008"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000042
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000001"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r4_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r5_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r6_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000003"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000008"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000043
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000002"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r4_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000004"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r5_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r6_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000006"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000044
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000010"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+      - Location:        r4_systemz
+        Type:
+          UnqualifiedType: "/Types/Primitive-776"
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000007"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000045
+    Arguments:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000001"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r3_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000002"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r4_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000003"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+      - Location:        r5_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000004"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    ReturnValues:
+      - Location:        r2_systemz
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000010"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            8
+    PreservedRegisters:
+      - r6_systemz
+      - r7_systemz
+      - r8_systemz
+      - r9_systemz
+      - r10_systemz
+      - r11_systemz
+      - r12_systemz
+      - r13_systemz
+      - r15_systemz
+      - f8_systemz
+      - f9_systemz
+      - f10_systemz
+      - f11_systemz
+      - f12_systemz
+      - f13_systemz
+      - f15_systemz
+    FinalStackOffset: 0
+Segments:        []
+Functions:       []
+ImportedDynamicFunctions: []
+...

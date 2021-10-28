@@ -447,10 +447,20 @@ ABI<V>::toRaw(model::Binary &TheBinary,
           FinalName += "_part_" + std::to_string(++Index) + "_out_of_"
                        + std::to_string(ArgumentStorage.Registers.size());
         model::NamedTypedRegister Argument(Register);
-        if (ArgumentStorage.Registers.size() > 1)
+        if (ArgumentStorage.Registers.size() > 1) {
           Argument.Type = buildGenericType(Register, TheBinary);
-        else
-          Argument.Type = buildType(Register, TheBinary);
+        } else {
+          auto TypeCopy = Original.Arguments.at(ArgumentIndex).Type;
+          auto TargetSize = model::Register::getSize(Register);
+          auto MaybeSize = Original.Arguments.at(ArgumentIndex).Type.size();
+          if (!MaybeSize) {
+            TypeCopy = buildType(Register, TheBinary);
+          } else if (*MaybeSize > TargetSize) {
+            auto Qualifier = model::Qualifier::createPointer(TargetSize);
+            TypeCopy.Qualifiers.emplace_back(Qualifier);
+          }
+          Argument.Type = std::move(TypeCopy);
+        }
         Argument.CustomName = FinalName;
         Result.Arguments.insert(Argument);
       }
@@ -473,7 +483,14 @@ ABI<V>::toRaw(model::Binary &TheBinary,
       constexpr size_t Alignment = CallingConvention::StackAlignment;
       size_t Aligned = Size + Alignment - 1
                        - (Size + Alignment - 1) % Alignment;
-      Result.FinalStackOffset += Aligned;
+
+      if constexpr (CallingConvention::UsePointerToCopyForStackArguments)
+        if (Aligned > CallingConvention::StackAlignment)
+          Result.FinalStackOffset += CallingConvention::StackAlignment;
+        else
+          Result.FinalStackOffset += Aligned;
+      else
+        Result.FinalStackOffset += Aligned;
     }
   }
 

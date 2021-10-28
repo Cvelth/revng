@@ -117,6 +117,11 @@ enum Values {
   /// [here](http://math-atlas.sourceforge.net/devel/assembly/mipsabi32.pdf)
   MIPS_o32,
 
+  /// The s390x ABI for SystemZ processor architecture.
+  /// The latest version of the documentation can be found
+  /// [here](https://github.com/IBM/s390x-abi)
+  SystemZ_s390x,
+
   Count
 };
 
@@ -164,6 +169,9 @@ inline constexpr llvm::StringRef getName(Values V) {
   case MIPS_o32:
     return "MIPS_o32";
 
+  case SystemZ_s390x:
+    return "SystemZ_s390x";
+
   default:
     revng_abort();
   }
@@ -196,6 +204,9 @@ inline constexpr model::Architecture::Values getArchitecture(Values V) {
 
   case MIPS_o32:
     return model::Architecture::mips;
+
+  case SystemZ_s390x:
+    return model::Architecture::systemz;
 
   case Count:
   case Invalid:
