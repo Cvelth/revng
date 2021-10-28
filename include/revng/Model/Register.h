@@ -162,10 +162,53 @@ enum Values {
   s5_mips,
   s6_mips,
   s7_mips,
+  s8_mips,
+  t0_mips,
+  t1_mips,
+  t2_mips,
+  t3_mips,
+  t4_mips,
+  t5_mips,
+  t6_mips,
+  t7_mips,
+  t8_mips,
+  t9_mips,
   gp_mips,
   sp_mips,
   fp_mips,
   ra_mips,
+  f0_mips,
+  f1_mips,
+  f2_mips,
+  f3_mips,
+  f4_mips,
+  f5_mips,
+  f6_mips,
+  f7_mips,
+  f8_mips,
+  f9_mips,
+  f10_mips,
+  f11_mips,
+  f12_mips,
+  f13_mips,
+  f14_mips,
+  f15_mips,
+  f16_mips,
+  f17_mips,
+  f18_mips,
+  f19_mips,
+  f20_mips,
+  f21_mips,
+  f22_mips,
+  f23_mips,
+  f24_mips,
+  f25_mips,
+  f26_mips,
+  f27_mips,
+  f28_mips,
+  f29_mips,
+  f30_mips,
+  f31_mips,
   // SystemZ registers
   r0_systemz,
   r1_systemz,
@@ -499,6 +542,28 @@ inline llvm::StringRef getName(Values V) {
     return "s6_mips";
   case s7_mips:
     return "s7_mips";
+  case s8_mips:
+    return "s8_mips";
+  case t0_mips:
+    return "t0_mips";
+  case t1_mips:
+    return "t1_mips";
+  case t2_mips:
+    return "t2_mips";
+  case t3_mips:
+    return "t3_mips";
+  case t4_mips:
+    return "t4_mips";
+  case t5_mips:
+    return "t5_mips";
+  case t6_mips:
+    return "t6_mips";
+  case t7_mips:
+    return "t7_mips";
+  case t8_mips:
+    return "t8_mips";
+  case t9_mips:
+    return "t9_mips";
   case gp_mips:
     return "gp_mips";
   case sp_mips:
@@ -507,6 +572,70 @@ inline llvm::StringRef getName(Values V) {
     return "fp_mips";
   case ra_mips:
     return "ra_mips";
+  case f0_mips:
+    return "f0_mips";
+  case f1_mips:
+    return "f1_mips";
+  case f2_mips:
+    return "f2_mips";
+  case f3_mips:
+    return "f3_mips";
+  case f4_mips:
+    return "f4_mips";
+  case f5_mips:
+    return "f5_mips";
+  case f6_mips:
+    return "f6_mips";
+  case f7_mips:
+    return "f7_mips";
+  case f8_mips:
+    return "f8_mips";
+  case f9_mips:
+    return "f9_mips";
+  case f10_mips:
+    return "f10_mips";
+  case f11_mips:
+    return "f11_mips";
+  case f12_mips:
+    return "f12_mips";
+  case f13_mips:
+    return "f13_mips";
+  case f14_mips:
+    return "f14_mips";
+  case f15_mips:
+    return "f15_mips";
+  case f16_mips:
+    return "f16_mips";
+  case f17_mips:
+    return "f17_mips";
+  case f18_mips:
+    return "f18_mips";
+  case f19_mips:
+    return "f19_mips";
+  case f20_mips:
+    return "f20_mips";
+  case f21_mips:
+    return "f21_mips";
+  case f22_mips:
+    return "f22_mips";
+  case f23_mips:
+    return "f23_mips";
+  case f24_mips:
+    return "f24_mips";
+  case f25_mips:
+    return "f25_mips";
+  case f26_mips:
+    return "f26_mips";
+  case f27_mips:
+    return "f27_mips";
+  case f28_mips:
+    return "f28_mips";
+  case f29_mips:
+    return "f29_mips";
+  case f30_mips:
+    return "f30_mips";
+  case f31_mips:
+    return "f31_mips";
   case r0_systemz:
     return "r0_systemz";
   case r1_systemz:
@@ -865,6 +994,28 @@ inline Values fromName(llvm::StringRef Name) {
     return s6_mips;
   else if (Name == "s7_mips")
     return s7_mips;
+  else if (Name == "s8_mips")
+    return s8_mips;
+  else if (Name == "t0_mips")
+    return t0_mips;
+  else if (Name == "t1_mips")
+    return t1_mips;
+  else if (Name == "t2_mips")
+    return t2_mips;
+  else if (Name == "t3_mips")
+    return t3_mips;
+  else if (Name == "t4_mips")
+    return t4_mips;
+  else if (Name == "t5_mips")
+    return t5_mips;
+  else if (Name == "t6_mips")
+    return t6_mips;
+  else if (Name == "t7_mips")
+    return t7_mips;
+  else if (Name == "t8_mips")
+    return t8_mips;
+  else if (Name == "t9_mips")
+    return t9_mips;
   else if (Name == "gp_mips")
     return gp_mips;
   else if (Name == "sp_mips")
@@ -873,6 +1024,70 @@ inline Values fromName(llvm::StringRef Name) {
     return fp_mips;
   else if (Name == "ra_mips")
     return ra_mips;
+  else if (Name == "f0_mips")
+    return f0_mips;
+  else if (Name == "f1_mips")
+    return f1_mips;
+  else if (Name == "f2_mips")
+    return f2_mips;
+  else if (Name == "f3_mips")
+    return f3_mips;
+  else if (Name == "f4_mips")
+    return f4_mips;
+  else if (Name == "f5_mips")
+    return f5_mips;
+  else if (Name == "f6_mips")
+    return f6_mips;
+  else if (Name == "f7_mips")
+    return f7_mips;
+  else if (Name == "f8_mips")
+    return f8_mips;
+  else if (Name == "f9_mips")
+    return f9_mips;
+  else if (Name == "f10_mips")
+    return f10_mips;
+  else if (Name == "f11_mips")
+    return f11_mips;
+  else if (Name == "f12_mips")
+    return f12_mips;
+  else if (Name == "f13_mips")
+    return f13_mips;
+  else if (Name == "f14_mips")
+    return f14_mips;
+  else if (Name == "f15_mips")
+    return f15_mips;
+  else if (Name == "f16_mips")
+    return f16_mips;
+  else if (Name == "f17_mips")
+    return f17_mips;
+  else if (Name == "f18_mips")
+    return f18_mips;
+  else if (Name == "f19_mips")
+    return f19_mips;
+  else if (Name == "f20_mips")
+    return f20_mips;
+  else if (Name == "f21_mips")
+    return f21_mips;
+  else if (Name == "f22_mips")
+    return f22_mips;
+  else if (Name == "f23_mips")
+    return f23_mips;
+  else if (Name == "f24_mips")
+    return f24_mips;
+  else if (Name == "f25_mips")
+    return f25_mips;
+  else if (Name == "f26_mips")
+    return f26_mips;
+  else if (Name == "f27_mips")
+    return f27_mips;
+  else if (Name == "f28_mips")
+    return f28_mips;
+  else if (Name == "f29_mips")
+    return f29_mips;
+  else if (Name == "f30_mips")
+    return f30_mips;
+  else if (Name == "f31_mips")
+    return f31_mips;
   else if (Name == "r0_systemz")
     return r0_systemz;
   else if (Name == "r1_systemz")
@@ -1090,10 +1305,53 @@ constexpr inline model::Architecture::Values getArchitecture(Values V) {
   case s5_mips:
   case s6_mips:
   case s7_mips:
+  case s8_mips:
+  case t0_mips:
+  case t1_mips:
+  case t2_mips:
+  case t3_mips:
+  case t4_mips:
+  case t5_mips:
+  case t6_mips:
+  case t7_mips:
+  case t8_mips:
+  case t9_mips:
   case gp_mips:
   case sp_mips:
   case fp_mips:
   case ra_mips:
+  case f0_mips:
+  case f1_mips:
+  case f2_mips:
+  case f3_mips:
+  case f4_mips:
+  case f5_mips:
+  case f6_mips:
+  case f7_mips:
+  case f8_mips:
+  case f9_mips:
+  case f10_mips:
+  case f11_mips:
+  case f12_mips:
+  case f13_mips:
+  case f14_mips:
+  case f15_mips:
+  case f16_mips:
+  case f17_mips:
+  case f18_mips:
+  case f19_mips:
+  case f20_mips:
+  case f21_mips:
+  case f22_mips:
+  case f23_mips:
+  case f24_mips:
+  case f25_mips:
+  case f26_mips:
+  case f27_mips:
+  case f28_mips:
+  case f29_mips:
+  case f30_mips:
+  case f31_mips:
     return model::Architecture::mips;
   case r0_systemz:
   case r1_systemz:

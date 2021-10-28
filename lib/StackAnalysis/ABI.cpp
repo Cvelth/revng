@@ -170,7 +170,12 @@ template<typename CC, typename RegisterType, size_t RegisterCount>
 static std::optional<model::QualifiedType>
 convertReturnValue(const SortedVector<RegisterType> &UsedRegisters,
                    const RegisterArray<RegisterCount> &AllowedRegisters,
+                   const model::Register::Values PointerToCopyLocation,
                    model::Binary &TheBinary) {
+  if (UsedRegisters.size() == 1)
+    if (UsedRegisters.begin()->Location == PointerToCopyLocation)
+      return buildType(PointerToCopyLocation, TheBinary);
+
   bool MustUseTheNextOne = false;
   size_t Size = 0, UsedRegisterCount = 0;
   model::PrimitiveTypeKind::Values Kind = model::PrimitiveTypeKind::Void;
@@ -213,6 +218,12 @@ ABI<V>::toCABI(model::Binary &TheBinary,
   if (!verify<A>(Explicit.ReturnValues, CC::GeneralPurposeReturnValueRegisters))
     return std::nullopt;
 
+  constexpr model::Register::Values PTCRR = CC::PointerToCopyRegister;
+  if (PTCRR != model::Register::Invalid)
+    revng_assert(model::Register::getArchitecture(PTCRR) == A);
+  for (auto &SavedRegister : CC::CalleeSavedRegisters)
+    revng_assert(model::Register::getArchitecture(SavedRegister) == A);
+
   model::CABIFunctionType Result;
   Result.ABI = V;
 
@@ -227,6 +238,7 @@ ABI<V>::toCABI(model::Binary &TheBinary,
   auto
     ReturnValue = convertReturnValue<CC>(Explicit.ReturnValues,
                                          CC::GeneralPurposeReturnValueRegisters,
+                                         CC::PointerToCopyRegister,
                                          TheBinary);
   if (ReturnValue == std::nullopt)
     return std::nullopt;
@@ -567,6 +579,8 @@ template class ABI<model::abi::Microsoft_x86_thiscall>;
 template class ABI<model::abi::Aarch64>;
 template class ABI<model::abi::Aarch32>;
 
+template class ABI<model::abi::MIPS_o32>;
+
 //
 // Dynamic convertion.
 //
@@ -611,6 +625,9 @@ convertToCABI(model::abi::Values RuntimeABI,
     return ABI<Aarch64>::toCABI(TheBinary, Explicit);
   case Aarch32:
     return ABI<Aarch32>::toCABI(TheBinary, Explicit);
+
+  case MIPS_o32:
+    return ABI<MIPS_o32>::toCABI(TheBinary, Explicit);
 
   default:
     return ABI<Invalid>::toCABI(TheBinary, Explicit);
@@ -657,6 +674,9 @@ convertToRaw(model::abi::Values RuntimeABI,
     return ABI<Aarch64>::toRaw(TheBinary, Original);
   case Aarch32:
     return ABI<Aarch32>::toRaw(TheBinary, Original);
+
+  case MIPS_o32:
+    return ABI<MIPS_o32>::toRaw(TheBinary, Original);
 
   default:
     return ABI<Invalid>::toRaw(TheBinary, Original);

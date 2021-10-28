@@ -17,7 +17,7 @@ enum Values {
   /// Unknown and/or unsupported ABI.
   Invalid,
 
-  /// 64-bit SystemV ABI for x86 processor architecure.
+  /// 64-bit SystemV ABI for x86 processor architecture.
   /// The latest version of the documentation can be found
   /// [here](https://gitlab.com/x86-psABIs/x86-64-ABI)
   SystemV_x86_64,
@@ -102,15 +102,20 @@ enum Values {
   /// [here](https://docs.microsoft.com/en-us/cpp/cpp/vectorcall)
   Microsoft_x86_vectorcall,
 
-  /// The ABI for Aarch64 (ARM) processor architecure.
+  /// The ABI for Aarch64 (ARM) processor architecture.
   /// The latest version of the documentation can be found
   /// [here](https://github.com/ARM-software/abi-aa/releases)
   Aarch64,
 
-  /// The ABI for Aarch32 (ARM) processor architecure.
+  /// The ABI for Aarch32 (ARM) processor architecture.
   /// The latest version of the documentation can be found
   /// [here](https://github.com/ARM-software/abi-aa/releases)
   Aarch32,
+
+  /// The ABI for MIPS RISC processor architecture.
+  /// The latest version of the documentation can be found
+  /// [here](http://math-atlas.sourceforge.net/devel/assembly/mipsabi32.pdf)
+  MIPS_o32,
 
   Count
 };
@@ -156,6 +161,9 @@ inline constexpr llvm::StringRef getName(Values V) {
   case Aarch32:
     return "Aarch32";
 
+  case MIPS_o32:
+    return "MIPS_o32";
+
   default:
     revng_abort();
   }
@@ -185,6 +193,9 @@ inline constexpr model::Architecture::Values getArchitecture(Values V) {
     return model::Architecture::aarch64;
   case Aarch32:
     return model::Architecture::arm;
+
+  case MIPS_o32:
+    return model::Architecture::mips;
 
   case Count:
   case Invalid:

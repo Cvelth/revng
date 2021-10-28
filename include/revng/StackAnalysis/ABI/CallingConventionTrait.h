@@ -66,6 +66,14 @@ struct CallingConventionTrait {
   /// \note: the option has no effect if `ArgumentsArePositionBased` is true.
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
+  /// Specifies whether vector registers are always used in rigid pairs, meaning
+  /// that an odd-index vector register cannot be used without the even-index
+  /// register from the same pair being used to hold half the value.
+  ///
+  /// \note: The option still is not fully implemented since the vector register
+  /// support is still super limited.
+  static constexpr bool VectorRegistersArePaired = true;
+
   /// States whether specified ABI allows accepting aggregate object arguments
   /// (structs, unions, etc) in the designated registers if they provide enough
   /// space (including padding) and the maximum number of registers allowed for
@@ -178,6 +186,14 @@ struct CallingConventionTrait {
   /// must be the same as it was when the function was called.
   static constexpr std::array<model::Register::Values, 0>
     CalleeSavedRegisters = {};
+
+  /// Specifies a register to be used for returning (or even passing,
+  /// depending on ABI) the pointer to the memory used for returning
+  /// copies of big aggregate objects.
+  ///
+  /// Can be `model::Register::Invalid` for ABIs that do not support returning
+  /// values by 'pointer-to-copy'.
+  static constexpr auto PointerToCopyRegister = model::Register::Invalid;
 };
 
 /// System V x64 ABI.
@@ -187,6 +203,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_64> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 8;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 2;
@@ -223,6 +240,8 @@ struct CallingConventionTrait<model::abi::SystemV_x86_64> {
     model::Register::r13_x86_64, model::Register::r14_x86_64,
     model::Register::r15_x86_64, model::Register::fs_x86_64
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::rdi_x86_64;
 };
 
 /// The default Microsoft x64 ABI.
@@ -232,6 +251,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x64> {
   static constexpr bool ArgumentsArePositionBased = true;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
@@ -268,6 +288,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x64> {
     model::Register::rbx_x86_64,  model::Register::rbp_x86_64,
     model::Register::xmm6_x86_64, model::Register::xmm7_x86_64
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::rax_x86_64;
 };
 
 /// The `__vectorcall` Microsoft x64 ABI.
@@ -277,6 +299,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_vectorcall> {
   static constexpr bool ArgumentsArePositionBased = true;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
@@ -312,6 +335,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_vectorcall> {
     model::Register::rbx_x86_64,  model::Register::rbp_x86_64,
     model::Register::xmm6_x86_64, model::Register::xmm7_x86_64
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::rax_x86_64;
 };
 
 /// The `__clrcall` microsoft ABI (can be used for executables of either x86 or
@@ -326,6 +351,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
@@ -352,6 +378,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x64_clrcall> {
     model::Register::rbx_x86_64,  model::Register::rbp_x86_64,
     model::Register::xmm6_x86_64, model::Register::xmm7_x86_64
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::Invalid;
 };
 
 /// The default SystemV x86 ABI
@@ -362,6 +390,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
@@ -395,6 +424,8 @@ struct CallingConventionTrait<model::abi::SystemV_x86> {
     model::Register::edi_x86,
     model::Register::esi_x86
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::eax_x86;
 };
 
 /// `regparm(1)` SystemV x86 ABI
@@ -404,6 +435,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
@@ -437,6 +469,8 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_1> {
     model::Register::edi_x86,
     model::Register::esi_x86
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::eax_x86;
 };
 
 /// `regparm(2)` SystemV x86 ABI
@@ -446,6 +480,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
@@ -481,6 +516,8 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_2> {
     model::Register::edi_x86,
     model::Register::esi_x86
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::eax_x86;
 };
 
 /// `regparm(3)` SystemV x86 ABI
@@ -490,6 +527,7 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
@@ -526,6 +564,8 @@ struct CallingConventionTrait<model::abi::SystemV_x86_regparm_3> {
     model::Register::edi_x86,
     model::Register::esi_x86
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::eax_x86;
 };
 
 /// `__cdecl` Microsoft x86 ABI
@@ -535,6 +575,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
@@ -563,6 +604,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_cdecl> {
     model::Register::edi_x86,
     model::Register::esi_x86
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::eax_x86;
 };
 
 /// `__stdcall` Microsoft x86 ABI
@@ -572,6 +615,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
@@ -600,6 +644,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_stdcall> {
     model::Register::edi_x86,
     model::Register::esi_x86
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::eax_x86;
 };
 
 /// `__fastcall` Microsoft x86 ABI
@@ -609,6 +655,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
@@ -639,6 +686,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_fastcall> {
     model::Register::edi_x86,
     model::Register::esi_x86
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::eax_x86;
 };
 
 /// `__thiscall` Microsoft x86 ABI
@@ -649,6 +698,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
@@ -678,6 +728,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
     model::Register::edi_x86,
     model::Register::esi_x86
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::eax_x86;
 };
 
 /// The `__clrcall` microsoft ABI (can be used for executables of either x86 or
@@ -692,6 +744,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_clrcall> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
@@ -718,6 +771,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_clrcall> {
     model::Register::edi_x86,
     model::Register::esi_x86
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::eax_x86;
 };
 
 /// The `__vectorcall` Microsoft x86 ABI.
@@ -730,6 +785,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_vectorcall> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 0;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
@@ -762,6 +818,8 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_vectorcall> {
     model::Register::esi_x86, model::Register::xmm6_x86,
     model::Register::xmm7_x86
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::eax_x86;
 };
 
 /// The Aarch64 (ARM) ABI.
@@ -771,6 +829,7 @@ struct CallingConventionTrait<model::abi::Aarch64> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = true;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = true;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 2;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 2;
@@ -818,6 +877,8 @@ struct CallingConventionTrait<model::abi::Aarch64> {
     model::Register::v12_aarch64, model::Register::v13_aarch64,
     model::Register::v14_aarch64, model::Register::v15_aarch64
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::x8_aarch64;
 };
 
 /// The Aarch32 (ARM) ABI.
@@ -827,6 +888,7 @@ struct CallingConventionTrait<model::abi::Aarch32> {
   static constexpr bool ArgumentsArePositionBased = false;
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = true;
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = true;
+  static constexpr bool VectorRegistersArePaired = false;
 
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 4;
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 1;
@@ -871,6 +933,67 @@ struct CallingConventionTrait<model::abi::Aarch32> {
     model::Register::q4_arm,  model::Register::q5_arm,
     model::Register::q6_arm,  model::Register::q7_arm
   };
+
+  static constexpr auto PointerToCopyRegister = model::Register::r0_arm;
+};
+
+/// The "old" 32-bit MIPS ABI.
+/// Function arguments are passed using both stack and specified registers.
+template<>
+struct CallingConventionTrait<model::abi::MIPS_o32> {
+  static constexpr bool ArgumentsArePositionBased = true;
+  static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = true;
+  static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = true;
+  static constexpr bool VectorRegistersArePaired = true;
+
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateArgument = 4;
+  static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 2;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveArgument = 4;
+  static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 2;
+
+  static constexpr bool CalleeIsResponsibleForStackCleanup = false;
+  static constexpr size_t StackAlignment = 4;
+
+  static constexpr std::array GeneralPurposeArgumentRegisters = {
+    model::Register::a0_mips,
+    model::Register::a1_mips,
+    model::Register::a2_mips,
+    model::Register::a3_mips
+  };
+  static constexpr std::array GeneralPurposeReturnValueRegisters = {
+    model::Register::v0_mips,
+    model::Register::v1_mips
+  };
+
+  static constexpr std::array VectorArgumentRegisters = {
+    model::Register::f12_mips,
+    model::Register::f13_mips,
+    model::Register::f14_mips,
+    model::Register::f15_mips
+  };
+  static constexpr std::array VectorReturnValueRegisters = {
+    model::Register::f0_mips,
+    model::Register::f1_mips,
+    model::Register::f2_mips,
+    model::Register::f3_mips
+  };
+
+  static constexpr std::array CalleeSavedRegisters = {
+    model::Register::s0_mips,  model::Register::s1_mips,
+    model::Register::s2_mips,  model::Register::s3_mips,
+    model::Register::s4_mips,  model::Register::s5_mips,
+    model::Register::s6_mips,  model::Register::s7_mips,
+    model::Register::s8_mips,  model::Register::gp_mips,
+    model::Register::sp_mips,  model::Register::f20_mips,
+    model::Register::f21_mips, model::Register::f22_mips,
+    model::Register::f23_mips, model::Register::f24_mips,
+    model::Register::f25_mips, model::Register::f26_mips,
+    model::Register::f27_mips, model::Register::f28_mips,
+    model::Register::f29_mips, model::Register::f30_mips,
+    model::Register::f31_mips
+  };
+
+  static constexpr auto PointerToCopyRegister = model::Register::v0_mips;
 };
 
 } // namespace abi

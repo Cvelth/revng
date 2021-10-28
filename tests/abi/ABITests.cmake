@@ -39,4 +39,6 @@ add_abi_tests("x86" "Microsoft_x86_vectorcall")
 add_abi_tests("aarch64" "Aarch64")
 add_abi_tests("arm" "Aarch32")
 
+add_abi_tests("mips" "MIPS_o32")
+
 # More architectures and ABIs are to come.
