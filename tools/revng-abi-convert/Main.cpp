@@ -74,6 +74,11 @@ inline constexpr std::string_view getABIDescription(model::abi::Values V) {
            "be passed using a register. It is never used for "
            "'free' functions";
 
+  case model::abi::Aarch64:
+    return "64-bit ARM abi";
+  case model::abi::Aarch32:
+    return "32-bit ARM abi";
+
   case model::abi::Count:
   case model::abi::Invalid:
   default:
@@ -114,7 +119,9 @@ auto TaV = values(clABIDescription(SystemV_x86_64),
                   clABIDescription(Microsoft_x86_thiscall),
                   clABIDescription(Microsoft_x86_fastcall),
                   clABIDescription(Microsoft_x86_clrcall),
-                  clABIDescription(Microsoft_x86_vectorcall));
+                  clABIDescription(Microsoft_x86_vectorcall),
+                  clABIDescription(Aarch64),
+                  clABIDescription(Aarch32));
 opt<ABI> TargetABI("abi", Required, desc(TrgDesc), TaV, cat(Category));
 
 constexpr const char *FnDesc = "<input file name>";

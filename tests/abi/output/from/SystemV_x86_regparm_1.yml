@@ -471,7 +471,7 @@ Types:
     ReturnValues:
       - Location:        eax_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-516"
+          UnqualifiedType: "/Types/Primitive-772"
     PreservedRegisters:
       - ebx_x86
       - esi_x86
@@ -486,7 +486,7 @@ Types:
     ReturnValues:
       - Location:        eax_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-516"
+          UnqualifiedType: "/Types/Primitive-772"
     PreservedRegisters:
       - ebx_x86
       - esi_x86
@@ -501,7 +501,7 @@ Types:
     ReturnValues:
       - Location:        eax_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-516"
+          UnqualifiedType: "/Types/Primitive-772"
     PreservedRegisters:
       - ebx_x86
       - esi_x86
@@ -573,7 +573,7 @@ Types:
     ReturnValues:
       - Location:        eax_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-516"
+          UnqualifiedType: "/Types/Primitive-772"
     PreservedRegisters:
       - ebx_x86
       - esi_x86

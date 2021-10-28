@@ -36,4 +36,7 @@ add_abi_tests("x86" "Microsoft_x86_fastcall")
 add_abi_tests("x86" "Microsoft_x86_clrcall")
 add_abi_tests("x86" "Microsoft_x86_vectorcall")
 
+add_abi_tests("aarch64" "Aarch64")
+add_abi_tests("arm" "Aarch32")
+
 # More architectures and ABIs are to come.

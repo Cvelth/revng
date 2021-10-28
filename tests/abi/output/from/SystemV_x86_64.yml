@@ -305,10 +305,10 @@ Types:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        rsi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        r8_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
@@ -344,10 +344,10 @@ Types:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        r8_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        r9_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -365,16 +365,16 @@ Types:
     Arguments:
       - Location:        rcx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rsi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -392,22 +392,22 @@ Types:
     Arguments:
       - Location:        rcx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rsi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        r8_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        r9_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -515,10 +515,10 @@ Types:
     Arguments:
       - Location:        rsi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -536,16 +536,16 @@ Types:
     Arguments:
       - Location:        rcx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rsi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -563,16 +563,16 @@ Types:
     Arguments:
       - Location:        rcx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rsi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -590,16 +590,16 @@ Types:
     Arguments:
       - Location:        rcx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rsi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
     ReturnValues:    []
     PreservedRegisters:
       - rbx_x86_64
@@ -650,16 +650,16 @@ Types:
     Arguments:
       - Location:        rcx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rsi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        r8_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
@@ -686,10 +686,10 @@ Types:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        rdx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rsi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdi_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
@@ -711,7 +711,7 @@ Types:
     ReturnValues:
       - Location:        rax_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-776"
     PreservedRegisters:
       - rbx_x86_64
       - rbp_x86_64
@@ -729,7 +729,7 @@ Types:
     ReturnValues:
       - Location:        rax_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-776"
     PreservedRegisters:
       - rbx_x86_64
       - rbp_x86_64
@@ -747,7 +747,7 @@ Types:
     ReturnValues:
       - Location:        rax_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-776"
     PreservedRegisters:
       - rbx_x86_64
       - rbp_x86_64
@@ -765,7 +765,7 @@ Types:
     ReturnValues:
       - Location:        rax_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-776"
     PreservedRegisters:
       - rbx_x86_64
       - rbp_x86_64
@@ -803,10 +803,10 @@ Types:
     Arguments:
       - Location:        rsi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
     ReturnValues:
       - Location:        rax_x86_64
         Type:
@@ -843,7 +843,7 @@ Types:
     ReturnValues:
       - Location:        rax_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-776"
     PreservedRegisters:
       - rbx_x86_64
       - rbp_x86_64
@@ -861,7 +861,7 @@ Types:
     ReturnValues:
       - Location:        rax_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-776"
     PreservedRegisters:
       - rbx_x86_64
       - rbp_x86_64
@@ -879,7 +879,7 @@ Types:
     ReturnValues:
       - Location:        rax_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-776"
     PreservedRegisters:
       - rbx_x86_64
       - rbp_x86_64
@@ -897,7 +897,7 @@ Types:
     ReturnValues:
       - Location:        rax_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-776"
     PreservedRegisters:
       - rbx_x86_64
       - rbp_x86_64
@@ -915,7 +915,7 @@ Types:
     ReturnValues:
       - Location:        rax_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-776"
     PreservedRegisters:
       - rbx_x86_64
       - rbp_x86_64
@@ -933,7 +933,7 @@ Types:
     ReturnValues:
       - Location:        rax_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-776"
     PreservedRegisters:
       - rbx_x86_64
       - rbp_x86_64
@@ -1055,19 +1055,19 @@ Types:
     Arguments:
       - Location:        rcx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdx_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rsi_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        rdi_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        r8_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        r9_x86_64
         Type:
           UnqualifiedType: "/Types/Primitive-776"
@@ -1142,14 +1142,14 @@ Types:
           UnqualifiedType: "/Types/Primitive-776"
       - Location:        r8_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
       - Location:        r9_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-776"
+          UnqualifiedType: "/Types/Primitive-520"
     ReturnValues:
       - Location:        rax_x86_64
         Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-776"
     PreservedRegisters:
       - rbx_x86_64
       - rbp_x86_64

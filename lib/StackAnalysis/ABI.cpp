@@ -70,6 +70,13 @@ buildType(model::Register::Values Register, model::Binary &TheBinary) {
   return getType(Kind, Size, TheBinary);
 }
 
+static model::QualifiedType
+buildGenericType(model::Register::Values Register, model::Binary &TheBinary) {
+  constexpr auto Kind = model::PrimitiveTypeKind::Generic;
+  size_t Size = model::Register::getSize(Register);
+  return getType(Kind, Size, TheBinary);
+}
+
 // static std::optional<model::QualifiedType>
 // buildDoubleType(model::Register::Values UpperRegister,
 //                 model::Register::Values LowerRegister,
@@ -428,7 +435,10 @@ ABI<V>::toRaw(model::Binary &TheBinary,
           FinalName += "_part_" + std::to_string(++Index) + "_out_of_"
                        + std::to_string(ArgumentStorage.Registers.size());
         model::NamedTypedRegister Argument(Register);
-        Argument.Type = buildType(Register, TheBinary);
+        if (ArgumentStorage.Registers.size() > 1)
+          Argument.Type = buildGenericType(Register, TheBinary);
+        else
+          Argument.Type = buildType(Register, TheBinary);
         Argument.CustomName = FinalName;
         Result.Arguments.insert(Argument);
       }
@@ -464,15 +474,14 @@ ABI<V>::toRaw(model::Binary &TheBinary,
     if (!ReturnValue->Registers.empty()) {
       // Handle a register-based return value.
       for (model::Register::Values Register : ReturnValue->Registers) {
-        constexpr auto GenericKind = model::PrimitiveTypeKind::Generic;
-        auto RegisterSize = model::Register::getSize(Register);
-        auto GenericType = getType(GenericKind, RegisterSize, TheBinary);
+        model::TypedRegister ReturnValueRegister;
+        ReturnValueRegister.Location = Register;
+        if (ReturnValue->Registers.size() > 1)
+          ReturnValueRegister.Type = buildGenericType(Register, TheBinary);
+        else
+          ReturnValueRegister.Type = buildType(Register, TheBinary);
 
-        model::TypedRegister ReturnValue;
-        ReturnValue.Location = Register;
-        ReturnValue.Type = GenericType;
-
-        Result.ReturnValues.insert(std::move(ReturnValue));
+        Result.ReturnValues.insert(std::move(ReturnValueRegister));
       }
     } else {
       // Handle a pointer-based return value.
