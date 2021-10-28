@@ -205,6 +205,9 @@ Types:
       - Location:        ecx_x86
         Type:
           UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
     ReturnValues:    []
     PreservedRegisters:
       - ebx_x86
@@ -214,7 +217,7 @@ Types:
       - esp_x86
       - xmm6_x86
       - xmm7_x86
-    FinalStackOffset: 4
+    FinalStackOffset: 0
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000004
@@ -222,6 +225,29 @@ Types:
       - Location:        ecx_x86
         Type:
           UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+      - xmm6_x86
+      - xmm7_x86
+    FinalStackOffset: 0
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000005
+    Arguments:
+      - Location:        ecx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
     ReturnValues:    []
     PreservedRegisters:
       - ebx_x86
@@ -234,28 +260,14 @@ Types:
     FinalStackOffset: 4
   - !RawFunctionType
     Kind:            RawFunctionType
-    ID:              2000000005
-    Arguments:
-      - Location:        ecx_x86
-        Type:
-          UnqualifiedType: "/Types/Primitive-772"
-    ReturnValues:    []
-    PreservedRegisters:
-      - ebx_x86
-      - esi_x86
-      - edi_x86
-      - ebp_x86
-      - esp_x86
-      - xmm6_x86
-      - xmm7_x86
-    FinalStackOffset: 8
-  - !RawFunctionType
-    Kind:            RawFunctionType
     ID:              2000000006
     Arguments:
       - Location:        ecx_x86
         Type:
           UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
     ReturnValues:    []
     PreservedRegisters:
       - ebx_x86
@@ -265,7 +277,7 @@ Types:
       - esp_x86
       - xmm6_x86
       - xmm7_x86
-    FinalStackOffset: 16
+    FinalStackOffset: 12
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000007
@@ -273,21 +285,7 @@ Types:
       - Location:        ecx_x86
         Type:
           UnqualifiedType: "/Types/Primitive-772"
-    ReturnValues:    []
-    PreservedRegisters:
-      - ebx_x86
-      - esi_x86
-      - edi_x86
-      - ebp_x86
-      - esp_x86
-      - xmm6_x86
-      - xmm7_x86
-    FinalStackOffset: 32
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000008
-    Arguments:
-      - Location:        ecx_x86
+      - Location:        edx_x86
         Type:
           UnqualifiedType: "/Types/Primitive-772"
     ReturnValues:    []
@@ -299,7 +297,27 @@ Types:
       - esp_x86
       - xmm6_x86
       - xmm7_x86
-    FinalStackOffset: 32
+    FinalStackOffset: 28
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000008
+    Arguments:
+      - Location:        ecx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+    ReturnValues:    []
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+      - xmm6_x86
+      - xmm7_x86
+    FinalStackOffset: 28
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000009
@@ -517,7 +535,7 @@ Types:
     ReturnValues:
       - Location:        eax_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-772"
+          UnqualifiedType: "/Types/Primitive-516"
     PreservedRegisters:
       - ebx_x86
       - esi_x86
@@ -534,7 +552,7 @@ Types:
     ReturnValues:
       - Location:        eax_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-772"
+          UnqualifiedType: "/Types/Primitive-516"
     PreservedRegisters:
       - ebx_x86
       - esi_x86
@@ -551,7 +569,7 @@ Types:
     ReturnValues:
       - Location:        eax_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-772"
+          UnqualifiedType: "/Types/Primitive-516"
     PreservedRegisters:
       - ebx_x86
       - esi_x86
@@ -628,10 +646,13 @@ Types:
       - Location:        ecx_x86
         Type:
           UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
     ReturnValues:
       - Location:        eax_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-772"
+          UnqualifiedType: "/Types/Primitive-516"
     PreservedRegisters:
       - ebx_x86
       - esi_x86
@@ -640,7 +661,7 @@ Types:
       - esp_x86
       - xmm6_x86
       - xmm7_x86
-    FinalStackOffset: 12
+    FinalStackOffset: 8
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000031
@@ -848,27 +869,7 @@ Types:
       - Location:        ecx_x86
         Type:
           UnqualifiedType: "/Types/Primitive-772"
-    ReturnValues:
-      - Location:        eax_x86
-        Type:
-          UnqualifiedType: "/Types/Struct-7000000008"
-          Qualifiers:
-            - Kind:            Pointer
-              Size:            4
-    PreservedRegisters:
-      - ebx_x86
-      - esi_x86
-      - edi_x86
-      - ebp_x86
-      - esp_x86
-      - xmm6_x86
-      - xmm7_x86
-    FinalStackOffset: 60
-  - !RawFunctionType
-    Kind:            RawFunctionType
-    ID:              2000000042
-    Arguments:
-      - Location:        ecx_x86
+      - Location:        edx_x86
         Type:
           UnqualifiedType: "/Types/Primitive-772"
     ReturnValues:
@@ -886,12 +887,41 @@ Types:
       - esp_x86
       - xmm6_x86
       - xmm7_x86
-    FinalStackOffset: 28
+    FinalStackOffset: 56
+  - !RawFunctionType
+    Kind:            RawFunctionType
+    ID:              2000000042
+    Arguments:
+      - Location:        ecx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+    ReturnValues:
+      - Location:        eax_x86
+        Type:
+          UnqualifiedType: "/Types/Struct-7000000008"
+          Qualifiers:
+            - Kind:            Pointer
+              Size:            4
+    PreservedRegisters:
+      - ebx_x86
+      - esi_x86
+      - edi_x86
+      - ebp_x86
+      - esp_x86
+      - xmm6_x86
+      - xmm7_x86
+    FinalStackOffset: 24
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000043
     Arguments:
       - Location:        ecx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
         Type:
           UnqualifiedType: "/Types/Primitive-772"
     ReturnValues:
@@ -909,12 +939,15 @@ Types:
       - esp_x86
       - xmm6_x86
       - xmm7_x86
-    FinalStackOffset: 36
+    FinalStackOffset: 32
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000044
     Arguments:
       - Location:        ecx_x86
+        Type:
+          UnqualifiedType: "/Types/Primitive-772"
+      - Location:        edx_x86
         Type:
           UnqualifiedType: "/Types/Primitive-772"
     ReturnValues:
@@ -932,7 +965,7 @@ Types:
       - esp_x86
       - xmm6_x86
       - xmm7_x86
-    FinalStackOffset: 68
+    FinalStackOffset: 64
   - !RawFunctionType
     Kind:            RawFunctionType
     ID:              2000000045

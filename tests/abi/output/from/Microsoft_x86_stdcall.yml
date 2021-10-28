@@ -31,11 +31,6 @@ Types:
     ID:              528
     PrimitiveKind:   Generic
     Size:            16
-  - !Primitive
-    Kind:            Primitive
-    ID:              772
-    PrimitiveKind:   PointerOrNumber
-    Size:            4
   - !Struct
     Kind:            Struct
     ID:              7000000001
@@ -450,7 +445,7 @@ Types:
     ReturnValues:
       - Location:        eax_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-772"
+          UnqualifiedType: "/Types/Primitive-516"
     PreservedRegisters:
       - ebx_x86
       - esi_x86
@@ -465,7 +460,7 @@ Types:
     ReturnValues:
       - Location:        eax_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-772"
+          UnqualifiedType: "/Types/Primitive-516"
     PreservedRegisters:
       - ebx_x86
       - esi_x86
@@ -480,7 +475,7 @@ Types:
     ReturnValues:
       - Location:        eax_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-772"
+          UnqualifiedType: "/Types/Primitive-516"
     PreservedRegisters:
       - ebx_x86
       - esi_x86
@@ -495,10 +490,10 @@ Types:
     ReturnValues:
       - Location:        eax_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-772"
+          UnqualifiedType: "/Types/Primitive-516"
       - Location:        edx_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-772"
+          UnqualifiedType: "/Types/Primitive-516"
     PreservedRegisters:
       - ebx_x86
       - esi_x86
@@ -549,7 +544,7 @@ Types:
     ReturnValues:
       - Location:        eax_x86
         Type:
-          UnqualifiedType: "/Types/Primitive-772"
+          UnqualifiedType: "/Types/Primitive-516"
     PreservedRegisters:
       - ebx_x86
       - esi_x86

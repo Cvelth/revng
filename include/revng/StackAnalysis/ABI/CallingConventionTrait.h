@@ -39,6 +39,8 @@ struct CallingConventionTrait {
   /// is true, the argument is passed using a pair of registers starting from
   /// the next one with an even index (`r2` and `r3` in this example),
   /// otherwise, the next pair of registers is used (`r1` and `r2` here).
+  ///
+  /// \note: the option has no effect if `ArgumentsArePositionBased` is true.
   static constexpr bool OnlyStartDoubleArgumentsFromAnEvenRegister = false;
 
   /// States whether specified ABI allows splitting a single big (with size
@@ -60,6 +62,8 @@ struct CallingConventionTrait {
   /// `r1-r3` and the last 4 bytes would go on the stack.
   /// Otherwise, the entire object would go on the stack with the remaining
   /// three registers unused.
+  ///
+  /// \note: the option has no effect if `ArgumentsArePositionBased` is true.
   static constexpr bool ArgumentsCanBeSplitBetweenRegistersAndStack = false;
 
   /// States whether specified ABI allows accepting aggregate object arguments
@@ -652,6 +656,7 @@ struct CallingConventionTrait<model::abi::Microsoft_x86_thiscall> {
   static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 2;
 
   static constexpr bool CalleeIsResponsibleForStackCleanup = true;
+  static constexpr size_t StackAlignment = 4;
 
   static constexpr std::array GeneralPurposeArgumentRegisters = {
     model::Register::ecx_x86

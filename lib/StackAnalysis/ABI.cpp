@@ -231,11 +231,279 @@ ABI<V>::toCABI(model::Binary &TheBinary,
 // toRaw
 //
 
+using IndexType = decltype(model::Argument::Index);
+struct DistributedArgument {
+  llvm::SmallVector<model::Register::Values, 1> Registers = {};
+  size_t Size = 0, SizeOnStack = 0;
+};
+using DistributedArguments = llvm::DenseMap<IndexType, DistributedArgument>;
+
+using ArgumentContainer = SortedVector<model::Argument>;
+template<typename CallConv>
+static std::optional<DistributedArguments>
+distributeArgumentsBasedOnPositions(const ArgumentContainer &Arguments) {
+  DistributedArguments Result;
+
+  for (const model::Argument &Argument : Arguments) {
+    auto &DistributedRef = Result[Argument.Index];
+
+    auto MaybeSize = Argument.Type.size();
+    if (MaybeSize == std::nullopt)
+      return std::nullopt;
+    DistributedRef.Size = *MaybeSize;
+
+    if (Argument.Type.isFloat()) {
+      if (Argument.Index < CallConv::VectorArgumentRegisters.size()) {
+        auto Register = CallConv::VectorArgumentRegisters[Argument.Index];
+        DistributedRef.Registers.emplace_back(Register);
+      } else {
+        DistributedRef.SizeOnStack = DistributedRef.Size;
+      }
+    } else {
+      if (Argument.Index < CallConv::GeneralPurposeArgumentRegisters.size()) {
+        auto Reg = CallConv::GeneralPurposeArgumentRegisters[Argument.Index];
+        DistributedRef.Registers.emplace_back(Reg);
+      } else {
+        DistributedRef.SizeOnStack = DistributedRef.Size;
+      }
+    }
+  }
+
+  return Result;
+}
+
+template<typename CallConv, size_t RegisterCount>
+std::pair<DistributedArgument, size_t>
+considerRegisters(size_t Size,
+                  size_t AllowedRegisterLimit,
+                  size_t OccupiedRegisterCount,
+                  const RegisterArray<RegisterCount> &AllowedRegisters,
+                  bool AllowPuttingPartOfAnArgumentOnStack) {
+  size_t RegisterLimit = OccupiedRegisterCount + AllowedRegisterLimit;
+  size_t ConsideredRegisterCounter = OccupiedRegisterCount;
+
+  size_t SizeCounter = 0;
+  const size_t ARC = AllowedRegisters.size();
+  if (ARC > 0) {
+    size_t &CRC = ConsideredRegisterCounter;
+    while (SizeCounter < Size && CRC < ARC && CRC < RegisterLimit) {
+      size_t RegisterIndex = ConsideredRegisterCounter++;
+      auto CurrentRegister = AllowedRegisters[RegisterIndex];
+      SizeCounter += model::Register::getSize(CurrentRegister);
+    }
+  }
+
+  DistributedArgument DA;
+  DA.Size = Size;
+
+  if constexpr (CallConv::OnlyStartDoubleArgumentsFromAnEvenRegister) {
+    if (ConsideredRegisterCounter - OccupiedRegisterCount == 2) {
+      if ((OccupiedRegisterCount & 1) != 0) {
+        ++OccupiedRegisterCount;
+        ++ConsideredRegisterCounter;
+      }
+    }
+  }
+
+  if (SizeCounter >= Size) {
+    for (size_t I = OccupiedRegisterCount; I < ConsideredRegisterCounter; ++I)
+      DA.Registers.emplace_back(AllowedRegisters[I]);
+    DA.SizeOnStack = 0;
+  } else if (AllowPuttingPartOfAnArgumentOnStack) {
+    for (size_t I = OccupiedRegisterCount; I < ConsideredRegisterCounter; ++I)
+      DA.Registers.emplace_back(AllowedRegisters[I]);
+    DA.SizeOnStack = DA.Size - SizeCounter;
+  } else {
+    DA.SizeOnStack = DA.Size;
+    ConsideredRegisterCounter = OccupiedRegisterCount;
+  }
+
+  return { DA, ConsideredRegisterCounter };
+}
+
+template<typename CallConv>
+static std::optional<DistributedArguments>
+distributeArgumentsFreely(const SortedVector<model::Argument> &Arguments) {
+  DistributedArguments Result;
+  size_t UsedGeneralPurposeRegisterCounter = 0;
+  size_t UsedVectorRegisterCounter = 0;
+
+  for (const model::Argument &Argument : Arguments) {
+    auto MaybeSize = Argument.Type.size();
+    if (MaybeSize == std::nullopt)
+      return std::nullopt;
+
+    using CC = CallConv;
+    constexpr bool SplitArgs = CC::ArgumentsCanBeSplitBetweenRegistersAndStack;
+    if (Argument.Type.isFloat()) {
+      const auto &Registers = CC::VectorArgumentRegisters;
+      size_t &Counter = UsedVectorRegisterCounter;
+      const size_t Limit = 1;
+
+      auto [Distributed, NextIndex] = considerRegisters<CC>(*MaybeSize,
+                                                            Limit,
+                                                            Counter,
+                                                            Registers,
+                                                            SplitArgs);
+      Result[Argument.Index] = Distributed;
+      Counter = NextIndex;
+    } else {
+      const auto &Registers = CC::GeneralPurposeArgumentRegisters;
+      size_t &Counter = UsedGeneralPurposeRegisterCounter;
+      if (Argument.Type.isScalar()) {
+        const size_t Limit = CC::MaxGeneralPurposeRegistersPerPrimitiveArgument;
+
+        auto [Distributed, NextIndex] = considerRegisters<CC>(*MaybeSize,
+                                                              Limit,
+                                                              Counter,
+                                                              Registers,
+                                                              SplitArgs);
+        Result[Argument.Index] = Distributed;
+        Counter = NextIndex;
+      } else {
+        const size_t Limit = CC::MaxGeneralPurposeRegistersPerAggregateArgument;
+
+        auto [Distributed, NextIndex] = considerRegisters<CC>(*MaybeSize,
+                                                              Limit,
+                                                              Counter,
+                                                              Registers,
+                                                              SplitArgs);
+        Result[Argument.Index] = Distributed;
+        Counter = NextIndex;
+      }
+    }
+  }
+
+  return Result;
+}
+
+template<typename CallConv>
+static std::optional<DistributedArguments>
+distributeArguments(const SortedVector<model::Argument> &Arguments) {
+  if constexpr (CallConv::ArgumentsArePositionBased)
+    return distributeArgumentsBasedOnPositions<CallConv>(Arguments);
+  else
+    return distributeArgumentsFreely<CallConv>(Arguments);
+}
+
+template<typename CallConv>
+static std::optional<DistributedArgument>
+distributeReturnValue(const model::QualifiedType &ReturnValueType) {
+  auto MaybeSize = ReturnValueType.size();
+  if (MaybeSize == std::nullopt)
+    return std::nullopt;
+
+  using CC = CallConv;
+  if (ReturnValueType.isFloat()) {
+    const auto &Registers = CC::VectorReturnValueRegisters;
+    return considerRegisters<CC>(*MaybeSize, 1, 0, Registers, false).first;
+  } else {
+    const auto &Registers = CC::GeneralPurposeReturnValueRegisters;
+    if (ReturnValueType.isScalar()) {
+      const size_t L = CC::MaxGeneralPurposeRegistersPerPrimitiveReturnValue;
+      return considerRegisters<CC>(*MaybeSize, L, 0, Registers, false).first;
+    } else {
+      const size_t L = CC::MaxGeneralPurposeRegistersPerAggregateReturnValue;
+      return considerRegisters<CC>(*MaybeSize, L, 0, Registers, false).first;
+    }
+  }
+}
+
 template<model::abi::Values V>
 std::optional<model::RawFunctionType>
 ABI<V>::toRaw(model::Binary &TheBinary,
               const model::CABIFunctionType &Original) {
-  return std::nullopt;
+  auto Arguments = distributeArguments<CallingConvention>(Original.Arguments);
+  if (Arguments == std::nullopt)
+    return std::nullopt;
+
+  model::RawFunctionType Result;
+  for (auto [ArgumentIndex, ArgumentStorage] : *Arguments) {
+    if (!ArgumentStorage.Registers.empty()) {
+      // Handle the registers
+      auto OriginalName = Original.Arguments.at(ArgumentIndex).CustomName;
+      for (size_t Index = 0; auto Register : ArgumentStorage.Registers) {
+        auto FinalName = OriginalName;
+        if (ArgumentStorage.Registers.size() > 1 && !FinalName.empty())
+          FinalName += "_part_" + std::to_string(++Index) + "_out_of_"
+                       + std::to_string(ArgumentStorage.Registers.size());
+        model::NamedTypedRegister Argument(Register);
+        Argument.Type = buildType(Register, TheBinary);
+        Argument.CustomName = FinalName;
+        Result.Arguments.insert(Argument);
+      }
+    }
+
+    if (ArgumentStorage.SizeOnStack != 0) {
+      // Handle the stack
+      auto ArgumentIterator = Original.Arguments.find(ArgumentIndex);
+      revng_assert(ArgumentIterator != Original.Arguments.end());
+      const model::Argument &Argument = *ArgumentIterator;
+
+      auto MaybeSize = Argument.Type.size();
+      revng_assert(MaybeSize.has_value());
+      size_t Size = *MaybeSize;
+
+      // TODO: handle stack arguments properly.
+      // \note: different ABIs could use different stack types.
+      // \see: `clrcall` ABI.
+
+      constexpr size_t Alignment = CallingConvention::StackAlignment;
+      size_t Aligned = Size + Alignment - 1
+                       - (Size + Alignment - 1) % Alignment;
+      Result.FinalStackOffset += Aligned;
+    }
+  }
+
+  if (!Original.ReturnType.isVoid()) {
+    using CC = CallingConvention;
+    auto ReturnValue = distributeReturnValue<CC>(Original.ReturnType);
+    if (ReturnValue == std::nullopt)
+      return std::nullopt;
+
+    if (!ReturnValue->Registers.empty()) {
+      // Handle a register-based return value.
+      for (model::Register::Values Register : ReturnValue->Registers) {
+        constexpr auto GenericKind = model::PrimitiveTypeKind::Generic;
+        auto RegisterSize = model::Register::getSize(Register);
+        auto GenericType = getType(GenericKind, RegisterSize, TheBinary);
+
+        model::TypedRegister ReturnValue;
+        ReturnValue.Location = Register;
+        ReturnValue.Type = GenericType;
+
+        Result.ReturnValues.insert(std::move(ReturnValue));
+      }
+    } else {
+      // Handle a pointer-based return value.
+      if (CallingConvention::GeneralPurposeReturnValueRegisters.empty())
+        return std::nullopt;
+
+      auto Register = CallingConvention::GeneralPurposeReturnValueRegisters[0];
+      auto RegisterSize = model::Register::getSize(Register);
+      auto PointerQualifier = model::Qualifier::createPointer(RegisterSize);
+
+      auto MaybeReturnValueSize = Original.ReturnType.size();
+      if (MaybeReturnValueSize == std::nullopt)
+        return std::nullopt;
+      if (ReturnValue->Size != *MaybeReturnValueSize)
+        return std::nullopt;
+
+      model::QualifiedType ReturnType = Original.ReturnType;
+      ReturnType.Qualifiers.emplace_back(PointerQualifier);
+
+      model::TypedRegister ReturnPointer(Register);
+      ReturnPointer.Type = std::move(ReturnType);
+      Result.ReturnValues.insert(std::move(ReturnPointer));
+    }
+  }
+
+  // Populate the list of preserved registers
+  using CC = CallingConvention;
+  for (model::Register::Values Register : CC::CalleeSavedRegisters)
+    Result.PreservedRegisters.insert(Register);
+
+  return Result;
 }
 
 //
@@ -265,445 +533,6 @@ model::TypePath ABI<V>::defaultPrototype(model::Binary &TheBinary) {
 
   return TypePath;
 }
-
-/*
-
-template<model::Architecture::Values Architecture,
-         typename RegisterType,
-         size_t RegisterCount>
-static std::optional<ChosenRegisters<RegisterCount>>
-analyze(const SortedVector<RegisterType> &UsedRegisters,
-        const RegisterArray<RegisterCount> &AllowedGeneralPurposeRegisters) {
-  revng_assert(verify<Architecture>(UsedRegisters));
-  revng_assert(verify<Architecture>(AllowedGeneralPurposeRegisters));
-
-  // Ensure all the used registers are allowed
-  for (const RegisterType &Register : UsedRegisters) {
-    if (llvm::count(AllowedGeneralPurposeRegisters, Register.Location) != 1)
-      return std::nullopt;
-  }
-
-  ChosenRegisters<RegisterCount> Result;
-
-  // Ensure the register usage continuity, e. g. if the register for the second
-  // parameter is used, the register for the first one must be used as well.
-  auto SelectUsed = [&UsedRegisters,
-                     &Result](const auto &RegisterContainer) -> bool {
-    size_t UsedCount = 0;
-    bool MustBeUsed = false;
-    for (model::Register::Values Register : RegisterContainer) {
-      bool IsUsed = UsedRegisters.find(Register) != UsedRegisters.end();
-      if (IsUsed)
-        Result.emplace_back(Register);
-
-      if (!IsUsed && MustBeUsed)
-        return false;
-
-      MustBeUsed = MustBeUsed || IsUsed;
-    }
-
-    return true;
-  };
-
-  if (!SelectUsed(llvm::reverse(AllowedGeneralPurposeRegisters)))
-    return std::nullopt;
-
-  return Result;
-}
-
-template<model::abi::Values V>
-bool ABI<V>::isCompatible(const model::RawFunctionType &Explicit) {
-  static constexpr model::Architecture::Values A = getArchitecture(V);
-  using CC = CallingConvention;
-  auto ArgumentAnalysis = analyze<A>(Explicit.Arguments,
-                                     CC::GeneralPurposeArgumentRegisters);
-  auto ReturnValueAnalysis = analyze<A>(Explicit.ReturnValues,
-                                        CC::GeneralPurposeReturnValueRegisters);
-  return ArgumentAnalysis.has_value() && ReturnValueAnalysis.has_value();
-}
-
-template<typename CallingConvention, unsigned AvailableRegisterCount>
-static std::optional<model::QualifiedType>
-buildReturnType(const ChosenRegisters<AvailableRegisterCount> &Registers,
-                model::Binary &Binary) {
-  using CC = CallingConvention;
-
-  if (Registers.size() == 0) {
-    return model::QualifiedType{
-      Binary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0)
-    };
-  } else if (Registers.size() == 1) {
-    return buildType(Registers.front(), Binary);
-  } else {
-    if constexpr (CC::MaximumGeneralPurposeRegistersPerReturnValue >= 2)
-      if (Registers.size() == 2)
-        if (auto MaybeType = buildDoubleType(Registers.front(),
-                                             Registers.back(),
-                                             Binary))
-          return *MaybeType;
-
-    if constexpr (CC::AllowPassingAggregatesInRegisters) {
-      size_t Offset = 0;
-      model::UpcastableType NewType = model::makeType<model::StructType>();
-      auto *MultipleReturnValues = llvm::cast<model::StructType>(NewType.get());
-      for (const model::Register::Values &Register : Registers) {
-        model::StructField NewField;
-        NewField.Offset = Offset;
-        NewField.Type = buildType(Register, Binary);
-        MultipleReturnValues->Fields.insert(std::move(NewField));
-
-        Offset += model::Register::getSize(Register);
-      }
-      MultipleReturnValues->Size = Offset;
-
-      return model::QualifiedType{ Binary.recordNewType(std::move(NewType)) };
-    }
-
-    // Maybe this should be a softer fail, like `return std::nullopt`.
-    revng_abort("There shouldn't be more than a single register used for "
-                "returning values when ABI doesn't allow splitting "
-                "arguments between multiple registers.");
-  }
-}
-
-template<model::abi::Values V>
-std::optional<model::CABIFunctionType>
-ABI<V>::toCABI(model::Binary &TheBinary,
-               const model::RawFunctionType &Explicit) {
-
-  static constexpr model::Architecture::Values A = getArchitecture(V);
-  using CC = CallingConvention;
-  auto AnalyzedArguments = analyze<A>(Explicit.Arguments,
-                                      CC::GeneralPurposeArgumentRegisters);
-  auto
-    AnalyzedReturnValues = analyze<A>(Explicit.ReturnValues,
-                                      CC::GeneralPurposeReturnValueRegisters);
-
-  if (!AnalyzedArguments.has_value() || !AnalyzedReturnValues.has_value())
-    return std::nullopt;
-
-  model::CABIFunctionType Result;
-  Result.ABI = V;
-
-  if (auto MaybeType = buildReturnType<CC>(*AnalyzedReturnValues, TheBinary))
-    Result.ReturnType = *MaybeType;
-  else
-    return std::nullopt;
-
-  // Build argument list
-  for (size_t Index = 0; auto Register : AnalyzedArguments.value()) {
-    model::Argument NewArgument;
-    NewArgument.Index = Index++;
-    NewArgument.Type = buildType(Register, TheBinary);
-    NewArgument.CustomName = Explicit.Arguments.at(Register).CustomName;
-    Result.Arguments.insert(std::move(NewArgument));
-  }
-
-  return Result;
-}
-
-using IndexType = decltype(model::Argument::Index);
-using MultiRegister = llvm::SmallVector<model::Register::Values, 1>;
-struct InternalArguments {
-  llvm::DenseMap<IndexType, MultiRegister> Registers;
-  SortedVector<IndexType> Stack;
-};
-template<typename CallConv>
-static std::optional<InternalArguments>
-allocateRegistersFreely(const SortedVector<model::Argument> &Arguments) {
-  InternalArguments Result;
-  size_t UsedGeneralPurposeRegisterCounter = 0;
-
-  using RV = llvm::SmallVector<model::Register::Values, 8>;
-  auto SelectGPRs = [&UsedGeneralPurposeRegisterCounter](size_t Size) -> RV {
-    size_t ConsideredRegisterCounter = UsedGeneralPurposeRegisterCounter;
-    auto HasRunOutOfRegisters = [&ConsideredRegisterCounter]() {
-      constexpr auto GPRC = CallConv::GeneralPurposeArgumentRegisters.size();
-      return !GPRC || ConsideredRegisterCounter >= GPRC - 1;
-    };
-
-    size_t SizeCounter = 0;
-    while (SizeCounter < Size && !HasRunOutOfRegisters()) {
-      size_t Index = ConsideredRegisterCounter++;
-      auto CurrentGPR = CallConv::GeneralPurposeArgumentRegisters[Index];
-      SizeCounter += model::Register::getSize(CurrentGPR);
-    }
-
-    llvm::SmallVector<model::Register::Values, 8> Result;
-    if (SizeCounter >= Size) {
-      for (size_t Index = UsedGeneralPurposeRegisterCounter;
-           Index < ConsideredRegisterCounter;
-           ++Index)
-        Result.emplace_back(CallConv::GeneralPurposeArgumentRegisters[Index]);
-    }
-    return Result;
-  };
-
-  using IndexType = decltype(model::Argument::Index);
-  constexpr auto Max = CallConv::MaximumGeneralPurposeRegistersPerArgument;
-  auto AllocateGPRs = [&](IndexType Index, uint64_t Size) -> size_t {
-    auto Registers = SelectGPRs(Size);
-    if (!Registers.empty() && Registers.size() <= Max) {
-      abi::MultiRegister &Container = Result.Registers[Index];
-      for (model::Register::Values &Register : Registers)
-        Container.emplace_back(Register);
-      return Registers.size();
-    }
-    return 0;
-  };
-
-  for (const model::Argument &Argument : Arguments) {
-    std::optional<uint64_t> MaybeSize = Argument.Type.size();
-    revng_assert(MaybeSize);
-
-    if (Argument.Type.isScalar()) {
-      if (!Argument.Type.isFloat()) {
-        if (auto RegisterCount = AllocateGPRs(Argument.Index, *MaybeSize)) {
-          UsedGeneralPurposeRegisterCounter += RegisterCount;
-          continue;
-        }
-      } else {
-        // TODO: handle floating point arguments.
-        return std::nullopt;
-      }
-    } else if constexpr (CallConv::AllowPassingAggregatesInRegisters) {
-      // TODO: verify structs for eligibility.
-      if (auto RegisterCount = AllocateGPRs(Argument.Index, *MaybeSize)) {
-        UsedGeneralPurposeRegisterCounter += RegisterCount;
-        continue;
-      }
-    }
-
-    Result.Stack.insert(Argument.Index);
-  }
-
-  return Result;
-}
-
-template<typename CallConv>
-static std::optional<InternalArguments>
-allocatePositionBasedRegisters(const SortedVector<model::Argument> &Arguments) {
-  InternalArguments Result;
-
-  for (const model::Argument &Argument : Arguments) {
-    if (Argument.Index < CallConv::GeneralPurposeArgumentRegisters.size()) {
-      auto Register = CallConv::GeneralPurposeArgumentRegisters[Argument.Index];
-      Result.Registers[Argument.Index].emplace_back(Register);
-    } else {
-      Result.Stack.insert(Argument.Index);
-    }
-  }
-
-  return Result;
-}
-
-template<typename CallConv>
-static std::optional<InternalArguments>
-allocateRegisters(const SortedVector<model::Argument> &Arguments) {
-  if constexpr (CallConv::ArgumentsArePositionBased)
-    return allocatePositionBasedRegisters<CallConv>(Arguments);
-  else
-    return allocateRegistersFreely<CallConv>(Arguments);
-}
-
-template<size_t AvailableRegisterCount>
-struct Capacity {
-  const size_t NeededRegisterCount;
-  const size_t MaximumSizePossible;
-};
-
-template<size_t AllowedRegisterLimit, size_t Size>
-Capacity<Size>
-countCapacity(size_t ValueSize, const RegisterArray<Size> &Registers) {
-  size_t RegisterCounter = 0;
-  size_t SizeCounter = 0;
-
-  for (const model::Register::Values &Register : Registers) {
-    size_t RegisterSize = model::Register::getSize(Register);
-    if (SizeCounter < ValueSize)
-      ++RegisterCounter;
-    SizeCounter += RegisterSize;
-    if (RegisterCounter >= AllowedRegisterLimit)
-      break;
-  }
-  if (SizeCounter < ValueSize)
-    ++RegisterCounter;
-
-  return Capacity<Size>{ RegisterCounter, SizeCounter };
-}
-
-template<model::abi::Values V>
-std::optional<model::RawFunctionType>
-ABI<V>::toRaw(model::Binary &TheBinary,
-              const model::CABIFunctionType &Original) {
-  auto Arguments = allocateRegisters<CallingConvention>(Original.Arguments);
-  if (!Arguments.has_value())
-    return std::nullopt;
-  auto [RegisterArguments, StackArguments] = *Arguments;
-
-  model::RawFunctionType Result;
-  for (auto [ArgumentIndex, Registers] : RegisterArguments) {
-    revng_assert(!Registers.empty());
-    auto OriginalName = Original.Arguments.at(ArgumentIndex).CustomName;
-    for (size_t Index = 0; auto &Register : Registers) {
-      model::Identifier FinalName = OriginalName;
-      if (Registers.size() > 1 && !FinalName.empty())
-        FinalName += "_part_" + std::to_string(++Index) + "_out_of_"
-                     + std::to_string(Registers.size());
-      model::NamedTypedRegister Argument(Register);
-      Argument.Type = buildType(Register, TheBinary);
-      Argument.CustomName = FinalName;
-      Result.Arguments.insert(Argument);
-    }
-  }
-
-  // I'm not sure if this assert is required.
-  revng_assert(Result.FinalStackOffset == 0);
-
-  for (auto ArgumentIndex : StackArguments) {
-    // Get the argument.
-    auto ArgumentIterator = Original.Arguments.find(ArgumentIndex);
-    revng_assert(ArgumentIterator != Original.Arguments.end());
-    const model::Argument &Argument = *ArgumentIterator;
-
-    // Get it's size.
-    auto MaybeSize = Argument.Type.size();
-    revng_assert(MaybeSize.has_value());
-    size_t Size = *MaybeSize;
-
-    // TODO: handle stack arguments properly.
-    // \note: different ABIs could use different stack types.
-    // \see: `clrcall` ABI.
-
-    // Compute aligned size.
-    constexpr size_t Alignment = CallingConvention::StackAlignment;
-    size_t Aligned = Size + Alignment - 1 - (Size + Alignment - 1) % Alignment;
-    Result.FinalStackOffset += Aligned;
-  }
-
-  constexpr model::Architecture::Values Arch = model::abi::getArchitecture(V);
-  constexpr auto PointerSize = model::Architecture::getPointerSize(Arch);
-  auto PointerQualifier = model::Qualifier::createPointer(PointerSize);
-
-  // Allocate return values
-  if (!Original.ReturnType.isVoid()) {
-    if (CallingConvention::GeneralPurposeReturnValueRegisters.empty())
-      return std::nullopt;
-    auto
-      ReturnRegister = CallingConvention::GeneralPurposeReturnValueRegisters[0];
-    auto RegisterSize = model::Register::getSize(ReturnRegister);
-
-    auto MaybeReturnValueSize = Original.ReturnType.size();
-    revng_assert(MaybeReturnValueSize.has_value());
-    using CC = CallingConvention;
-    constexpr size_t L = CC::MaximumGeneralPurposeRegistersPerReturnValue;
-    auto Capacity = countCapacity<L>(*MaybeReturnValueSize,
-                                     CC::GeneralPurposeReturnValueRegisters);
-
-    bool AreSubsequentRegistersAllowed = true;
-    if constexpr (!CC::AllowPassingAggregatesInRegisters)
-      if (!Original.ReturnType.isScalar())
-        AreSubsequentRegistersAllowed = false;
-
-    if (*MaybeReturnValueSize <= Capacity.MaximumSizePossible) {
-      if (AreSubsequentRegistersAllowed) {
-        constexpr auto
-          &AvailableRegisters = CC::GeneralPurposeReturnValueRegisters;
-        constexpr size_t AvailableRegisterCount = AvailableRegisters.size();
-
-        revng_assert(Capacity.NeededRegisterCount <= AvailableRegisterCount);
-        for (size_t Index = 0; Index < Capacity.NeededRegisterCount; ++Index) {
-          auto Register = AvailableRegisters[Index];
-          model::QualifiedType Type = buildType(Register, TheBinary);
-
-          model::TypedRegister ReturnPointer(Register);
-          ReturnPointer.Type = std::move(Type);
-          Result.ReturnValues.insert(ReturnPointer);
-        }
-      }
-    }
-
-    if (Result.ReturnValues.empty()) {
-      if (*MaybeReturnValueSize <= RegisterSize
-          && AreSubsequentRegistersAllowed) {
-        model::TypedRegister Argument(ReturnRegister);
-        Argument.Type = buildType(ReturnRegister, TheBinary);
-        Result.ReturnValues.insert(Argument);
-      } else {
-        model::QualifiedType ReturnType = Original.ReturnType;
-        ReturnType.Qualifiers.emplace_back(PointerQualifier);
-
-        model::TypedRegister ReturnPointer(ReturnRegister);
-        ReturnPointer.Type = std::move(ReturnType);
-        Result.ReturnValues.insert(std::move(ReturnPointer));
-      }
-    }
-  }
-
-  // Populate the list of preserved registers
-  using CC = CallingConvention;
-  for (model::Register::Values Register : CC::CalleeSavedRegisters)
-    Result.PreservedRegisters.insert(Register);
-
-  return Result;
-}
-
-// TODO: implement this!
-template<model::abi::Values V>
-void ABI<V>::applyDeductions(RegisterStateMap &Prototype) {
-  static_cast<void>(Prototype);
-  // using namespace model::RegisterState;
-  // using CC = CallingConvention;
-
-  // // Find the highest-indexed YesOrDead argument, and mark YesOrDead all
-  // those
-  // // before it. Same for return values.
-  // bool ArgumentMatch = false;
-  // for (auto Register : llvm::reverse(CC::GeneralPurposeArgumentRegisters))
-  // {
-  //   auto State = getOrDefault(Prototype,
-  //                             Register,
-  //                             { model::RegisterState::Invalid,
-  //                               model::RegisterState::Invalid });
-
-  //   auto AsArgument = State.first;
-
-  //   if (not ArgumentMatch) {
-  //     ArgumentMatch = isYesOrDead(AsArgument);
-  //   } else if (AsArgument != Yes and AsArgument != Dead) {
-  //     Prototype[Register].first = YesOrDead;
-  //   }
-  // }
-
-  // bool ReturnValueMatch = false;
-  // for (auto Register :
-  // llvm::reverse(CC::GeneralPurposeReturnValueRegisters)) {
-  //   auto State = getOrDefault(Prototype,
-  //                             Register,
-  //                             { model::RegisterState::Invalid,
-  //                               model::RegisterState::Invalid });
-
-  //   auto AsReturnValue = State.second;
-
-  //   if (not ReturnValueMatch) {
-  //     ReturnValueMatch = isYesOrDead(AsReturnValue);
-  //   } else if (AsReturnValue != Yes and AsReturnValue != Dead) {
-  //     Prototype[Register].second = YesOrDead;
-  //   }
-  // }
-
-  // // Mark all the other non-YesOrDead as No
-  // for (auto &[Register, State] : Prototype) {
-  //   auto &[AsArgument, AsReturnValue] = State;
-
-  //   if (not isYesOrDead(AsArgument))
-  //     AsArgument = No;
-
-  //   if (not isYesOrDead(AsReturnValue))
-  //     AsReturnValue = No;
-  // }
-}
-*/
 
 //
 // Specializations

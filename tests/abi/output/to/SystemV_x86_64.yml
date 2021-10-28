@@ -36,11 +36,6 @@ Types:
     ID:              776
     PrimitiveKind:   PointerOrNumber
     Size:            8
-  - !Primitive
-    Kind:            Primitive
-    ID:              784
-    PrimitiveKind:   PointerOrNumber
-    Size:            16
   - !Struct
     Kind:            Struct
     ID:              7000000001
@@ -261,21 +256,21 @@ Types:
     ID:              1000000023
     ABI:             SystemV_x86_64
     ReturnType:
-      UnqualifiedType: "/Types/Primitive-784"
+      UnqualifiedType: "/Types/Primitive-528"
     Arguments:       []
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              1000000024
     ABI:             SystemV_x86_64
     ReturnType:
-      UnqualifiedType: "/Types/Primitive-784"
+      UnqualifiedType: "/Types/Primitive-528"
     Arguments:       []
   - !CABIFunctionType
     Kind:            CABIFunctionType
     ID:              1000000025
     ABI:             SystemV_x86_64
     ReturnType:
-      UnqualifiedType: "/Types/Primitive-784"
+      UnqualifiedType: "/Types/Primitive-528"
     Arguments:
       - Index:           0
         Type:

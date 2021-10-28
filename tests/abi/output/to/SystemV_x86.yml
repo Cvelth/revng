@@ -36,11 +36,6 @@ Types:
     ID:              772
     PrimitiveKind:   PointerOrNumber
     Size:            4
-  - !Primitive
-    Kind:            Primitive
-    ID:              776
-    PrimitiveKind:   PointerOrNumber
-    Size:            8
   - !Struct
     Kind:            Struct
     ID:              7000000001
@@ -191,7 +186,7 @@ Types:
     ID:              1000000015
     ABI:             SystemV_x86
     ReturnType:
-      UnqualifiedType: "/Types/Primitive-776"
+      UnqualifiedType: "/Types/Primitive-520"
     Arguments:       []
 Segments:        []
 Functions:       []
