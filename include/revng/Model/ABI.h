@@ -19,12 +19,12 @@ enum Values {
 
   /// 64-bit SystemV ABI for x86 processor architecture.
   /// The latest version of the documentation can be found
-  /// [here](https://gitlab.com/x86-psABIs/x86-64-ABI)
+  /// \sa https://gitlab.com/x86-psABIs/x86-64-ABI
   SystemV_x86_64,
 
   /// 32-bit SystemV ABI for x86 processor architecture.
   /// The latest version of the documentation can be found
-  /// [here](https://gitlab.com/x86-psABIs/i386-ABI/-/tree/hjl/x86/master)
+  /// \sa https://gitlab.com/x86-psABIs/i386-ABI/-/tree/hjl/x86/master
   SystemV_x86,
 
   /// A gcc specific modification of the 32-bit SystemV ABI for x86 processor
@@ -47,32 +47,32 @@ enum Values {
 
   /// 64-bit Microsoft ABI for x86 processor architecture.
   /// The documentation can be found
-  /// [here](https://docs.microsoft.com/en-us/cpp/build/x64-calling-convention)
+  /// \sa https://docs.microsoft.com/en-us/cpp/build/x64-calling-convention
   Microsoft_x64,
 
   /// A modification of 64-bit Microsoft ABI for x86 processor architecture.
   /// It allows using extra vector registers for passing function arguments.
   /// The documentation can be found
-  /// [here](https://docs.microsoft.com/en-us/cpp/cpp/vectorcall)
+  /// \sa https://docs.microsoft.com/en-us/cpp/cpp/vectorcall
   Microsoft_x64_vectorcall,
 
   /// A modification of 64-bit Microsoft ABI for x86 processor architecture.
   /// It uses CLR expression stack to pass function arguments.
   /// The documentation can be found
-  /// [here](https://docs.microsoft.com/en-us/cpp/cpp/clrcall)
+  /// \sa https://docs.microsoft.com/en-us/cpp/cpp/clrcall
   Microsoft_x64_clrcall,
 
   /// The default 32-bit Microsoft ABI for x86 processor architecture.
   /// It was indented to be compatible with `SystemV_x86` but there are slight
   /// differences. The documentation can be found
-  /// [here](https://docs.microsoft.com/en-us/cpp/cpp/cdecl)
+  /// \sa https://docs.microsoft.com/en-us/cpp/cpp/cdecl
   Microsoft_x86_cdecl,
 
   /// A modification of the 32-bit `__cdecl` Microsoft ABI for x86 processor
   /// architecture. The main difference is the fact that the callee is
   /// responsible for stack cleanup instead of the caller.
   /// The documentation can be found
-  /// [here](https://docs.microsoft.com/en-us/cpp/cpp/stdcall)
+  /// \sa https://docs.microsoft.com/en-us/cpp/cpp/stdcall
   Microsoft_x86_stdcall,
 
   /// A modification of the 32-bit `__stdcall` Microsoft ABI for x86 processor
@@ -80,46 +80,46 @@ enum Values {
   /// single (the first) function argument using a register. This ABI is only
   /// used for member function call where the first argument is always a `this`
   /// pointer. The documentation can be found
-  /// [here](https://docs.microsoft.com/en-us/cpp/cpp/thiscall)
+  /// \sa https://docs.microsoft.com/en-us/cpp/cpp/thiscall
   Microsoft_x86_thiscall,
 
   /// A modification of the 32-bit `__stdcall` Microsoft ABI for x86 processor
   /// architecture. The main difference is the fact that it allows to pass two
   /// first GPR-sized non-aggregate function arguments in registers.=
   /// The documentation can be found
-  /// [here](https://docs.microsoft.com/en-us/cpp/cpp/fastcall)
+  /// \sa https://docs.microsoft.com/en-us/cpp/cpp/fastcall
   Microsoft_x86_fastcall,
 
   /// A modification of 32-bit Microsoft ABI for x86 processor architecture.
   /// It uses CLR expression stack to pass function arguments.
   /// The documentation can be found
-  /// [here](https://docs.microsoft.com/en-us/cpp/cpp/clrcall)
+  /// \sa https://docs.microsoft.com/en-us/cpp/cpp/clrcall
   Microsoft_x86_clrcall,
 
   /// A modification of the 32-bit `__fastcall` Microsoft ABI for x86 processor
   /// architecture. It allows using extra vector registers for passing function
   /// arguments. The documentation can be found
-  /// [here](https://docs.microsoft.com/en-us/cpp/cpp/vectorcall)
+  /// \sa https://docs.microsoft.com/en-us/cpp/cpp/vectorcall
   Microsoft_x86_vectorcall,
 
   /// The ABI for Aarch64 (ARM) processor architecture.
   /// The latest version of the documentation can be found
-  /// [here](https://github.com/ARM-software/abi-aa/releases)
+  /// \sa https://github.com/ARM-software/abi-aa/releases
   Aarch64,
 
   /// The ABI for Aarch32 (ARM) processor architecture.
   /// The latest version of the documentation can be found
-  /// [here](https://github.com/ARM-software/abi-aa/releases)
+  /// \sa https://github.com/ARM-software/abi-aa/releases
   Aarch32,
 
   /// The ABI for MIPS RISC processor architecture.
   /// The latest version of the documentation can be found
-  /// [here](http://math-atlas.sourceforge.net/devel/assembly/mipsabi32.pdf)
+  /// \sa http://math-atlas.sourceforge.net/devel/assembly/mipsabi32.pdf
   MIPS_o32,
 
   /// The s390x ABI for SystemZ processor architecture.
   /// The latest version of the documentation can be found
-  /// [here](https://github.com/IBM/s390x-abi)
+  /// \sa https://github.com/IBM/s390x-abi
   SystemZ_s390x,
 
   Count
