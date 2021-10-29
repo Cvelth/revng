@@ -120,7 +120,7 @@ struct CallingConventionTrait {
   ///
   /// The rules from `MaxGeneralPurposeRegistersPerAggregateArgument` apply,
   /// see relevant comment for additional information.
-  /// \see MaxGeneralPurposeRegistersPerAggregateArgument
+  /// \sa MaxGeneralPurposeRegistersPerAggregateArgument
   static constexpr size_t MaxGeneralPurposeRegistersPerAggregateReturnValue = 0;
 
   /// States whether specified ABI allows accepting primite object arguments
@@ -153,7 +153,7 @@ struct CallingConventionTrait {
   ///
   /// The rules from `MaxGeneralPurposeRegistersPerPrimitiveArgument` apply,
   /// see relevant comment for additional information.
-  /// \see MaxGeneralPurposeRegistersPerPrimitiveArgument
+  /// \sa MaxGeneralPurposeRegistersPerPrimitiveArgument
   static constexpr size_t MaxGeneralPurposeRegistersPerPrimitiveReturnValue = 0;
 
   /// States who is responsible for cleaning the stack after the function call.

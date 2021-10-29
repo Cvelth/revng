@@ -495,7 +495,7 @@ ABI<V>::toRaw(model::Binary &TheBinary,
 
       // TODO: handle stack arguments properly.
       // \note: different ABIs could use different stack types.
-      // \see: `clrcall` ABI.
+      // \sa: `clrcall` ABI.
 
       constexpr size_t Alignment = CallingConvention::StackAlignment;
       size_t Aligned = Size + Alignment - 1

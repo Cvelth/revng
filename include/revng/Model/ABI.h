@@ -30,19 +30,19 @@ enum Values {
   /// A gcc specific modification of the 32-bit SystemV ABI for x86 processor
   /// architecture. It allows three first GPR-sized arguments to be passed
   /// using the EAX, EDX, and ECX registers.
-  /// \see `regparm` x86 function attribute.
+  /// \sa `regparm` x86 function attribute.
   SystemV_x86_regparm_3,
 
   /// A gcc specific modification of the 32-bit SystemV ABI for x86 processor
   /// architecture. It allows two first GPR-sized arguments to be passed
   /// using the EAX, and ECX registers.
-  /// \see `regparm` x86 function attribute.
+  /// \sa `regparm` x86 function attribute.
   SystemV_x86_regparm_2,
 
   /// A gcc specific modification of the 32-bit SystemV ABI for x86 processor
   /// architecture. It allows the first GPR-sized argument to be passed
   /// using the EAX register.
-  /// \see `regparm` x86 function attribute.
+  /// \sa `regparm` x86 function attribute.
   SystemV_x86_regparm_1,
 
   /// 64-bit Microsoft ABI for x86 processor architecture.

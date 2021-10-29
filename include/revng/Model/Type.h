@@ -952,7 +952,7 @@ struct llvm::yaml::MappingTraits<model::Argument>
 /// information about the register is embedded. That information is implicit in
 /// the ABI this type is associated to.
 ///
-/// \see RawFunctionType
+/// \sa RawFunctionType
 class model::CABIFunctionType : public model::Type {
 public:
   static constexpr const char *Tag = "!CABIFunctionType";
