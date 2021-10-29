@@ -44,6 +44,7 @@ convertToRaw(model::abi::Values,
              const model::CABIFunctionType &);
 model::TypePath defaultPrototype(model::abi::Values, model::Binary &);
 
+/// \deprecated
 inline std::optional<model::RawFunctionType>
 convertToRaw(model::Binary &TheBinary, const model::Type *T) {
   revng_assert(T != nullptr);
@@ -58,6 +59,7 @@ convertToRaw(model::Binary &TheBinary, const model::Type *T) {
   }
 }
 
+/// \deprecated
 inline model::RawFunctionType
 convertToRawOrDefault(model::Binary &TheBinary, const model::Type *T) {
   using RFT = model::RawFunctionType;

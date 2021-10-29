@@ -251,8 +251,9 @@ ABI<V>::toCABI(model::Binary &TheBinary,
 //
 
 using IndexType = decltype(model::Argument::Index);
+using RegisterList = llvm::SmallVector<model::Register::Values, 1>;
 struct DistributedArgument {
-  llvm::SmallVector<model::Register::Values, 1> Registers = {};
+  RegisterList Registers = {};
   size_t Size = 0, SizeOnStack = 0;
 };
 using DistributedArguments = llvm::DenseMap<IndexType, DistributedArgument>;
@@ -428,6 +429,31 @@ distributeReturnValue(const model::QualifiedType &ReturnValueType) {
   }
 }
 
+static model::QualifiedType
+chooseArgumentType(const model::QualifiedType &ArgumentType,
+                   model::Register::Values Register,
+                   const RegisterList &RegisterList,
+                   model::Binary &TheBinary) {
+  if (RegisterList.size() > 1) {
+    return buildGenericType(Register, TheBinary);
+  } else {
+    auto ResultType = ArgumentType;
+    auto MaybeSize = ArgumentType.size();
+    auto TargetSize = model::Register::getSize(Register);
+
+    if (!MaybeSize) {
+      return buildType(Register, TheBinary);
+    } else if (*MaybeSize > TargetSize) {
+      auto Qualifier = model::Qualifier::createPointer(TargetSize);
+      ResultType.Qualifiers.emplace_back(Qualifier);
+    } else if (!ResultType.isScalar()) {
+      return buildGenericType(Register, TheBinary);
+    }
+
+    return ResultType;
+  }
+}
+
 template<model::abi::Values V>
 std::optional<model::RawFunctionType>
 ABI<V>::toRaw(model::Binary &TheBinary,
@@ -438,6 +464,7 @@ ABI<V>::toRaw(model::Binary &TheBinary,
 
   model::RawFunctionType Result;
   for (auto [ArgumentIndex, ArgumentStorage] : *Arguments) {
+    const auto &ArgumentType = Original.Arguments.at(ArgumentIndex).Type;
     if (!ArgumentStorage.Registers.empty()) {
       // Handle the registers
       auto OriginalName = Original.Arguments.at(ArgumentIndex).CustomName;
@@ -447,20 +474,10 @@ ABI<V>::toRaw(model::Binary &TheBinary,
           FinalName += "_part_" + std::to_string(++Index) + "_out_of_"
                        + std::to_string(ArgumentStorage.Registers.size());
         model::NamedTypedRegister Argument(Register);
-        if (ArgumentStorage.Registers.size() > 1) {
-          Argument.Type = buildGenericType(Register, TheBinary);
-        } else {
-          auto TypeCopy = Original.Arguments.at(ArgumentIndex).Type;
-          auto TargetSize = model::Register::getSize(Register);
-          auto MaybeSize = Original.Arguments.at(ArgumentIndex).Type.size();
-          if (!MaybeSize) {
-            TypeCopy = buildType(Register, TheBinary);
-          } else if (*MaybeSize > TargetSize) {
-            auto Qualifier = model::Qualifier::createPointer(TargetSize);
-            TypeCopy.Qualifiers.emplace_back(Qualifier);
-          }
-          Argument.Type = std::move(TypeCopy);
-        }
+        Argument.Type = chooseArgumentType(ArgumentType,
+                                           Register,
+                                           ArgumentStorage.Registers,
+                                           TheBinary);
         Argument.CustomName = FinalName;
         Result.Arguments.insert(Argument);
       }
@@ -505,10 +522,10 @@ ABI<V>::toRaw(model::Binary &TheBinary,
       for (model::Register::Values Register : ReturnValue->Registers) {
         model::TypedRegister ReturnValueRegister;
         ReturnValueRegister.Location = Register;
-        if (ReturnValue->Registers.size() > 1)
-          ReturnValueRegister.Type = buildGenericType(Register, TheBinary);
-        else
-          ReturnValueRegister.Type = buildType(Register, TheBinary);
+        ReturnValueRegister.Type = chooseArgumentType(Original.ReturnType,
+                                                      Register,
+                                                      ReturnValue->Registers,
+                                                      TheBinary);
 
         Result.ReturnValues.insert(std::move(ReturnValueRegister));
       }

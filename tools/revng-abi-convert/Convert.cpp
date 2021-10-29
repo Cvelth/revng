@@ -85,10 +85,10 @@ int convertToCABI(TupleTree<model::Binary> &Binary,
   }
 
   TupleTree<model::Binary> Result = Binary.clone({});
-  if (!Result->verify()) {
+  if (!Result->verify(true)) {
     std::string Serialized;
     Result.serialize(Serialized);
-    dbg << "Result model verification failed (on "
+    dbg << "Model copy verification failed (on "
         << model::abi::getName(ABI).data() << "):\n"
         << Serialized;
     return 7;
@@ -108,7 +108,7 @@ int convertToCABI(TupleTree<model::Binary> &Binary,
 
   std::string Serialized;
   Result.serialize(Serialized);
-  if (!Result->verify()) {
+  if (!Result->verify(true)) {
     dbg << "Result model verification failed (on "
         << model::abi::getName(ABI).data() << "):\n"
         << Serialized;
@@ -140,10 +140,10 @@ int convertToRaw(TupleTree<model::Binary> &Binary,
   }
 
   TupleTree<model::Binary> Result = Binary.clone({});
-  if (!Result->verify()) {
+  if (!Result->verify(true)) {
     std::string Serialized;
     Result.serialize(Serialized);
-    dbg << "Result model verification failed (on "
+    dbg << "Model copy verification failed (on "
         << model::abi::getName(ABI).data() << "):\n"
         << Serialized;
     return 35;
@@ -163,7 +163,7 @@ int convertToRaw(TupleTree<model::Binary> &Binary,
 
   std::string Serialized;
   Result.serialize(Serialized);
-  if (!Result->verify()) {
+  if (!Result->verify(true)) {
     dbg << "Result model verification failed (on "
         << model::abi::getName(ABI).data() << "):\n"
         << Serialized;

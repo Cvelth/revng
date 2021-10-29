@@ -8,35 +8,35 @@ Types:
     Size:            0
   - !Primitive
     Kind:            Primitive
-    ID:              513
-    PrimitiveKind:   Generic
+    ID:              1025
+    PrimitiveKind:   Number
     Size:            1
   - !Primitive
     Kind:            Primitive
-    ID:              514
-    PrimitiveKind:   Generic
+    ID:              1026
+    PrimitiveKind:   Number
     Size:            2
   - !Primitive
     Kind:            Primitive
-    ID:              516
-    PrimitiveKind:   Generic
+    ID:              1028
+    PrimitiveKind:   Number
     Size:            4
   - !Primitive
     Kind:            Primitive
-    ID:              520
-    PrimitiveKind:   Generic
+    ID:              1032
+    PrimitiveKind:   Number
     Size:            8
   - !Primitive
     Kind:            Primitive
-    ID:              528
-    PrimitiveKind:   Generic
+    ID:              1040
+    PrimitiveKind:   Number
     Size:            16
   - !Struct
     Kind:            Struct
     ID:              7000000001
     Fields:
       - Type:
-          UnqualifiedType: "/Types/Primitive-513"
+          UnqualifiedType: "/Types/Primitive-1025"
         Offset:          0
     Size:            8
   - !Struct
@@ -44,10 +44,10 @@ Types:
     ID:              7000000002
     Fields:
       - Type:
-          UnqualifiedType: "/Types/Primitive-513"
+          UnqualifiedType: "/Types/Primitive-1025"
         Offset:          0
       - Type:
-          UnqualifiedType: "/Types/Primitive-513"
+          UnqualifiedType: "/Types/Primitive-1025"
         Offset:          1
     Size:            8
   - !Struct
@@ -55,10 +55,10 @@ Types:
     ID:              7000000003
     Fields:
       - Type:
-          UnqualifiedType: "/Types/Primitive-514"
+          UnqualifiedType: "/Types/Primitive-1026"
         Offset:          0
       - Type:
-          UnqualifiedType: "/Types/Primitive-513"
+          UnqualifiedType: "/Types/Primitive-1025"
         Offset:          2
     Size:            8
   - !Struct
@@ -66,10 +66,10 @@ Types:
     ID:              7000000004
     Fields:
       - Type:
-          UnqualifiedType: "/Types/Primitive-513"
+          UnqualifiedType: "/Types/Primitive-1025"
         Offset:          0
       - Type:
-          UnqualifiedType: "/Types/Primitive-514"
+          UnqualifiedType: "/Types/Primitive-1026"
         Offset:          2
     Size:            8
   - !Struct
@@ -77,10 +77,10 @@ Types:
     ID:              7000000005
     Fields:
       - Type:
-          UnqualifiedType: "/Types/Primitive-516"
+          UnqualifiedType: "/Types/Primitive-1028"
         Offset:          0
       - Type:
-          UnqualifiedType: "/Types/Primitive-516"
+          UnqualifiedType: "/Types/Primitive-1028"
         Offset:          4
     Size:            8
   - !Struct
@@ -88,13 +88,13 @@ Types:
     ID:              7000000006
     Fields:
       - Type:
-          UnqualifiedType: "/Types/Primitive-516"
+          UnqualifiedType: "/Types/Primitive-1028"
         Offset:          0
       - Type:
-          UnqualifiedType: "/Types/Primitive-516"
+          UnqualifiedType: "/Types/Primitive-1028"
         Offset:          4
       - Type:
-          UnqualifiedType: "/Types/Primitive-513"
+          UnqualifiedType: "/Types/Primitive-1025"
         Offset:          8
     Size:            16
   - !Struct
@@ -102,16 +102,16 @@ Types:
     ID:              7000000007
     Fields:
       - Type:
-          UnqualifiedType: "/Types/Primitive-516"
+          UnqualifiedType: "/Types/Primitive-1028"
         Offset:          0
       - Type:
-          UnqualifiedType: "/Types/Primitive-516"
+          UnqualifiedType: "/Types/Primitive-1028"
         Offset:          4
       - Type:
-          UnqualifiedType: "/Types/Primitive-513"
+          UnqualifiedType: "/Types/Primitive-1025"
         Offset:          8
       - Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-1032"
         Offset:          16
     Size:            32
   - !Struct
@@ -119,19 +119,19 @@ Types:
     ID:              7000000008
     Fields:
       - Type:
-          UnqualifiedType: "/Types/Primitive-516"
+          UnqualifiedType: "/Types/Primitive-1028"
         Offset:          0
       - Type:
-          UnqualifiedType: "/Types/Primitive-516"
+          UnqualifiedType: "/Types/Primitive-1028"
         Offset:          4
       - Type:
-          UnqualifiedType: "/Types/Primitive-513"
+          UnqualifiedType: "/Types/Primitive-1025"
         Offset:          8
       - Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-1032"
         Offset:          12
       - Type:
-          UnqualifiedType: "/Types/Primitive-520"
+          UnqualifiedType: "/Types/Primitive-1032"
         Offset:          20
     Size:            32
   - !Struct
@@ -139,10 +139,10 @@ Types:
     ID:              7000000009
     Fields:
       - Type:
-          UnqualifiedType: "/Types/Primitive-528"
+          UnqualifiedType: "/Types/Primitive-1040"
         Offset:          0
       - Type:
-          UnqualifiedType: "/Types/Primitive-528"
+          UnqualifiedType: "/Types/Primitive-1040"
         Offset:          16
     Size:            32
   - !Struct
@@ -150,16 +150,16 @@ Types:
     ID:              7000000010
     Fields:
       - Type:
-          UnqualifiedType: "/Types/Primitive-528"
+          UnqualifiedType: "/Types/Primitive-1040"
         Offset:          0
       - Type:
-          UnqualifiedType: "/Types/Primitive-528"
+          UnqualifiedType: "/Types/Primitive-1040"
         Offset:          16
       - Type:
-          UnqualifiedType: "/Types/Primitive-528"
+          UnqualifiedType: "/Types/Primitive-1040"
         Offset:          32
       - Type:
-          UnqualifiedType: "/Types/Primitive-528"
+          UnqualifiedType: "/Types/Primitive-1040"
         Offset:          48
     Size:            64
   - !CABIFunctionType
