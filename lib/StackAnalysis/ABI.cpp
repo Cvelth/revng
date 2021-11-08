@@ -667,4 +667,29 @@ defaultPrototype(model::abi::Values RuntimeABI, model::Binary &TheBinary) {
   });
 }
 
+Descended::Descended(model::CABIFunctionType &Function, model::Binary &Binary) :
+  Binary(Binary),
+  Original(Function),
+  Temporary(abi::convertToRaw(Function.ABI, this->Binary, Function)) {
+}
+
+bool Descended::ascend() {
+  if (WasAscended)
+    return false;
+
+  if (Temporary == std::nullopt)
+    return false;
+
+  auto DA = skippingEnumSwitch<1>(Original.ABI, [this]<model::abi::Values A>() {
+    using CallConv = typename ABI<A>::CallingConvention;
+    return distributeArguments<CallConv>(Original.Arguments);
+  });
+  if (!DA)
+    return false;
+
+  Temporary = std::nullopt;
+  WasAscended = true;
+  return true;
+}
+
 } // namespace abi

@@ -71,4 +71,39 @@ convertToRawOrDefault(model::Binary &TheBinary, const model::Type *T) {
     revng_abort("getRawFunctionType with non-function type");
 }
 
+class Descended;
+Descended descend(model::CABIFunctionType &Function, model::Binary &Binary);
+
+class Descended {
+  friend inline Descended
+  descend(model::CABIFunctionType &Function, model::Binary &Binary) {
+    return Descended(Function, Binary);
+  }
+  Descended(model::CABIFunctionType &Function, model::Binary &Binary);
+
+public:
+  ~Descended() { ascend(); }
+  std::optional<model::RawFunctionType> &get() { return Temporary; }
+  const std::optional<model::RawFunctionType> &get() const { return Temporary; }
+
+  bool has_value() const { return Temporary.has_value(); }
+  model::RawFunctionType &value() { return Temporary.value(); }
+  const model::RawFunctionType &value() const { return Temporary.value(); }
+
+  operator bool() const { return has_value(); }
+  model::RawFunctionType &operator*() { return value(); }
+  const model::RawFunctionType &operator*() const { return value(); }
+  model::RawFunctionType *operator->() { return &value(); }
+  const model::RawFunctionType *operator->() const { return &value(); }
+
+  bool ascend();
+
+private:
+  model::Binary &Binary;
+  model::CABIFunctionType &Original;
+  std::optional<model::RawFunctionType> Temporary;
+
+  bool WasAscended = false;
+};
+
 } // namespace abi
