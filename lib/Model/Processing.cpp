@@ -169,4 +169,142 @@ void deduplicateEquivalentTypes(TupleTree<model::Binary> &Model) {
   // * Otherwise, the nodes are not equivalent.
 }
 
+namespace impl {
+
+//
+// Helper functions
+//
+static bool AreSameSize(model::Type *LHS, model::Type *RHS) {
+  return LHS->size() && RHS->size() && *LHS->size() == *RHS->size();
+}
+
+//
+// Custom specializations for the cases where such a conversion is possible
+//
+
+template<>
+Type *
+tryUpgrade(PrimitiveType *Original, PrimitiveType *Target, Binary &Binary) {
+  if (!AreSameSize(Original, Target))
+    return nullptr;
+
+  namespace Kind = PrimitiveTypeKind;
+
+  Kind::Values &TargetKind = Target->PrimitiveKind;
+  if (TargetKind == Kind::Invalid || TargetKind >= Kind::Count)
+    revng_abort();
+
+  switch (Original->PrimitiveKind) {
+  case Kind::Generic:
+    if (TargetKind != Kind::Void)
+      return Binary.getPrimitiveType(TargetKind, *Target->size()).get();
+    break;
+  case Kind::PointerOrNumber:
+    if (TargetKind == Kind::PointerOrNumber || TargetKind == Kind::Number
+        || TargetKind == Kind::Unsigned || TargetKind == Kind::Signed)
+      return Binary.getPrimitiveType(TargetKind, *Target->size()).get();
+    break;
+  case Kind::Number:
+    if (TargetKind == Kind::Number || TargetKind == Kind::Unsigned
+        || TargetKind == Kind::Signed)
+      return Binary.getPrimitiveType(TargetKind, *Target->size()).get();
+    break;
+
+  case Kind::Unsigned:
+  case Kind::Signed:
+  case Kind::Float:
+  case Kind::Void:
+    break;
+
+  case Kind::Invalid:
+  case Kind::Count:
+  default:
+    revng_abort();
+  }
+
+  return nullptr;
+}
+template<>
+Type *tryUpgrade(PrimitiveType *Original, EnumType *Target, Binary &Binary) {
+  if (!AreSameSize(Original, Target))
+    return nullptr;
+
+  switch (Original->PrimitiveKind) {
+  case PrimitiveTypeKind::Generic:
+  case PrimitiveTypeKind::PointerOrNumber:
+  case PrimitiveTypeKind::Number:
+  case PrimitiveTypeKind::Unsigned:
+  case PrimitiveTypeKind::Signed:
+    break;
+
+  case PrimitiveTypeKind::Float:
+  case PrimitiveTypeKind::Void:
+    return nullptr;
+
+  case PrimitiveTypeKind::Invalid:
+  case PrimitiveTypeKind::Count:
+  default:
+    revng_abort();
+  }
+
+  if (!tryUpgrade(Original, Target->UnderlyingType.get(), Binary))
+    return nullptr;
+
+  return Binary.recordNewType(UpcastableType::make<EnumType>(Target)).get();
+}
+template<>
+Type *tryUpgrade(EnumType *Original, EnumType *Target, Binary &Binary) {
+  if (!AreSameSize(Original, Target))
+    return nullptr;
+
+  if (!tryUpgrade(Original->UnderlyingType.get(), Target->UnderlyingType.get(), Binary))
+    return nullptr;
+
+  return Binary.recordNewType(UpcastableType::make<EnumType>(Target)).get();
+}
+template<>
+Type *tryUpgrade(StructType *Original, StructType *Target, Binary &Binary) {
+  if (!AreSameSize(Original, Target))
+    return nullptr;
+
+  // Iterate and try to upgrade all the fields. If no issues, proceed.
+
+  return nullptr;
+}
+template<>
+Type *tryUpgrade(UnionType *Original, UnionType *Target, Binary &Binary) {
+  if (!AreSameSize(Original, Target))
+    return nullptr;
+
+  // Iterate and try to upgrade all the fields. If no issues, proceed.
+
+  return nullptr;
+}
+
+using CFT = CABIFunctionType;
+using RFT = RawFunctionType;
+template<>
+Type *tryUpgrade(CFT *Original, CFT *Target, Binary &Binary) {
+
+  // Iterate and try to upgrade all the arguments. If no issues, proceed.
+
+  return nullptr;
+}
+template<>
+Type *tryUpgrade(RFT *Original, RFT *Target, Binary &Binary) {
+
+  // Iterate and try to upgrade all the arguments. If no issues, proceed.
+
+  return nullptr;
+}
+template<>
+Type *tryUpgrade(CFT *Original, RFT *Target, Binary &Binary) {
+
+  // Convert RFT to CFT and then rely on (CFT -> CFT) specialization.
+  
+  return nullptr;
+}
+
+} // namespace impl
+
 } // namespace model
