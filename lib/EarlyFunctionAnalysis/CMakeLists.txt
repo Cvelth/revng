@@ -18,6 +18,7 @@ llvm_map_components_to_libnames(LLVM_LIBRARIES Analysis)
 
 target_link_libraries(revngEarlyFunctionAnalysis
   revngBasicAnalyses
+  revngABI
   revngABIAnalyses
   revngSupport
   revngModel

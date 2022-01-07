@@ -42,6 +42,7 @@
 #include "llvm/Transforms/Utils/CodeExtractor.h"
 #include "llvm/Transforms/Utils/Mem2Reg.h"
 
+#include "revng/ABI/FunctionType.h"
 #include "revng/ADT/KeyedObjectTraits.h"
 #include "revng/ADT/Queue.h"
 #include "revng/ADT/SortedVector.h"
@@ -204,13 +205,29 @@ public:
 /// methods to retrieve the stored information, acting as a oracle.
 class FunctionAnalysisResults {
 private:
+  llvm::Module &M;
+  ArrayRef<GlobalVariable *> ABIRegisters;
+  model::Binary &Binary;
+
   /// For each function, the result of the intraprocedural analysis
   std::map<MetaAddress, FunctionSummary> FunctionsBucket;
   FunctionSummary DefaultSummary;
 
 public:
-  FunctionAnalysisResults(FunctionSummary DefaultSummary) :
+  FunctionAnalysisResults(llvm::Module &M,
+                          ArrayRef<GlobalVariable *> ABIRegisters,
+                          model::Binary &Binary,
+                          FunctionSummary DefaultSummary) :
+    M(M),
+    ABIRegisters(ABIRegisters),
+    Binary(Binary),
     DefaultSummary(std::move(DefaultSummary)) {}
+
+  FunctionSummary &insert(const MetaAddress &PC, FunctionSummary &&Summary) {
+    auto It = FunctionsBucket.find(PC);
+    revng_assert(It == FunctionsBucket.end());
+    return FunctionsBucket.emplace(PC, std::move(Summary)).first->second;
+  }
 
   FunctionSummary &at(MetaAddress PC) { return FunctionsBucket.at(PC); }
 
@@ -258,6 +275,12 @@ private:
       return It->second;
     return DefaultSummary;
   }
+
+public:
+  void importModel();
+
+private:
+  FunctionSummary importPrototype(model::FunctionType::Values, model::TypePath);
 };
 
 /// An outlined function helper object.
@@ -385,6 +408,7 @@ private:
                            ABIAnalyses::ABIAnalysesResults &,
                            const std::set<llvm::GlobalVariable *> &);
   llvm::Function *createFakeFunction(llvm::BasicBlock *BB);
+  void initializeFakeFunctions();
 
 private:
   static auto *markerType(llvm::Module &M) {
@@ -457,6 +481,76 @@ FEA::FunctionEntrypointAnalyzer(llvm::Module &M,
                                                       EC,
                                                       llvm::sys::fs::OF_Append);
     revng_assert(!EC);
+  }
+
+  // Re-create fake functions, should they exist
+  initializeFakeFunctions();
+}
+
+FunctionSummary
+FunctionAnalysisResults::importPrototype(model::FunctionType::Values Type,
+                                         model::TypePath Prototype) {
+  using namespace llvm;
+  using namespace model;
+  using Register = model::Register::Values;
+  using RegisterState = abi::RegisterState::Values;
+
+  FunctionSummary Summary(Type,
+                          { ABIRegisters.begin(), ABIRegisters.end() },
+                          ABIAnalyses::ABIAnalysesResults(),
+                          {},
+                          0,
+                          nullptr);
+
+  auto Layout = abi::FunctionType::Layout::make(Prototype);
+
+  for (auto *CSV : ABIRegisters) {
+    Summary.ABIResults.ArgumentsRegisters[CSV] = RegisterState::No;
+    Summary.ABIResults.FinalReturnValuesRegisters[CSV] = RegisterState::No;
+  }
+
+  for (const auto &ArgumentLayout : Layout.Arguments) {
+    for (Register ArgumentRegister : ArgumentLayout.Registers) {
+      auto Name = ABIRegister::toCSVName(ArgumentRegister);
+      auto *CSV = cast_or_null<GlobalVariable>(M.getGlobalVariable(Name, true));
+      if (!CSV)
+        continue;
+      Summary.ABIResults.ArgumentsRegisters.at(CSV) = RegisterState::Yes;
+    }
+  }
+
+  for (Register ReturnValueRegister : Layout.ReturnValue.Registers) {
+    auto Name = ABIRegister::toCSVName(ReturnValueRegister);
+    auto *CSV = cast_or_null<GlobalVariable>(M.getGlobalVariable(Name, true));
+    if (!CSV)
+      continue;
+    Summary.ABIResults.FinalReturnValuesRegisters.at(CSV) = RegisterState::Yes;
+  }
+
+  std::set<llvm::GlobalVariable *> PreservedRegisters;
+  for (Register CalleeSavedRegister : Layout.CalleeSavedRegisters) {
+    auto Name = ABIRegister::toCSVName(CalleeSavedRegister);
+    auto *CSV = cast_or_null<GlobalVariable>(M.getGlobalVariable(Name, true));
+    if (!CSV)
+      continue;
+    PreservedRegisters.insert(CSV);
+  }
+
+  std::erase_if(Summary.ClobberedRegisters, [&](const auto &E) {
+    auto End = PreservedRegisters.end();
+    return PreservedRegisters.find(E) != End;
+  });
+
+  Summary.ElectedFSO = Layout.FinalStackOffset;
+  return Summary;
+}
+
+void FunctionAnalysisResults::importModel() {
+  for (const model::Function &Function : Binary.Functions) {
+    if (Function.Type == model::FunctionType::Invalid)
+      continue;
+
+    insert(Function.Entry, importPrototype(Function.Type, Function.Prototype));
   }
 }
 
@@ -531,12 +625,14 @@ finalizeModel(GeneratedCodeBasicInfo &GCBI,
   using namespace model;
   using RegisterState = abi::RegisterState::Values;
 
-  // Create a `model::function` and build its prototype for each function
-  // entrypoint.
+  // Fill up the model and build its prototype for each function
+  std::set<model::Function *> Functions;
   for (model::Function &Function : Binary.Functions) {
+    if (Function.Type != model::FunctionType::Invalid)
+      continue;
+
     MetaAddress EntryPC = Function.Entry;
     revng_assert(EntryPC.isValid());
-
     auto &Summary = Properties.at(EntryPC);
     Function.Type = Summary.Type;
 
@@ -604,15 +700,15 @@ finalizeModel(GeneratedCodeBasicInfo &GCBI,
     }
 
     Function.Prototype = Binary.recordNewType(std::move(NewType));
+    Functions.insert(&Function);
   }
 
   // Finish up the CFG
-  for (model::Function &Function : Binary.Functions) {
-    auto &Summary = Properties.at(Function.Entry);
-
-    if (Function.Type == FunctionTypeValue::Fake)
+  for (auto &Function : Functions) {
+    if (Function->Type == FunctionTypeValue::Fake)
       continue;
 
+    auto &Summary = Properties.at(Function->Entry);
     for (auto &Block : Summary.CFG) {
       for (auto &Edge : Block.Successors) {
         llvm::StringRef SymbolName;
@@ -660,7 +756,7 @@ finalizeModel(GeneratedCodeBasicInfo &GCBI,
       }
     }
 
-    Function.CFG = Summary.CFG;
+    Function->CFG = Summary.CFG;
   }
 
   revng_check(Binary.verify(true));
@@ -1147,6 +1243,17 @@ FunctionEntrypointAnalyzer::createFakeFunction(llvm::BasicBlock *Entry) {
   return FakeFunction.extractFunction();
 }
 
+void FunctionEntrypointAnalyzer::initializeFakeFunctions() {
+  for (const auto &Function : Binary.Functions) {
+    if (Function.Type != FunctionTypeValue::Fake)
+      continue;
+
+    auto &Summary = Oracle.at(Function.Entry);
+    revng_assert(Summary.Type == FunctionTypeValue::Fake);
+    Summary.FakeFunction = createFakeFunction(GCBI->getBlockAt(Function.Entry));
+  }
+}
+
 FunctionSummary FunctionEntrypointAnalyzer::analyze(BasicBlock *Entry) {
   using namespace llvm;
   using namespace ABIAnalyses;
@@ -1584,6 +1691,9 @@ FunctionEntrypointAnalyzer::outlineFunction(llvm::BasicBlock *Entry) {
   ValueToValueMapTy VMap;
   SmallVector<BasicBlock *, 8> BlocksToExtract;
 
+  auto *AnyPCBB = GCBI->anyPC();
+  auto *UnexpectedPCBB = GCBI->unexpectedPC();
+
   for (const auto &BB : BlocksToClone) {
     BasicBlock *Cloned = CloneBasicBlock(BB, VMap, Twine("_cloned"), Root);
 
@@ -1591,11 +1701,11 @@ FunctionEntrypointAnalyzer::outlineFunction(llvm::BasicBlock *Entry) {
     BlocksToExtract.emplace_back(Cloned);
   }
 
-  auto AnyPCIt = VMap.find(GCBI->anyPC());
+  auto AnyPCIt = VMap.find(AnyPCBB);
   if (AnyPCIt != VMap.end())
     OutlinedFunction.AnyPCCloned = cast<BasicBlock>(AnyPCIt->second);
 
-  auto UnexpPCIt = VMap.find(GCBI->unexpectedPC());
+  auto UnexpPCIt = VMap.find(UnexpectedPCBB);
   if (UnexpPCIt != VMap.end())
     OutlinedFunction.UnexpectedPCCloned = cast<BasicBlock>(UnexpPCIt->second);
 
@@ -1709,8 +1819,6 @@ FunctionEntrypointAnalyzer::outlineFunction(llvm::BasicBlock *Entry) {
 }
 
 bool EarlyFunctionAnalysis::runOnModule(Module &M) {
-  Function &F = *M.getFunction("root");
-
   revng_log(PassesLog, "Starting EarlyFunctionAnalysis");
 
   auto &GCBI = getAnalysis<GeneratedCodeBasicInfoWrapperPass>().getGCBI();
@@ -1780,7 +1888,13 @@ bool EarlyFunctionAnalysis::runOnModule(Module &M) {
   // function entrypoints is maintained.
   UniquedQueue<BasicBlockNode *> EntrypointsQueue;
   for (auto *Node : llvm::post_order(&CG)) {
-    if (Node != RootNode)
+    if (Node == RootNode)
+      continue;
+
+    // The intraprocedural analysis will be scheduled only for those functions
+    // which have `Invalid` as type.
+    auto &Function = Binary.Functions.at(getBasicBlockPC(Node->BB));
+    if (Function.Type == model::FunctionType::Invalid)
       EntrypointsQueue.insert(Node);
   }
 
@@ -1815,7 +1929,12 @@ bool EarlyFunctionAnalysis::runOnModule(Module &M) {
                                  {},
                                  GCBI.minimalFSO(),
                                  nullptr);
-  FunctionAnalysisResults Properties(std::move(DefaultSummary));
+
+  using FAR = FunctionAnalysisResults;
+  FAR Properties(M, ABIRegisters, Binary, std::move(DefaultSummary));
+
+  // Cache pre-population of existing functions in the model
+  Properties.importModel();
 
   // Instantiate a FunctionEntrypointAnalyzer object
   FEA Analyzer(M, &GCBI, ABIRegisters, Properties, Binary);
