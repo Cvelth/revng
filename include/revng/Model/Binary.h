@@ -59,6 +59,11 @@ fields:
       type: SortedVector
       upcastable: true
       elementType: model::Type
+  - name: DefaultPrototype
+    doc: Default prototype
+    reference:
+      pointeeType: model::Type
+      rootType: model::Binary
   - name: ImportedLibraries
     doc: List of imported libraries
     sequence:
@@ -109,51 +114,6 @@ public:
   bool verify(VerifyHelper &VH) const;
   void dump() const debug_function;
   std::string toString() const debug_function;
-
-public:
-  void dumpCFG(const Function &F) const debug_function;
 };
-
-inline model::TypePath
-getPrototype(const model::Binary &Binary, const model::CallEdge &Edge) {
-  if (Edge.Type == model::FunctionEdgeType::FunctionCall) {
-    if (not Edge.DynamicFunction.empty()) {
-      // Get the dynamic function prototype
-      return Binary.ImportedDynamicFunctions.at(Edge.DynamicFunction).Prototype;
-    } else if (Edge.Destination.isValid()) {
-      // Get the function prototype
-      return Binary.Functions.at(Edge.Destination).Prototype;
-    } else {
-      revng_abort();
-    }
-  } else {
-    return Edge.Prototype;
-  }
-}
-
-inline bool hasAttribute(const model::Binary &Binary,
-                         const model::CallEdge &Edge,
-                         model::FunctionAttribute::Values Attribute) {
-  using namespace model;
-
-  if (Edge.Attributes.count(Attribute) != 0)
-    return true;
-
-  if (Edge.Type == FunctionEdgeType::FunctionCall) {
-    const MutableSet<FunctionAttribute::Values> *CalleeAttributes = nullptr;
-    if (not Edge.DynamicFunction.empty()) {
-      const auto &F = Binary.ImportedDynamicFunctions.at(Edge.DynamicFunction);
-      CalleeAttributes = &F.Attributes;
-    } else if (Edge.Destination.isValid()) {
-      CalleeAttributes = &Binary.Functions.at(Edge.Destination).Attributes;
-    } else {
-      revng_abort();
-    }
-
-    return CalleeAttributes->count(Attribute) != 0;
-  }
-
-  return false;
-}
 
 #include "revng/Model/Generated/Late/Binary.h"

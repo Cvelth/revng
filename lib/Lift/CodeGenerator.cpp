@@ -1243,6 +1243,7 @@ void CodeGenerator::translate(Optional<uint64_t> RawVirtualAddress) {
 
   // Create a default prototype
   auto DefaultTypePath = abi::defaultFunctionPrototype(*Model.get());
+  Model->DefaultPrototype = DefaultTypePath;
 
   // Record all dynamic imported functions and assign them a default prototype,
   // and record static functions as well, if they have a name.
