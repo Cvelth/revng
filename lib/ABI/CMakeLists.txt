@@ -4,6 +4,7 @@
 
 revng_add_analyses_library_internal(revngABI
   ApplyRegisterStateDeductions.cpp
+  DescribeFunctionType.cpp
   DefaultFunctionPrototype.cpp)
 
 target_link_libraries(revngABI
