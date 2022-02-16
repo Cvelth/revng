@@ -110,10 +110,17 @@ struct llvm::DOTGraphTraits<SmallCallGraph *>
 
 namespace EarlyFunctionAnalysis {
 
-char EarlyFunctionAnalysis::ID = 0;
+template<>
+char EarlyFunctionAnalysis<true>::ID = 0;
 
-using RegisterABI = RegisterPass<EarlyFunctionAnalysis>;
-static RegisterABI Y("abi-analysis", "ABI Analysis Pass", true, true);
+template<>
+char EarlyFunctionAnalysis<false>::ID = 0;
+
+using ABIDetectionPass = RegisterPass<EarlyFunctionAnalysis<true>>;
+static ABIDetectionPass X("detect-abi", "ABI Detection Pass", true, false);
+
+using CFGCollectionPass = RegisterPass<EarlyFunctionAnalysis<false>>;
+static CFGCollectionPass Y("collect-cfg", "CFG Collection Pass", true, true);
 
 static opt<std::string> CallGraphOutputPath("cg-output",
                                             desc("Dump to disk the recovered "
@@ -334,6 +341,8 @@ struct TemporaryOpaqueFunction {
   }
 };
 
+using BasicBlockQueue = UniquedQueue<BasicBlockNode *>;
+
 /// An intraprocedural analysis storage.
 ///
 /// Implementation of the intraprocedural stack analysis. It holds the
@@ -347,8 +356,9 @@ private:
   llvm::LLVMContext &Context;
   GeneratedCodeBasicInfo *GCBI;
   ArrayRef<GlobalVariable *> ABIRegisters;
+  BasicBlockQueue *EntrypointsQueue;
   FunctionOracle &Oracle;
-  const model::Binary &Binary;
+  model::Binary &Binary;
   /// PreHookMarker and PostHookMarker mark the presence of an original
   /// function call, and surround a basic block containing the registers
   /// clobbered by the function called. They take the MetaAddress of the
@@ -371,14 +381,21 @@ public:
   FunctionEntrypointAnalyzer(llvm::Module &,
                              GeneratedCodeBasicInfo *GCBI,
                              ArrayRef<GlobalVariable *>,
+                             BasicBlockQueue *,
                              FunctionOracle &,
-                             const model::Binary &);
+                             model::Binary &);
 
 public:
+  void runInterproceduralAnalysis();
+  void interproceduralPropagation();
+  void finalizeModel();
+  void recoverCFG();
+
+private:
   /// The `analyze` method is the entry point of the intraprocedural analysis,
   /// and it is called on each function entrypoint until a fixed point is
   /// reached. It is responsible for performing the whole computation.
-  FunctionSummary analyze(llvm::BasicBlock *BB);
+  FunctionSummary analyze(llvm::BasicBlock *BB, bool ShouldAnalyzeABI);
 
 private:
   OutlinedFunction outlineFunction(llvm::BasicBlock *BB);
@@ -397,8 +414,11 @@ private:
   FunctionSummary milkInfo(OutlinedFunction *F,
                            SortedVector<efa::BasicBlock> &,
                            ABIAnalyses::ABIAnalysesResults &,
-                           const std::set<llvm::GlobalVariable *> &);
+                           const std::set<llvm::GlobalVariable *> &,
+                           bool ShouldAnalyzeABI);
   llvm::Function *createFakeFunction(llvm::BasicBlock *BB);
+  UpcastablePointer<model::Type>
+  buildPrototype(const FunctionSummary &, const efa::BasicBlock &);
   void initializeFakeFunctions();
 
 private:
@@ -423,12 +443,14 @@ template<class FO>
 FEAnalyzer<FO>::FunctionEntrypointAnalyzer(llvm::Module &M,
                                            GeneratedCodeBasicInfo *GCBI,
                                            ArrayRef<GlobalVariable *> ABIRegs,
+                                           BasicBlockQueue *EntrypointsQueue,
                                            FO &Oracle,
-                                           const model::Binary &Binary) :
+                                           model::Binary &Binary) :
   M(M),
   Context(M.getContext()),
   GCBI(GCBI),
   ABIRegisters(ABIRegs),
+  EntrypointsQueue(EntrypointsQueue),
   Oracle(Oracle),
   Binary(Binary),
   // Initialize hook markers for subsequent ABI analyses on function calls
@@ -582,11 +604,10 @@ void FAR::importModel(llvm::Module &M,
   }
 }
 
-static UpcastablePointer<model::Type>
-buildPrototype(GeneratedCodeBasicInfo &GCBI,
-               model::Binary &Binary,
-               const FunctionSummary &Summary,
-               const efa::BasicBlock &Block) {
+template<class FunctionOracle>
+UpcastablePointer<model::Type>
+FEAnalyzer<FunctionOracle>::buildPrototype(const FunctionSummary &Summary,
+                                           const efa::BasicBlock &Block) {
   using namespace model;
   using RegisterState = abi::RegisterState::Values;
 
@@ -612,8 +633,9 @@ buildPrototype(GeneratedCodeBasicInfo &GCBI,
                                                Arg->second;
         RegisterState RSRV = RV == nullptr ? RegisterState::Maybe : RV->second;
 
-        auto RegisterID = ABIRegister::fromCSVName(CSV->getName(), GCBI.arch());
-        if (RegisterID == Register::Invalid || CSV == GCBI.spReg())
+        auto RegisterID = ABIRegister::fromCSVName(CSV->getName(),
+                                                   GCBI->arch());
+        if (RegisterID == Register::Invalid || CSV == GCBI->spReg())
           continue;
 
         auto *CSVType = CSV->getType()->getPointerElementType();
@@ -645,11 +667,8 @@ buildPrototype(GeneratedCodeBasicInfo &GCBI,
 }
 
 /// Finish the population of the model by building the prototype
-static void
-finalizeModel(GeneratedCodeBasicInfo &GCBI,
-              const std::vector<llvm::GlobalVariable *> &ABIRegisters,
-              const FunctionAnalysisResults &Properties,
-              model::Binary &Binary) {
+template<class FunctionOracle>
+void FEAnalyzer<FunctionOracle>::finalizeModel() {
   using namespace model;
   using RegisterState = abi::RegisterState::Values;
 
@@ -661,7 +680,7 @@ finalizeModel(GeneratedCodeBasicInfo &GCBI,
 
     MetaAddress EntryPC = Function.Entry;
     revng_assert(EntryPC.isValid());
-    auto &Summary = Properties.at(EntryPC);
+    auto &Summary = Oracle.at(EntryPC);
     Function.Type = Summary.Type;
 
     auto NewType = makeType<RawFunctionType>();
@@ -681,8 +700,9 @@ finalizeModel(GeneratedCodeBasicInfo &GCBI,
                                                Arg->second;
         RegisterState RSRV = RV == nullptr ? RegisterState::Maybe : RV->second;
 
-        auto RegisterID = ABIRegister::fromCSVName(CSV->getName(), GCBI.arch());
-        if (RegisterID == Register::Invalid || CSV == GCBI.spReg())
+        auto RegisterID = ABIRegister::fromCSVName(CSV->getName(),
+                                                   GCBI->arch());
+        if (RegisterID == Register::Invalid || CSV == GCBI->spReg())
           continue;
 
         auto *CSVType = CSV->getType()->getPointerElementType();
@@ -714,7 +734,8 @@ finalizeModel(GeneratedCodeBasicInfo &GCBI,
       });
 
       for (auto *CSV : PreservedRegisters) {
-        auto RegisterID = ABIRegister::fromCSVName(CSV->getName(), GCBI.arch());
+        auto RegisterID = ABIRegister::fromCSVName(CSV->getName(),
+                                                   GCBI->arch());
         if (RegisterID == Register::Invalid)
           continue;
 
@@ -736,13 +757,13 @@ finalizeModel(GeneratedCodeBasicInfo &GCBI,
     if (Function->Type == FunctionTypeValue::Fake)
       continue;
 
-    auto &Summary = Properties.at(Function->Entry);
+    auto &Summary = Oracle.at(Function->Entry);
     for (auto &Block : Summary.CFG) {
       for (auto &Edge : Block.Successors) {
         llvm::StringRef SymbolName;
 
         if (Edge->Destination.isValid()) {
-          auto *Successor = GCBI.getBlockAt(Edge->Destination);
+          auto *Successor = GCBI->getBlockAt(Edge->Destination);
           auto *NewPCCall = getCallTo(&*Successor->begin(), "newpc");
           revng_assert(NewPCCall != nullptr);
 
@@ -779,7 +800,7 @@ finalizeModel(GeneratedCodeBasicInfo &GCBI,
             revng_assert(not Function->CallSitePrototypes.count(Block.Start));
           } else {
             // It's an indirect call: forge a new prototype
-            auto Prototype = buildPrototype(GCBI, Binary, Summary, Block);
+            auto Prototype = buildPrototype(Summary, Block);
             auto TypedPrototype = Binary.recordNewType(std::move(Prototype));
             auto PrototypeInserter = Function->CallSitePrototypes
                                        .batch_insert();
@@ -811,11 +832,10 @@ static void combineCrossCallSites(auto &CallSite, auto &Callee) {
 }
 
 /// Perform cross-call site propagation
-static void
-interproceduralPropagation(FunctionAnalysisResults &Properties,
-                           SortedVector<model::Function> &Functions) {
-  for (model::Function &Function : Functions) {
-    auto &Summary = Properties.at(Function.Entry);
+template<class FunctionOracle>
+void FEAnalyzer<FunctionOracle>::interproceduralPropagation() {
+  for (model::Function &Function : Binary.Functions) {
+    auto &Summary = Oracle.at(Function.Entry);
     for (auto &[PC, CallSite] : Summary.ABIResults.CallSites) {
       if (PC == Function.Entry)
         combineCrossCallSites(CallSite, Summary.ABIResults);
@@ -1301,11 +1321,29 @@ void FEAnalyzer<FunctionOracle>::initializeFakeFunctions() {
 }
 
 template<class FunctionOracle>
-FunctionSummary FEAnalyzer<FunctionOracle>::analyze(BasicBlock *Entry) {
+void FEAnalyzer<FunctionOracle>::recoverCFG() {
+  for (const auto &Function : Binary.Functions) {
+    // No CFG will be recovered for `Fake` or `Invalid` functions
+    if (Function.Type == FunctionTypeValue::Invalid
+        || Function.Type == FunctionTypeValue::Fake)
+      continue;
+
+    auto *Entry = GCBI->getBlockAt(Function.Entry);
+
+    // Recover the control-flow graph of the function
+    auto &Summary = Oracle.at(Function.Entry);
+    Summary.CFG = std::move(analyze(Entry, false).CFG);
+  }
+}
+
+template<class FunctionOracle>
+FunctionSummary
+FEAnalyzer<FunctionOracle>::analyze(BasicBlock *Entry, bool ShouldAnalyzeABI) {
   using namespace llvm;
   using namespace ABIAnalyses;
 
   IRBuilder<> Builder(M.getContext());
+  ABIAnalysesResults ABIResults;
   SmallVector<Instruction *, 4> BranchesForIBI;
 
   // Detect function boundaries
@@ -1322,15 +1360,17 @@ FunctionSummary FEAnalyzer<FunctionOracle>::analyze(BasicBlock *Entry) {
   // refine the final results.
   auto WrittenRegisters = findWrittenRegisters(OutlinedFunction.F);
 
-  // Run ABI-independent data-flow analyses
-  ABIAnalysesResults ABIResults = analyzeOutlinedFunction(OutlinedFunction.F,
-                                                          *GCBI,
-                                                          PreHookMarker.F,
-                                                          PostHookMarker.F,
-                                                          RetHookMarker.F);
+  if (ShouldAnalyzeABI) {
+    // Run ABI-independent data-flow analyses
+    ABIResults = analyzeOutlinedFunction(OutlinedFunction.F,
+                                         *GCBI,
+                                         PreHookMarker.F,
+                                         PostHookMarker.F,
+                                         RetHookMarker.F);
+  }
 
-  // Recompute the DomTree for the current outlined function due to split basic
-  // blocks.
+  // Recompute the DomTree for the current outlined function due to split
+  // basic blocks.
   GCBI->purgeDomTree(OutlinedFunction.F);
 
   // The analysis aims at identifying the callee-saved registers of a function
@@ -1367,7 +1407,8 @@ FunctionSummary FEAnalyzer<FunctionOracle>::analyze(BasicBlock *Entry) {
   auto FunctionInfo = milkInfo(&OutlinedFunction,
                                CFG,
                                ABIResults,
-                               WrittenRegisters);
+                               WrittenRegisters,
+                               ShouldAnalyzeABI);
 
   // Does the outlined function basically represent a function prologue? If so,
   // the function is said to be fake, and a copy of the unoptimized outlined
@@ -1446,7 +1487,8 @@ FunctionSummary
 FEAnalyzer<FO>::milkInfo(OutlinedFunction *OutlinedFunction,
                          SortedVector<efa::BasicBlock> &CFG,
                          ABIAnalyses::ABIAnalysesResults &ABIResults,
-                         const std::set<GlobalVariable *> &WrittenRegisters) {
+                         const std::set<GlobalVariable *> &WrittenRegisters,
+                         bool ShouldAnalyzeABI) {
   using namespace llvm;
 
   SmallVector<std::pair<CallBase *, int64_t>, 4> MaybeReturns;
@@ -1563,26 +1605,28 @@ FEAnalyzer<FO>::milkInfo(OutlinedFunction *OutlinedFunction,
   if (Type == FunctionTypeValue::Fake)
     CFG.clear();
 
-  // We say that a register is callee-saved when, besides being preserved by the
-  // callee, there is at least a write onto this register.
-  auto ActualCalleeSavedRegs = intersect(CalleeSavedRegs, WrittenRegisters);
+  if (ShouldAnalyzeABI) {
+    // We say that a register is callee-saved when, besides being preserved by
+    // the callee, there is at least a write onto this register.
+    auto ActualCalleeSavedRegs = intersect(CalleeSavedRegs, WrittenRegisters);
 
-  // Union between effective callee-saved registers and SP
-  ActualCalleeSavedRegs.insert(GCBI->spReg());
+    // Union between effective callee-saved registers and SP
+    ActualCalleeSavedRegs.insert(GCBI->spReg());
 
-  // Refine ABI analyses results by suppressing callee-saved and stack pointer
-  // registers.
-  suppressCSAndSPRegisters(ABIResults, ActualCalleeSavedRegs);
+    // Refine ABI analyses results by suppressing callee-saved and stack pointer
+    // registers.
+    suppressCSAndSPRegisters(ABIResults, ActualCalleeSavedRegs);
 
-  // ABI analyses run from all the `indirect_branch_info` (i.e., all candidate
-  // returns). We are going to merge the results only from those return points
-  // that have been classified as proper return (i.e., no broken return).
-  discardBrokenReturns(ABIResults, IBIResult);
+    // ABI analyses run from all the `indirect_branch_info` (i.e., all candidate
+    // returns). We are going to merge the results only from those return points
+    // that have been classified as proper return (i.e., no broken return).
+    discardBrokenReturns(ABIResults, IBIResult);
 
-  // Merge return values registers
-  ABIAnalyses::finalizeReturnValues(ABIResults);
+    // Merge return values registers
+    ABIAnalyses::finalizeReturnValues(ABIResults);
 
-  ABIResults.dump(EarlyFunctionAnalysisLog);
+    ABIResults.dump(EarlyFunctionAnalysisLog);
+  }
 
   return FunctionSummary(Type,
                          std::move(ClobberedRegs),
@@ -1868,7 +1912,44 @@ FEAnalyzer<FunctionOracle>::outlineFunction(llvm::BasicBlock *Entry) {
   return OutlinedFunction;
 }
 
-bool EarlyFunctionAnalysis::runOnModule(Module &M) {
+template<class FunctionOracle>
+void FEAnalyzer<FunctionOracle>::runInterproceduralAnalysis() {
+  while (!EntrypointsQueue->empty()) {
+    BasicBlockNode *EntryNode = EntrypointsQueue->pop();
+    revng_log(EarlyFunctionAnalysisLog,
+              "Analyzing Entry: " << EntryNode->BB->getName());
+
+    // Intraprocedural analysis
+    FunctionSummary AnalysisResult = analyze(EntryNode->BB, true);
+    bool Changed = Oracle.registerFunction(getBasicBlockPC(EntryNode->BB),
+                                           std::move(AnalysisResult));
+
+    // If we got improved results for a function, we need to recompute its
+    // callers, and if a caller turns out to be fake, the callers of the fake
+    // function too.
+    if (Changed) {
+      BasicBlockQueue FakeFunctionWorklist;
+      FakeFunctionWorklist.insert(EntryNode);
+
+      while (!FakeFunctionWorklist.empty()) {
+        BasicBlockNode *Node = FakeFunctionWorklist.pop();
+        for (auto *Caller : Node->predecessors()) {
+          // Root node?
+          if (Caller->BB == nullptr)
+            break;
+
+          if (!Oracle.isFakeFunction(getBasicBlockPC(Caller->BB)))
+            EntrypointsQueue->insert(Caller);
+          else
+            FakeFunctionWorklist.insert(Caller);
+        }
+      }
+    }
+  }
+}
+
+template<bool ShouldAnalyzeABI>
+bool EarlyFunctionAnalysis<ShouldAnalyzeABI>::runOnModule(Module &M) {
   revng_log(PassesLog, "Starting EarlyFunctionAnalysis");
 
   auto &GCBI = getAnalysis<GeneratedCodeBasicInfoWrapperPass>().getGCBI();
@@ -1876,14 +1957,13 @@ bool EarlyFunctionAnalysis::runOnModule(Module &M) {
 
   model::Binary &Binary = *LMP.getWriteableModel();
 
-  using BasicBlockToNodeMapTy = llvm::DenseMap<BasicBlock *, BasicBlockNode *>;
-  BasicBlockToNodeMapTy BasicBlockNodeMap;
+  using BasicBlockToNodeMap = llvm::DenseMap<BasicBlock *, BasicBlockNode *>;
+  BasicBlockToNodeMap BasicBlockNodeMap;
 
   // Temporary worklist to collect the function entrypoints
   llvm::SmallVector<BasicBlock *, 8> Worklist;
   SmallCallGraph CG;
 
-  // Create an over-approximated call graph
   for (const auto &Function : Binary.Functions) {
     auto *Entry = GCBI.getBlockAt(Function.Entry);
     BasicBlockNode Node{ Entry };
@@ -1936,7 +2016,7 @@ bool EarlyFunctionAnalysis::runOnModule(Module &M) {
 
   // Create an over-approximated call graph of the program. A queue of all the
   // function entrypoints is maintained.
-  UniquedQueue<BasicBlockNode *> EntrypointsQueue;
+  BasicBlockQueue EntrypointsQueue;
   for (auto *Node : llvm::post_order(&CG)) {
     if (Node == RootNode)
       continue;
@@ -1986,55 +2066,32 @@ bool EarlyFunctionAnalysis::runOnModule(Module &M) {
 
   // Instantiate a FunctionEntrypointAnalyzer object
   using FEA = FunctionEntrypointAnalyzer<FunctionAnalysisResults>;
-  FEA Analyzer(M, &GCBI, ABIRegisters, Properties, Binary);
+  FEA Analyzer(M, &GCBI, ABIRegisters, &EntrypointsQueue, Properties, Binary);
 
-  // Interprocedural analysis over the collected functions in post-order
-  // traversal (leafs first).
-  while (!EntrypointsQueue.empty()) {
-    BasicBlockNode *EntryNode = EntrypointsQueue.pop();
-    revng_log(EarlyFunctionAnalysisLog,
-              "Analyzing Entry: " << EntryNode->BB->getName());
+  // Either recover the control-flow graph of the program and serialize it to
+  // LLVM IR, or schedule a full ABI analysis for each function detected
+  // (control-flow graph recovery included).
+  if (!ShouldAnalyzeABI) {
+    Analyzer.recoverCFG();
+  } else {
+    // Interprocedural analysis over the collected functions in post-order
+    // traversal (leafs first).
+    Analyzer.runInterproceduralAnalysis();
 
-    // Intraprocedural analysis
-    FunctionSummary AnalysisResult = Analyzer.analyze(EntryNode->BB);
-    bool Changed = Properties.registerFunction(getBasicBlockPC(EntryNode->BB),
-                                               std::move(AnalysisResult));
+    // Propagate results between call-sites and functions
+    Analyzer.interproceduralPropagation();
 
-    // If we got improved results for a function, we need to recompute its
-    // callers, and if a caller turns out to be fake, the callers of the fake
-    // function too.
-    if (Changed) {
-      UniquedQueue<BasicBlockNode *> FakeFunctionWorklist;
-      FakeFunctionWorklist.insert(EntryNode);
-
-      while (!FakeFunctionWorklist.empty()) {
-        BasicBlockNode *Node = FakeFunctionWorklist.pop();
-        for (auto *Caller : Node->predecessors()) {
-          if (Caller == RootNode)
-            break;
-
-          if (!Properties.isFakeFunction(getBasicBlockPC(Caller->BB)))
-            EntrypointsQueue.insert(Caller);
-          else
-            FakeFunctionWorklist.insert(Caller);
-        }
-      }
-    }
+    // Commit the results onto the model
+    Analyzer.finalizeModel();
   }
+
+  // Serialize function metadata, including the CFG, to the entry basic blocks
+  // in `root`.
+  serializeFunctionMetadata(M.getContext(), GCBI, Properties, Binary);
 
   // Still OK?
   if (VerifyLog.isEnabled())
     revng_assert(llvm::verifyModule(M, &llvm::dbgs()) == false);
-
-  // Propagate results between call-sites and functions
-  interproceduralPropagation(Properties, Binary.Functions);
-
-  // Finalize model
-  finalizeModel(GCBI, ABIRegisters, Properties, Binary);
-
-  // Serialize function metadata, including the CFG, to BB entry points in
-  // `root`
-  serializeFunctionMetadata(M.getContext(), GCBI, Properties, Binary);
 
   return false;
 }
