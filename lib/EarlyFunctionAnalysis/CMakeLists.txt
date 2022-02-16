@@ -42,7 +42,6 @@ install(
 # Define revngEarlyFunctionAnalysis library
 revng_add_analyses_library_internal(revngEarlyFunctionAnalysis
   AAWriterPass.cpp
-  ABIDetectionPass.cpp
   IndirectBranchInfoPrinterPass.cpp
   PromoteGlobalToLocalVars.cpp
   SegregateDirectStackAccesses.cpp
