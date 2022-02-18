@@ -50,6 +50,9 @@ macro(artifact_handler CATEGORY INPUT_FILE CONFIGURATION OUTPUT TARGET_NAME)
       "./bin/revng"
       opt
       "${INPUT_FILE}"
+      --collect-functions-from-callees
+      --detect-abi
+      --collect-functions-from-unused-addresses
       --detect-abi
       --isolate
       --enforce-abi

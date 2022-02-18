@@ -5,7 +5,12 @@ Steps:
    Pipes:
      - Name:             LLVMPipe
        UsedContainers: [module]
-       Passes: [detect-abi, isolate, invoke-isolated-functions]
+       Passes: [collect-functions-from-callees,
+                detect-abi,
+                collect-functions-from-unused-addresses,
+                detect-abi,
+                isolate,
+                invoke-isolated-functions]
  - Name:            RecompileIsolated
    Pipes:
      - Name:             LinkSupport
