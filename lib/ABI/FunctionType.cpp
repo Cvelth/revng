@@ -762,6 +762,9 @@ Layout::Layout(const model::RawFunctionType &Function) {
   // Fill callee saved registers.
   CalleeSavedRegisters.resize(Function.PreservedRegisters.size());
   llvm::copy(Function.PreservedRegisters, CalleeSavedRegisters.begin());
+
+  // Set the final stack offset.
+  FinalStackOffset = Function.FinalStackOffset;
 }
 
 bool Layout::verify() const {
