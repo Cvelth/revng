@@ -25,6 +25,12 @@ revng \
     "$BINARY" \
     > "model/reference_binary.yml"
 
+CURRENT_PATH="$(pwd)/model"
+revng \
+    linkage-problem-reproducer \
+    "${CURRENT_PATH}/reference_binary.yml" \
+    "${RUNTIME_ABI_ANALYSIS_RESULT}"
+
 # Convert CABIFunctionType to RawFunctionType
 revng \
     model \
