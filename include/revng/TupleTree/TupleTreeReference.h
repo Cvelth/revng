@@ -75,6 +75,7 @@ public:
     if (Path.size() == 0)
       return nullptr;
 
+    static_assert(TupleTreeCompatible<RootType>);
     const auto GetByPathVisitor = [&Path = Path](const auto &RootPointer) {
       return getByPath<T>(Path, *RootPointer);
     };
