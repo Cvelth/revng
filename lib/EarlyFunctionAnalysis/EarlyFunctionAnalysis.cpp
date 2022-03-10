@@ -214,6 +214,7 @@ public:
 class FunctionAnalysisResults {
 private:
   llvm::Module &M;
+  GeneratedCodeBasicInfo *GCBI;
   ArrayRef<GlobalVariable *> ABIRegisters;
   model::Binary &Binary;
 
@@ -223,10 +224,12 @@ private:
 
 public:
   FunctionAnalysisResults(llvm::Module &M,
+                          GeneratedCodeBasicInfo *GCBI,
                           ArrayRef<GlobalVariable *> ABIRegisters,
                           model::Binary &Binary,
                           FunctionSummary DefaultSummary) :
     M(M),
+    GCBI(GCBI),
     ABIRegisters(ABIRegisters),
     Binary(Binary),
     DefaultSummary(std::move(DefaultSummary)) {}
@@ -286,6 +289,7 @@ private:
 
 public:
   void importModel();
+  void importDynamicSymbols();
 
 private:
   FunctionSummary importPrototype(model::FunctionType::Values, model::TypePath);
@@ -410,6 +414,8 @@ private:
 private:
   OutlinedFunction outlineFunction(llvm::BasicBlock *BB);
   void integrateFunctionCallee(llvm::BasicBlock *BB, MetaAddress);
+  UpcastablePointer<efa::FunctionEdgeBase>
+  handleFunctionCallForCFG(llvm::CallInst *);
   SortedVector<efa::BasicBlock> collectDirectCFG(OutlinedFunction *F);
   void initMarkersForABI(OutlinedFunction *F,
                          llvm::SmallVectorImpl<Instruction *> &,
@@ -610,6 +616,41 @@ void FunctionAnalysisResults::importModel() {
   }
 }
 
+void FunctionAnalysisResults::importDynamicSymbols() {
+  llvm::Function &Root = *M.getFunction("root");
+
+  for (BasicBlock &BB : Root) {
+    if (GCBI->getType(&BB) != BlockType::JumpTargetBlock)
+      continue;
+
+    auto *SymbolNameString = hasDynamicSymbol(&BB);
+    if (not SymbolNameString)
+      continue;
+
+    auto [Entry, _] = getPC(&*BB.begin());
+
+    // Already imported?
+    if (FunctionsBucket.find(Entry) != FunctionsBucket.end())
+      continue;
+
+    llvm::StringRef SymbolName = extractFromConstantStringPtr(SymbolNameString);
+    revng_assert(SymbolName.size() != 0);
+
+    // TODO: change this to assert, dynamic function must have been imported
+    auto It = Binary.ImportedDynamicFunctions.find(SymbolName.str());
+    if (It == Binary.ImportedDynamicFunctions.end())
+      continue;
+
+    model::FunctionType::Values FunctionType;
+    if (It->Attributes.count(model::FunctionAttribute::NoReturn) != 0)
+      FunctionType = model::FunctionType::NoReturn;
+    else
+      FunctionType = model::FunctionType::Regular;
+
+    insert(Entry, importPrototype(FunctionType, It->Prototype));
+  }
+}
+
 UpcastablePointer<model::Type>
 FunctionEntrypointAnalyzer::buildPrototype(const FunctionSummary &Summary,
                                            const efa::BasicBlock &Block) {
@@ -768,13 +809,8 @@ void FunctionEntrypointAnalyzer::finalizeModel() {
 
         if (Edge->Destination.isValid()) {
           auto *Successor = GCBI->getBlockAt(Edge->Destination);
-          auto *NewPCCall = getCallTo(&*Successor->begin(), "newpc");
-          revng_assert(NewPCCall != nullptr);
-
-          // Extract symbol name if any
-          auto *SymbolNameValue = NewPCCall->getArgOperand(4);
-          if (not isa<llvm::ConstantPointerNull>(SymbolNameValue)) {
-            llvm::Value *SymbolNameString = NewPCCall->getArgOperand(4);
+          llvm::Value *SymbolNameString = hasDynamicSymbol(Successor);
+          if (SymbolNameString) {
             SymbolName = extractFromConstantStringPtr(SymbolNameString);
             revng_assert(SymbolName.size() != 0);
           }
@@ -875,6 +911,54 @@ static MetaAddress getFinalAddressOfBasicBlock(llvm::BasicBlock *BB) {
   return End + Size;
 }
 
+UpcastablePointer<efa::FunctionEdgeBase>
+FunctionEntrypointAnalyzer::handleFunctionCallForCFG(llvm::CallInst *Call) {
+  using namespace llvm;
+
+  MetaAddress Destination;
+  Value *SymbolNameString = nullptr;
+  efa::FunctionEdgeType::Values Type;
+  auto *CalleePC = Call->getArgOperand(1);
+
+  // Direct or indirect call?
+  if (isa<ConstantStruct>(CalleePC)) {
+    auto AddressPC = MetaAddress::fromConstant(CalleePC);
+    // Does the function exist within the model?
+    auto It = Binary.Functions.find(AddressPC);
+    if (It != Binary.Functions.end()) {
+      Destination = AddressPC;
+      Type = efa::FunctionEdgeType::FunctionCall;
+    } else {
+      // Does the function exist within the imported functions?
+      auto *OriginalEntry = GCBI->getBlockAt(AddressPC);
+      SymbolNameString = hasDynamicSymbol(OriginalEntry);
+      if (SymbolNameString) {
+        // Dynamic function call. We set `Edge.Destination` to the callee's
+        // MetaAddress, and fix it to `Invalid` later in `finalizeModel`.
+        Destination = AddressPC;
+        Type = efa::FunctionEdgeType::FunctionCall;
+      } else {
+        // Indirect call
+        Destination = MetaAddress::invalid();
+        Type = efa::FunctionEdgeType::IndirectCall;
+      }
+    }
+  } else {
+    // Indirect call
+    Destination = MetaAddress::invalid();
+    Type = efa::FunctionEdgeType::IndirectCall;
+  }
+
+  auto Edge = makeEdge(Destination, Type);
+  auto DestTy = Oracle.getFunctionType(Destination);
+  if (DestTy == FunctionTypeValue::NoReturn) {
+    auto *CE = cast<efa::CallEdge>(Edge.get());
+    CE->Attributes.insert(model::FunctionAttribute::NoReturn);
+  }
+
+  return Edge;
+}
+
 SortedVector<efa::BasicBlock>
 FunctionEntrypointAnalyzer::collectDirectCFG(OutlinedFunction *F) {
   using namespace llvm;
@@ -919,40 +1003,15 @@ FunctionEntrypointAnalyzer::collectDirectCFG(OutlinedFunction *F) {
             Instruction *I = &(*Succ->begin());
 
             if (auto *Call = getCallTo(I, PreHookMarker.F)) {
-              MetaAddress Destination;
-              efa::FunctionEdgeType::Values Type;
-              auto *CalleePC = Call->getArgOperand(1);
-
-              // Direct or indirect call?
-              if (isa<ConstantStruct>(CalleePC)) {
-                auto AddressPC = MetaAddress::fromConstant(CalleePC);
-                // Does the function exist within the model?
-                auto It = Binary.Functions.find(AddressPC);
-                if (It != Binary.Functions.end()) {
-                  Destination = AddressPC;
-                  Type = efa::FunctionEdgeType::FunctionCall;
-                } else {
-                  Destination = MetaAddress::invalid();
-                  Type = efa::FunctionEdgeType::IndirectCall;
-                }
-              } else {
-                Destination = MetaAddress::invalid();
-                Type = efa::FunctionEdgeType::IndirectCall;
-              }
-
-              auto Edge = makeEdge(Destination, Type);
-              auto DestTy = Oracle.getFunctionType(Destination);
-              if (DestTy == FunctionTypeValue::NoReturn) {
-                auto *CE = cast<efa::CallEdge>(Edge.get());
-                CE->Attributes.insert(model::FunctionAttribute::NoReturn);
-              }
-
+              // Handle edge for direct function calls, dynamic function calls
+              // as well as indirect ones.
+              auto Edge = handleFunctionCallForCFG(Call);
               Block.Successors.insert(Edge);
             } else if (auto *Call = getCallTo(I, "function_call")) {
-              // At this stage, `function_call` marker has only been left to
-              // signal the presence of fake functions. We can safely erase it
-              // and add an edge of type FakeFunctionCall (still used in
-              // IsolateFunction).
+              // Handle edge for fake function calls. The marker `function_call`
+              // has been left to signal the presence of an edge of type
+              // FakeFunctionCall (still used in IsolateFunction). It can be
+              // safely erased now.
               Call->eraseFromParent();
 
               auto Destination = getBasicBlockPC(Succ);
@@ -960,6 +1019,7 @@ FunctionEntrypointAnalyzer::collectDirectCFG(OutlinedFunction *F) {
                                    efa::FunctionEdgeType::FakeFunctionCall);
               Block.Successors.insert(Edge);
             } else {
+              // Not one of the cases above? Enqueue the successor basic block.
               Queue.insert(Succ);
             }
           }
@@ -2047,10 +2107,13 @@ bool EarlyFunctionAnalysis<ShouldAnalyzeABI>::runOnModule(Module &M) {
                                  nullptr);
 
   using FAR = FunctionAnalysisResults;
-  FAR Properties(M, ABIRegisters, Binary, std::move(DefaultSummary));
+  FAR Properties(M, &GCBI, ABIRegisters, Binary, std::move(DefaultSummary));
 
   // Cache pre-population of existing functions in the model
   Properties.importModel();
+
+  // Cache pre-population of imported dynamic symbols
+  Properties.importDynamicSymbols();
 
   // Instantiate a FunctionEntrypointAnalyzer object
   FEA Analyzer(M, &GCBI, ABIRegisters, &EntrypointsQueue, Properties, Binary);

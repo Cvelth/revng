@@ -1308,6 +1308,14 @@ inline unsigned getMemoryAccessSize(llvm::Instruction *I) {
   return getPointeeSize(getPointer(I));
 }
 
+inline llvm::Value *hasDynamicSymbol(llvm::BasicBlock *BB) {
+  auto *NewPCCall = getCallTo(&*BB->begin(), "newpc");
+  revng_assert(NewPCCall != nullptr);
+  auto *SymbolNameValue = NewPCCall->getArgOperand(4);
+  return not isa<llvm::ConstantPointerNull>(SymbolNameValue) ? SymbolNameValue :
+                                                               nullptr;
+}
+
 /// Adds NewArguments and changes the return type of \p OldFunction
 ///
 /// \param OldFunction the original function from which the body will be stolen.

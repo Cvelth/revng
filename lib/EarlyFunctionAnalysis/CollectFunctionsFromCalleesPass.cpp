@@ -36,6 +36,9 @@ static void collectFunctionsFromCallees(Module &M,
     if (Binary.Functions.find(Entry) != Binary.Functions.end())
       continue;
 
+    if (hasDynamicSymbol(&BB) != nullptr)
+      continue;
+
     uint32_t Reasons = GCBI.getJTReasons(&BB);
     bool IsCallee = hasReason(Reasons, JTReason::Callee);
 
