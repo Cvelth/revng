@@ -27,7 +27,7 @@ DH::DissassemblyHelper() :
 DH::~DissassemblyHelper() {
 }
 
-static void analyzeBasicBlocks(assembly::Function &Function,
+static void analyzeBasicBlocks(yield::Function &Function,
                                const efa::FunctionMetadata &Metadata) {
   // Gather all the basic blocks that only have a single predecessor.
   std::map<MetaAddress, std::optional<MetaAddress>> Predecessors;
@@ -77,22 +77,29 @@ static void analyzeBasicBlocks(assembly::Function &Function,
       revng_assert(R != Function.BasicBlocks.end());
 
       if (Predecessor->End == Current->Start) {
-        R->IsAFallthroughTarget = true;
-        R->CanBeMergedWithPredecessor = (Predecessor->Successors.size() == 1);
+        if (Predecessor->Successors.size() == 1)
+          R->Type = yield::BasicBlockType::Mergeable;
+        else
+          R->Type = yield::BasicBlockType::FallthroughTarget;
       }
     }
   }
 }
 
-assembly::Function DH::disassemble(const model::Function &Function,
-                                   const efa::FunctionMetadata &Metadata,
-                                   const RawBinaryView &BinaryView) {
+yield::Function DH::disassemble(const model::Function &Function,
+                                const efa::FunctionMetadata &Metadata,
+                                const RawBinaryView &BinaryView) {
   auto &Helper = getDisassemblerFor(Function.Entry.type());
 
-  assembly::Function ResultFunction{ .Address = Function.Entry };
+  yield::Function ResultFunction;
+  ResultFunction.Address = Function.Entry;
+  ResultFunction.Name = Function.name().str().str();
   for (auto BasicBlockInserter = ResultFunction.BasicBlocks.batch_insert();
        const efa::BasicBlock &BasicBlock : Metadata.ControlFlowGraph) {
-    assembly::BasicBlock ResultBasicBlock{ .Address = BasicBlock.Start };
+    yield::BasicBlock ResultBasicBlock;
+    ResultBasicBlock.Address = BasicBlock.Start;
+    ResultBasicBlock.NextAddress = BasicBlock.End;
+    ResultBasicBlock.Type = yield::BasicBlockType::Ordinary;
     ResultBasicBlock.CommentIndicator = Helper.getCommentString();
     ResultBasicBlock.LabelIndicator = Helper.getLabelSuffix();
 
@@ -114,7 +121,7 @@ assembly::Function DH::disassemble(const model::Function &Function,
 
       auto MaybeBytes = BinaryView.getByAddress(CurrentAddress, Size);
       revng_assert(MaybeBytes.has_value());
-      using ByteContainer = assembly::Instruction::ByteContainer;
+      using ByteContainer = yield::ByteContainer;
       Instruction.Bytes = ByteContainer(MaybeBytes->begin(), MaybeBytes->end());
 
       CurrentAddress += Size;
@@ -127,8 +134,9 @@ assembly::Function DH::disassemble(const model::Function &Function,
     if (!ResultBasicBlock.Instructions.empty()) {
       if (!BasicBlock.Successors.empty()) {
         auto TargetInserter = ResultBasicBlock.Targets.batch_insert();
-        for (auto &SuccessorEdge : BasicBlock.Successors)
-          TargetInserter.insert(SuccessorEdge->Destination);
+        for (auto &SuccessorEdgePair : BasicBlock.Successors)
+          TargetInserter.insert(yield::Edge(SuccessorEdgePair->Destination,
+                                            SuccessorEdgePair->Type));
       }
     }
 
