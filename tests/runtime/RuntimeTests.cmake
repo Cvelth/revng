@@ -71,11 +71,11 @@ macro(artifact_handler CATEGORY INPUT_FILE CONFIGURATION OUTPUT TARGET_NAME)
     set(COMMAND_TO_RUN
         "./bin/revng"
         pipeline
-        assembly.html.yml:html:FunctionAssemblyHTML
+        assembly-html.yml:html:FunctionAssemblyHTML
         -i
         "begin:input:${INPUT_FILE}"
         -o
-        "YieldAssembly:assembly.html.yml:${OUTPUT}"
+        "YieldAssembly:assembly-html.yml:${OUTPUT}"
         --step
         YieldAssembly)
     set(DEPEND_ON revng-all-binaries)
