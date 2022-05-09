@@ -28,7 +28,7 @@ int main(int ArgC, char *ArgV[]) {
 
     auto Disassembled = Helper.disassemble(Function, *Metadata, Binary);
 
-    auto Plain = yield::plain::assembly(Disassembled, *Metadata, Model);
+    auto Plain = yield::plain::functionAssembly(Disassembled, Model);
     Result.insert_or_assign(Function.Entry, std::move(Plain));
   }
 

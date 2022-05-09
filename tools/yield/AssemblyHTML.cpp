@@ -26,8 +26,7 @@ int main(int ArgC, char *ArgV[]) {
     const auto &Function = *ModelFunctionIterator;
 
     auto Disassembled = Helper.disassemble(Function, *Metadata, Binary);
-
-    auto HTML = yield::html::assembly(Disassembled, *Metadata, Model);
+    auto HTML = yield::html::functionAssembly(Disassembled, Model);
     Result.insert_or_assign(Function.Entry, std::move(HTML));
   }
 
