@@ -1859,6 +1859,28 @@ static LaneContainer assignLanes(InternalGraph &Graph,
   return Result;
 }
 
+/// Sets final vertical coordinates for each of the nodes.
+static void setVerticalCoordinates(const LayerContainer &Layers,
+                                   const LaneContainer &Lanes,
+                                   float MarginSize,
+                                   float EdgeDistance) {
+  float LastY = 0;
+  for (size_t Index = 0; Index < Layers.size(); ++Index) {
+    float MaxHeight = 0;
+    for (auto Node : Layers[Index]) {
+      auto NodeHeight = Node->size().H;
+      if (MaxHeight < NodeHeight)
+        MaxHeight = NodeHeight;
+      Node->center().Y = LastY - Node->size().H / 2;
+    }
+
+    auto LaneCount = Index < Lanes.Horizontal.size() ?
+                       Lanes.Horizontal.at(Index).size() :
+                       0;
+    LastY -= MaxHeight + EdgeDistance * LaneCount + MarginSize * 2;
+  }
+}
+
 template<yield::sugiyama::RankingStrategy RS>
 static bool calculateSugiyamaLayout(ExternalGraph &Graph,
                                     const Configuration &Configuration) {
@@ -1896,6 +1918,10 @@ static bool calculateSugiyamaLayout(ExternalGraph &Graph,
 
   // Decide the lanes used for edge routing in a way to prevent the crossings.
   auto Lanes = assignLanes(DAG, LinearSegments, FinalLayout);
+
+  // Set the rest of the coordinates. Node layouting is complete after this.
+  const auto &EdgeGap = Configuration.EdgeMarginSize;
+  setVerticalCoordinates(Layers, Lanes, Margin, EdgeGap);
 
   return true;
 }
