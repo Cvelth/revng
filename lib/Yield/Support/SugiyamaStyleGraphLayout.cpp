@@ -1501,6 +1501,25 @@ selectLinearSegments(InternalGraph &Graph,
   return Result;
 }
 
+/// It's used to describe the position of a single node within the layered grid.
+struct LogicalPosition {
+  Rank Layer; /// Rank of the layer the node is in.
+  Rank Index; /// An index within the layer
+};
+
+/// It's used to describe the complete layout by storing the exact
+/// position of each node relative to all the others.
+using LayoutContainer = std::unordered_map<NodeView, LogicalPosition>;
+
+/// "Levels up" a `LayerContainer` to a `LayoutContainer`.
+static LayoutContainer toLayout(const LayerContainer &Layers) {
+  LayoutContainer Result;
+  for (size_t Index = 0; Index < Layers.size(); ++Index)
+    for (size_t NodeIndex = 0; NodeIndex < Layers[Index].size(); ++NodeIndex)
+      Result[Layers[Index][NodeIndex]] = { Index, NodeIndex };
+  return Result;
+}
+
 template<yield::sugiyama::RankingStrategy RS>
 static bool calculateSugiyamaLayout(ExternalGraph &Graph,
                                     const Configuration &Configuration) {
@@ -1528,6 +1547,9 @@ static bool calculateSugiyamaLayout(ExternalGraph &Graph,
   // Decide on which segments of the graph can be made linear, e.g. each edge
   // within the same linear segment is a straight line.
   auto LinearSegments = selectLinearSegments(DAG, Ranks, Layers, Order);
+
+  // Finalize the logical positions for each of the nodes.
+  const auto FinalLayout = toLayout(Layers);
 
   return true;
 }
