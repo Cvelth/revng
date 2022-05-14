@@ -40,6 +40,7 @@ TUPLE-TREE-YAML */
 // TODO: we need to handle noreturn function calls
 
 namespace efa::FunctionEdgeType {
+
 inline bool isCall(Values V) {
   switch (V) {
   case Count:
@@ -61,6 +62,54 @@ inline bool isCall(Values V) {
   case Killer:
   case Unreachable:
     return false;
+  }
+}
+
+inline bool isDirect(Values V) {
+  switch (V) {
+  case DirectBranch:
+  case FakeFunctionCall:
+  case FakeFunctionReturn:
+    return true;
+
+  case FunctionCall:
+  case IndirectCall:
+  case IndirectTailCall:
+  case Return:
+  case BrokenReturn:
+  case LongJmp:
+  case Killer:
+  case Unreachable:
+    return false;
+
+  case Invalid:
+  case Count:
+    revng_abort();
+    break;
+  }
+}
+
+inline bool needsFallthrough(Values V) {
+  switch (V) {
+  case FunctionCall:
+  case IndirectCall:
+    return true;
+
+  case DirectBranch:
+  case FakeFunctionCall:
+  case FakeFunctionReturn:
+  case IndirectTailCall:
+  case Return:
+  case BrokenReturn:
+  case LongJmp:
+  case Killer:
+  case Unreachable:
+    return false;
+
+  case Invalid:
+  case Count:
+    revng_abort();
+    break;
   }
 }
 
