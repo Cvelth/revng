@@ -15,6 +15,7 @@
 namespace tags {
 
 static constexpr auto Function = "function";
+static constexpr auto LabeledBlock = "labeled-block";
 static constexpr auto BasicBlock = "basic-block";
 static constexpr auto FunctionLabel = "function-label";
 static constexpr auto BasicBlockLabel = "basic-block-label";
@@ -75,6 +76,10 @@ static std::string linkAddress(const MetaAddress &Address) {
   return Result;
 }
 
+static std::string labeledBlockID(const MetaAddress &Address) {
+  return "labeled_block_at_" + linkAddress(Address);
+}
+
 static std::string basicBlockID(const MetaAddress &Address) {
   return "basic_block_at_" + linkAddress(Address);
 }
@@ -130,7 +135,7 @@ static std::string link(const MetaAddress &Target,
                          std::move(FinalName));
   } else {
     // The target is impossible to deduce, it's an indirect call or the like.
-    return "";
+    return "unknown";
   }
 }
 
@@ -244,25 +249,13 @@ static std::string bytes(const yield::BasicBlock &BasicBlock,
   return blockComment(tags::InstructionBytes, BasicBlock, std::move(Result));
 }
 
-static size_t countTargets(const SortedVector<MetaAddress> &Targets) {
-  return Targets.size() - Targets.count(MetaAddress::invalid());
-}
-
-static bool areTargetsAdjacent(const MetaAddress &CurrentAddress,
-                               const MetaAddress &TargetAddress,
-                               const yield::Function &Function) {
-  auto CurrentIterator = Function.BasicBlocks.find(CurrentAddress);
-  if (CurrentIterator == Function.BasicBlocks.end())
-    return false;
-
-  return CurrentIterator->NextAddress == TargetAddress;
-}
-
 static std::string targetLink(const MetaAddress &Target,
                               const yield::BasicBlock &BasicBlock,
                               const yield::Function &Function,
                               const model::Binary &Binary) {
-  if (areTargetsAdjacent(BasicBlock.Address, Target, Function))
+  if (Target.isInvalid())
+    return "unknown location";
+  else if (Target == BasicBlock.NextAddress)
     return llvm::formatv(templates::Span,
                          tags::InstructionTarget,
                          link(Target,
@@ -275,49 +268,147 @@ static std::string targetLink(const MetaAddress &Target,
                          link(Target, Function, Binary));
 }
 
-static std::string targets(const yield::BasicBlock &BasicBlock,
-                           const yield::Function &Function,
-                           const model::Binary &Binary,
-                           size_t TailOffset = 0) {
-  size_t TargetCount = countTargets(BasicBlock.Targets);
-  if (TargetCount == 0)
-    return ""; // We know nothing about the targets.
+static std::string calls(const SortedVector<MetaAddress> &CallAddresses,
+                         const yield::BasicBlock &BasicBlock,
+                         const yield::Function &Function,
+                         const model::Binary &Binary) {
+  std::string Result = "calls ";
 
-  std::string Result;
-  if (BasicBlock.Targets.size() == 1) {
-    // There's only a single known target. This is probably a direct call.
-    revng_assert(BasicBlock.Targets.begin()->isValid());
-    Result += comment(BasicBlock,
-                      "always goes to "
-                        + targetLink(*BasicBlock.Targets.begin(),
-                                     BasicBlock,
-                                     Function,
-                                     Binary));
-  } else {
-    Result += comment(BasicBlock, "known targets include: ");
-    bool HasInvalidTargets = false;
-    for (size_t Counter = 0; const auto &Destination : BasicBlock.Targets) {
-      if (Destination.isValid()) {
-        auto Link = targetLink(Destination, BasicBlock, Function, Binary);
-        if (BasicBlock.Targets.size() == TargetCount
-            && Counter != TargetCount - 1) {
-          Link = std::move(Link) + ",";
-        }
-        ++Counter;
-
-        Result += comment(BasicBlock, "- " + std::move(Link), TailOffset, true);
-      } else {
-        HasInvalidTargets = true;
-      }
-    }
-
-    if (HasInvalidTargets)
-      Result += comment(BasicBlock, "and more", TailOffset, true);
+  for (size_t Counter = 0; const MetaAddress &Address : CallAddresses) {
+    Result += targetLink(Address, BasicBlock, Function, Binary);
+    if (++Counter != CallAddresses.size())
+      Result += ", ";
   }
 
-  return llvm::formatv(templates::Span,
-                       tags::InstructionTargets,
-                       std::move(Result));
+  return comment(BasicBlock, std::move(Result));
+}
+
+struct TargetPair {
+  std::string Value;
+  size_t Count;
+};
+static TargetPair singleTarget(const MetaAddress &Target,
+                               const yield::BasicBlock &BasicBlock,
+                               const yield::Function &Function,
+                               const model::Binary &Binary,
+                               size_t TailOffset = 0) {
+  if (Target.isInvalid()) {
+    revng_assert(BasicBlock.Calls.size() == 0);
+    return { "", 0 };
+  }
+
+  size_t ResultCount = BasicBlock.Calls.size();
+  std::string Result = calls(BasicBlock.Calls, BasicBlock, Function, Binary);
+  if (Target != BasicBlock.NextAddress) {
+    std::string Link = targetLink(Target, BasicBlock, Function, Binary);
+    if (Result.size() != 0)
+      Result += comment(BasicBlock,
+                        "then goes to " + std::move(Link),
+                        TailOffset,
+                        true);
+    else
+      Result += comment(BasicBlock, "always goes to " + std::move(Link));
+    ++ResultCount;
+  }
+
+  return { std::move(Result), ResultCount };
+}
+
+static TargetPair multipleTargets(const SortedVector<MetaAddress> &Targets,
+                                  const yield::BasicBlock &BasicBlock,
+                                  const yield::Function &Function,
+                                  const model::Binary &Binary,
+                                  size_t TailOffset = 0) {
+  std::string Result = calls(BasicBlock.Calls, BasicBlock, Function, Binary);
+  if (!Result.empty())
+    Result += comment(BasicBlock, "then goes to one of: ", TailOffset, true);
+  else
+    Result += comment(BasicBlock, "known targets include: ");
+
+  size_t InvalidTargetCount = Targets.count(MetaAddress::invalid());
+  for (size_t Counter = 0; const auto &Destination : BasicBlock.Targets) {
+    if (Destination.isValid()) {
+      std::string Link = targetLink(Destination, BasicBlock, Function, Binary);
+      if (++Counter < InvalidTargetCount)
+        Link += ",";
+      Result += comment(BasicBlock, "- " + std::move(Link), TailOffset, true);
+    }
+  }
+
+  if (InvalidTargetCount != 0)
+    Result += comment(BasicBlock, "and more", TailOffset, true);
+
+  size_t ResultCount = BasicBlock.Calls.size() + Targets.size();
+  if (InvalidTargetCount != 0)
+    ResultCount -= InvalidTargetCount - 1;
+  return { std::move(Result), ResultCount };
+}
+
+static TargetPair twoTargets(MetaAddress FirstTarget,
+                             MetaAddress SecondTarget,
+                             const yield::BasicBlock &BasicBlock,
+                             const yield::Function &Function,
+                             const model::Binary &Binary,
+                             size_t TailOffset = 0) {
+  if (FirstTarget == SecondTarget)
+    return singleTarget(FirstTarget, BasicBlock, Function, Binary, TailOffset);
+
+  if (FirstTarget == BasicBlock.NextAddress)
+    std::swap(FirstTarget, SecondTarget);
+
+  if (SecondTarget == BasicBlock.NextAddress) {
+    // One of the targets is the next instruction.
+    std::string First = targetLink(FirstTarget, BasicBlock, Function, Binary);
+    std::string Second = targetLink(SecondTarget, BasicBlock, Function, Binary);
+    std::string Result = comment(BasicBlock,
+                                 "if taken, goes to " + std::move(First) + ",");
+    Result += comment(BasicBlock,
+                      "otherwise, goes to " + std::move(Second),
+                      TailOffset,
+                      true);
+    return { std::move(Result), 2 };
+  } else {
+    return multipleTargets({ FirstTarget, SecondTarget },
+                           BasicBlock,
+                           Function,
+                           Binary,
+                           TailOffset);
+  }
+}
+
+static TargetPair targets(const yield::BasicBlock &BasicBlock,
+                          const yield::Function &Function,
+                          const model::Binary &Binary,
+                          size_t TailOffset = 0) {
+  TargetPair Result;
+  if (BasicBlock.Targets.size() == 0) {
+    revng_assert(BasicBlock.Calls.size() == 0);
+    Result = { "", 0 };
+  } else if (BasicBlock.Targets.size() == 1) {
+    Result = singleTarget(*BasicBlock.Targets.begin(),
+                          BasicBlock,
+                          Function,
+                          Binary,
+                          TailOffset);
+  } else if (BasicBlock.Targets.size() == 2 && BasicBlock.Calls.empty()) {
+    Result = twoTargets(*BasicBlock.Targets.begin(),
+                        *std::next(BasicBlock.Targets.begin()),
+                        BasicBlock,
+                        Function,
+                        Binary,
+                        TailOffset);
+  } else {
+    Result = multipleTargets(BasicBlock.Targets,
+                             BasicBlock,
+                             Function,
+                             Binary,
+                             TailOffset);
+  }
+
+  Result.Value = llvm::formatv(templates::Span,
+                               tags::InstructionTargets,
+                               std::move(Result.Value));
+  return Result;
 }
 
 static std::string tagTypeAsString(yield::TagType::Values Type) {
@@ -446,13 +537,14 @@ static std::string taggedText(const yield::Instruction &Instruction) {
   return Result;
 }
 
+template<bool ShouldUseVerticalLayout>
 static std::string instruction(const yield::Instruction &Instruction,
-                               bool IsInDelayedSlot,
-                               bool NeedsToPrintTargets,
-                               bool ShouldUseVerticalLayout,
                                const yield::BasicBlock &BasicBlock,
                                const yield::Function &Function,
-                               const model::Binary &Binary) {
+                               const model::Binary &Binary,
+                               bool IsInDelayedSlot = false,
+                               const SortedVector<MetaAddress> &Targets = {},
+                               const SortedVector<MetaAddress> &Calls = {}) {
   // MetaAddress of the instruction.
   std::string Result = blockComment(tags::InstructionAddress,
                                     BasicBlock,
@@ -468,10 +560,11 @@ static std::string instruction(const yield::Instruction &Instruction,
 
   // LLVM's Opcode of the instruction.
   if (!Instruction.Opcode.empty())
-    Result += llvm::formatv(templates::Span,
-                            tags::InstructionOpcode,
-                            Instruction.Opcode);
+    Result += blockComment(tags::InstructionOpcode,
+                           BasicBlock,
+                           "llvm Opcode: " + Instruction.Opcode);
 
+  // Error message (Vertical layout only).
   if (ShouldUseVerticalLayout == true && !Instruction.Error.empty())
     Result += error(BasicBlock, "Error: " + Instruction.Error);
 
@@ -486,7 +579,7 @@ static std::string instruction(const yield::Instruction &Instruction,
     HasTailComments = true;
   }
 
-  // Delayed slot notice if applicable.
+  // Delayed slot notice (horizontal layout only).
   if (ShouldUseVerticalLayout == false && IsInDelayedSlot) {
     if (HasTailComments == true)
       Result += comment(BasicBlock, "delayed", Tail, true);
@@ -495,7 +588,7 @@ static std::string instruction(const yield::Instruction &Instruction,
     HasTailComments = true;
   }
 
-  // An error message if present.
+  // An error message (horizontal layout only).
   if (ShouldUseVerticalLayout == false && !Instruction.Error.empty()) {
     if (HasTailComments == true)
       Result += error(BasicBlock, "Error: " + Instruction.Error, Tail, true);
@@ -504,15 +597,15 @@ static std::string instruction(const yield::Instruction &Instruction,
     HasTailComments = true;
   }
 
-  // The list of targets if needed
-  if (NeedsToPrintTargets) {
-    if (HasTailComments == false) {
-      Result += whitespace(1);
-    } else if (countTargets(BasicBlock.Targets) != 0) {
-      Result += newLine() + whitespace(Tail);
+  // The list of targets (horizontal layout only).
+  if (ShouldUseVerticalLayout == false) {
+    auto [Targets, TargetCount] = targets(BasicBlock, Function, Binary, Tail);
+    if (TargetCount != 0) {
+      if (HasTailComments == false)
+        Result += whitespace(1) + std::move(Targets);
+      else
+        Result += newLine() + whitespace(Tail) + std::move(Targets);
     }
-
-    Result += targets(BasicBlock, Function, Binary, Tail);
   }
 
   return llvm::formatv(templates::BlockDiv,
@@ -521,17 +614,11 @@ static std::string instruction(const yield::Instruction &Instruction,
                        std::move(Result));
 }
 
-template<bool ShouldMergeFallthroughTargets, bool UseVerticalTargetLayout>
+template<bool UseVerticalLayout>
 static std::string basicBlock(const yield::BasicBlock &BasicBlock,
                               const yield::Function &Function,
                               const model::Binary &Binary) {
-  // Blocks are strung together if there's no reason to keep them separate.
-  // This determines whether this is the last block in the current string
-  // (if `NextBlock` is `nullptr`) or if there's continuation.
-  constexpr bool MergeFallthrough = ShouldMergeFallthroughTargets;
-  auto NextBlock = yield::cfg::detectFallthrough<MergeFallthrough>(BasicBlock,
-                                                                   Function,
-                                                                   Binary);
+  revng_assert(!BasicBlock.Instructions.empty());
 
   // Compile the list of delayed instructions so the corresponding comment
   // can be emited.
@@ -542,9 +629,11 @@ static std::string basicBlock(const yield::BasicBlock &BasicBlock,
       DelayedList.emplace_back(Instruction.Address);
     IsNextInstructionDelayed = Instruction.HasDelayedSlot;
   }
+  revng_assert(IsNextInstructionDelayed == false,
+               "Last instruction has a unfilled delayed slot.");
 
-  // Determine the last "proper" instruction. This is the instruction "targets"
-  // get printed for if this is the last basic block in a string.
+  // Determine the last non-delayed instruction.
+  // This is the instruction "targets" get printed for in horizontal layout.
   MetaAddress LastNotDelayedInstruction = MetaAddress::invalid();
   for (const auto &Instruction : llvm::reverse(BasicBlock.Instructions)) {
     if (!llvm::is_contained(DelayedList, Instruction.Address)) {
@@ -554,61 +643,61 @@ static std::string basicBlock(const yield::BasicBlock &BasicBlock,
   }
   revng_assert(LastNotDelayedInstruction.isValid());
 
-  // String the results together.
+  // String the instructions together.
   std::string Result;
   for (const auto &Instruction : BasicBlock.Instructions) {
-    bool PrintTargets = LastNotDelayedInstruction == Instruction.Address;
-    PrintTargets = PrintTargets && !UseVerticalTargetLayout;
-    if (NextBlock != nullptr)
-      PrintTargets = PrintTargets && countTargets(BasicBlock.Targets) > 1;
-
-    Result += instruction(Instruction,
-                          llvm::is_contained(DelayedList, Instruction.Address),
-                          PrintTargets,
-                          UseVerticalTargetLayout,
-                          BasicBlock,
-                          Function,
-                          Binary);
+    bool IsInDelayedSlot = llvm::is_contained(DelayedList, Instruction.Address);
+    if (LastNotDelayedInstruction == Instruction.Address)
+      Result += instruction<UseVerticalLayout>(Instruction,
+                                               BasicBlock,
+                                               Function,
+                                               Binary,
+                                               IsInDelayedSlot,
+                                               BasicBlock.Targets,
+                                               BasicBlock.Calls);
+    else
+      Result += instruction<UseVerticalLayout>(Instruction,
+                                               BasicBlock,
+                                               Function,
+                                               Binary,
+                                               IsInDelayedSlot);
   }
-
-  if (IsNextInstructionDelayed == true) {
-    std::string DelayedError = "Error: Last instruction has a delayed slot.";
-    Result += error(BasicBlock, std::move(DelayedError), 2, true);
-  }
-
-  if (NextBlock != nullptr) {
-    return Result += basicBlock<ShouldMergeFallthroughTargets,
-                                UseVerticalTargetLayout>(*NextBlock,
-                                                         Function,
-                                                         Binary);
-  } else {
-    if constexpr (UseVerticalTargetLayout == true) {
-      auto Targets = targets(BasicBlock, Function, Binary);
-      if (!Targets.empty())
-        Result += newLine() + std::move(Targets);
-    }
-
-    return Result;
-  }
-}
-
-template<bool ShouldMergeFallthroughTargets, bool UseVerticalTargetLayout>
-static std::string basicBlockString(const yield::BasicBlock &BasicBlock,
-                                    const yield::Function &Function,
-                                    const model::Binary &Binary) {
-  // Blocks that are merged into other block strings cannot start a new one.
-  using namespace yield::BasicBlockType;
-  if (shouldSkip<ShouldMergeFallthroughTargets>(BasicBlock.Type))
-    return "";
-
-  std::string Result;
-  Result += label(BasicBlock, Function, Binary);
-  Result += basicBlock<ShouldMergeFallthroughTargets,
-                       UseVerticalTargetLayout>(BasicBlock, Function, Binary);
 
   return llvm::formatv(templates::BlockDiv,
                        tags::BasicBlock,
                        basicBlockID(BasicBlock.Address),
+                       std::move(Result));
+}
+
+template<bool ShouldMergeFallthroughTargets, bool UseVerticalTargetLayout>
+static std::string labeledBlock(const yield::BasicBlock &FirstBlock,
+                                const yield::Function &Function,
+                                const model::Binary &Binary) {
+  using namespace yield::cfg;
+  constexpr bool MergeFallthrough = ShouldMergeFallthroughTargets;
+  auto BasicBlockAddresses = labeledBlock<MergeFallthrough>(FirstBlock,
+                                                            Function,
+                                                            Binary);
+  if (BasicBlockAddresses.empty())
+    return "";
+
+  std::string Result;
+  Result += label(FirstBlock, Function, Binary);
+  for (auto BasicBlockAddress : BasicBlockAddresses) {
+    auto Block = Function.BasicBlocks.find(BasicBlockAddress);
+    revng_assert(Block != Function.BasicBlocks.end());
+    Result += basicBlock<UseVerticalTargetLayout>(*Block, Function, Binary);
+  }
+
+  auto LastBlock = Function.BasicBlocks.find(BasicBlockAddresses.back());
+  revng_assert(LastBlock != Function.BasicBlocks.end());
+  auto [Targets, TargetCount] = targets(*LastBlock, Function, Binary);
+  if (TargetCount != 0)
+    Result += newLine() + std::move(Targets);
+
+  return llvm::formatv(templates::BlockDiv,
+                       tags::LabeledBlock,
+                       labeledBlockID(FirstBlock.Address),
                        std::move(Result));
 }
 
@@ -617,7 +706,7 @@ std::string yield::html::functionAssembly(const yield::Function &Function,
   std::string Result;
 
   for (const auto &BasicBlock : Function.BasicBlocks)
-    Result += basicBlockString<true, false>(BasicBlock, Function, Binary);
+    Result += labeledBlock<true, false>(BasicBlock, Function, Binary);
 
   return Result;
 }
@@ -627,7 +716,7 @@ std::string yield::html::controlFlowNode(const MetaAddress &Address,
                                          const model::Binary &Binary) {
   if (auto Iterator = Function.BasicBlocks.find(Address);
       Iterator != Function.BasicBlocks.end()) {
-    auto Result = basicBlockString<false, true>(*Iterator, Function, Binary);
+    auto Result = labeledBlock<false, true>(*Iterator, Function, Binary);
     revng_assert(!Result.empty());
 
     return Result;
