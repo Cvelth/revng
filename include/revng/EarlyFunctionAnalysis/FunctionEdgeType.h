@@ -65,30 +65,6 @@ inline bool isCall(Values V) {
   }
 }
 
-inline bool isDirect(Values V) {
-  switch (V) {
-  case DirectBranch:
-  case FakeFunctionCall:
-  case FakeFunctionReturn:
-    return true;
-
-  case FunctionCall:
-  case IndirectCall:
-  case IndirectTailCall:
-  case Return:
-  case BrokenReturn:
-  case LongJmp:
-  case Killer:
-  case Unreachable:
-    return false;
-
-  case Invalid:
-  case Count:
-    revng_abort();
-    break;
-  }
-}
-
 inline bool needsFallthrough(Values V) {
   switch (V) {
   case FunctionCall:

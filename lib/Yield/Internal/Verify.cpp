@@ -6,7 +6,6 @@
 //
 
 #include "revng/Yield/Internal/BasicBlock.h"
-#include "revng/Yield/Internal/Edge.h"
 #include "revng/Yield/Internal/Function.h"
 #include "revng/Yield/Internal/Instruction.h"
 #include "revng/Yield/Internal/Tag.h"
@@ -26,13 +25,6 @@ bool yield::Instruction::verify(model::VerifyHelper &VH) const {
   VH.maybeFail(!Bytes.empty());
 
   // TODO: Tags might need special verification as well.
-
-  return true;
-}
-
-bool yield::Edge::verify(model::VerifyHelper &VH) const {
-  VH.maybeFail(Destination.isValid());
-  VH.maybeFail(Type != efa::FunctionEdgeType::Invalid);
 
   return true;
 }

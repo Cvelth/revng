@@ -113,8 +113,8 @@ static revng::pipes::RegisterFunctionStringMap
                     revng::pipes::FunctionAssemblyInternal);
 static revng::pipes::RegisterFunctionStringMap
   HTMLContainer("FunctionAssemblyHTML",
-                    "application/x.yaml.function-assembly.html-body",
-                    revng::pipes::FunctionAssemblyHTML);
+                "application/x.yaml.function-assembly.html-body",
+                revng::pipes::FunctionAssemblyHTML);
 
 static pipeline::RegisterPipe<revng::pipes::ProcessAssemblyPipe> ProcessPipe;
 static pipeline::RegisterPipe<revng::pipes::YieldAssemblyPipe> YieldPipe;

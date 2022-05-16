@@ -53,7 +53,6 @@ target_tuple_tree_generator(
   HEADERS
   "${INTERNAL_ASSEMBLY_HEADERS}/BasicBlock.h"
   "${INTERNAL_ASSEMBLY_HEADERS}/BasicBlockType.h"
-  "${INTERNAL_ASSEMBLY_HEADERS}/Edge.h"
   "${INTERNAL_ASSEMBLY_HEADERS}/Function.h"
   "${INTERNAL_ASSEMBLY_HEADERS}/Instruction.h"
   "${INTERNAL_ASSEMBLY_HEADERS}/Tag.h"

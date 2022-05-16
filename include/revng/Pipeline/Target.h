@@ -90,7 +90,7 @@ public:
          Exactness::Values Exactness = Exactness::Exact) :
     K(&K), Exact(Exactness) {
     for (auto Name : Names)
-      Components.emplace_back(Name.str());
+      Components.emplace_back(Name == "*" ? PathComponent::all() : PathComponent(Name.str()));
     revng_assert(this->Components.size() == getKind().depth());
   }
 

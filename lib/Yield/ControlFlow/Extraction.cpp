@@ -55,7 +55,7 @@ yield::Graph yield::cfg::extractFromInternal(const yield::Function &Function,
       From->Node->NextAddress = Last->NextAddress;
 
       llvm::SmallVector<yield::Node::EdgeView, 4> TargetEdges;
-      for (const auto &[Target, Type] : Last->Targets) {
+      for (const MetaAddress &Target : Last->Targets) {
         auto From = LookupTable.find(Block.Address);
         revng_assert(From != LookupTable.end());
         if (Target.isValid()) {
@@ -63,44 +63,27 @@ yield::Graph yield::cfg::extractFromInternal(const yield::Function &Function,
             auto EdgeView = From->Node->addSuccessor(To->Node);
             revng_assert(EdgeView.Label != nullptr);
             TargetEdges.emplace_back(EdgeView);
-
-            if (efa::FunctionEdgeType::needsFallthrough(Type)) {
-              EdgeView.Label->Type = yield::Graph::EdgeType::Call;
-
-              auto Fallthrough = LookupTable.find(Last->NextAddress);
-              revng_assert(Fallthrough != LookupTable.end(),
-                           "The last basic block cannot have a fallthrough.");
-              auto View = From->Node->addSuccessor(Fallthrough->Node);
-              TargetEdges.emplace_back(std::move(View));
-            }
           }
         }
       }
 
       // Colour taken and refused edges.
       if (Last->Targets.size() == 2) {
-        bool HasFallthrough = false;
-        for (const auto &[Destination, Type] : Last->Targets)
-          if (efa::FunctionEdgeType::needsFallthrough(Type))
-            HasFallthrough = true;
-
-        if (HasFallthrough == false) {
-          revng_assert(TargetEdges.size() < 3);
-          if (TargetEdges.size() == 2) {
-            auto &Front = TargetEdges.front();
-            auto &Back = TargetEdges.back();
-            if (Front.Neighbor->Address == Last->NextAddress) {
-              Front.Label->Type = yield::Graph::EdgeType::Refused;
-              Back.Label->Type = yield::Graph::EdgeType::Taken;
-            } else if (Back.Neighbor->Address == Last->NextAddress) {
-              Front.Label->Type = yield::Graph::EdgeType::Taken;
-              Back.Label->Type = yield::Graph::EdgeType::Refused;
-            }
-          } else if (TargetEdges.size() == 1) {
-            auto &Front = TargetEdges.front();
-            if (Front.Neighbor->Address == Last->NextAddress)
-              TargetEdges.front().Label->Type = yield::Graph::EdgeType::Refused;
+        revng_assert(TargetEdges.size() < 3);
+        if (TargetEdges.size() == 2) {
+          auto &Front = TargetEdges.front();
+          auto &Back = TargetEdges.back();
+          if (Front.Neighbor->Address == Last->NextAddress) {
+            Front.Label->Type = yield::Graph::EdgeType::Refused;
+            Back.Label->Type = yield::Graph::EdgeType::Taken;
+          } else if (Back.Neighbor->Address == Last->NextAddress) {
+            Front.Label->Type = yield::Graph::EdgeType::Taken;
+            Back.Label->Type = yield::Graph::EdgeType::Refused;
           }
+        } else if (TargetEdges.size() == 1) {
+          auto &Front = TargetEdges.front();
+          if (Front.Neighbor->Address == Last->NextAddress)
+            TargetEdges.front().Label->Type = yield::Graph::EdgeType::Refused;
         }
       }
     }

@@ -75,7 +75,7 @@ static std::string basicBlock(const yield::BasicBlock &BasicBlock,
   // This determines whether this is the last block in the current string
   // (if `NextBlock` is `nullptr`) or if there's continuation.
   const yield::BasicBlock *NextBlock = nullptr;
-  for (const auto &[Target, Type] : BasicBlock.Targets) {
+  for (const MetaAddress &Target : BasicBlock.Targets) {
     if (Target == BasicBlock.NextAddress) {
       auto Iterator = Function.BasicBlocks.find(Target);
       revng_assert(Iterator != Function.BasicBlocks.end());

@@ -12,7 +12,6 @@
 #include "revng/Support/MetaAddress.h"
 #include "revng/Support/MetaAddress/YAMLTraits.h"
 #include "revng/Yield/Internal/BasicBlockType.h"
-#include "revng/Yield/Internal/Edge.h"
 #include "revng/Yield/Internal/Instruction.h"
 
 /* TUPLE-TREE-YAML
@@ -31,10 +30,15 @@ fields:
     sequence:
       type: SortedVector
       elementType: yield::Instruction
+  - name: Calls
+    sequence:
+      type: SortedVector
+      elementType: MetaAddress
+    optional: true
   - name: Targets
     sequence:
       type: SortedVector
-      elementType: yield::Edge
+      elementType: MetaAddress
     optional: true
 
   - name: CommentIndicator

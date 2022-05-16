@@ -6,7 +6,6 @@
 //
 
 #include "revng/Yield/Internal/BasicBlock.h"
-#include "revng/Yield/Internal/Edge.h"
 #include "revng/Yield/Internal/Function.h"
 #include "revng/Yield/Internal/Instruction.h"
 #include "revng/Yield/Internal/Tag.h"
@@ -16,10 +15,6 @@ void yield::Tag::dump() const {
 }
 
 void yield::Instruction::dump() const {
-  serialize(dbg, *this);
-}
-
-void yield::Edge::dump() const {
   serialize(dbg, *this);
 }
 

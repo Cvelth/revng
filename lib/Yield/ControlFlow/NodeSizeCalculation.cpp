@@ -147,7 +147,7 @@ instructionSize(const yield::Instruction &Instruction,
   return Result;
 }
 
-static size_t countTargets(const SortedVector<yield::Edge> &Targets) {
+static size_t countTargets(const SortedVector<MetaAddress> &Targets) {
   return Targets.size() - Targets.count(MetaAddress::invalid());
 }
 
@@ -165,7 +165,7 @@ targetFooterSize(const yield::BasicBlock &BasicBlock,
 
   yield::Graph::Size PrefixSize(BasicBlock.CommentIndicator.size() + 1, 0);
   if (BasicBlock.Targets.size() == 1) {
-    auto LinkSize = linkSize(BasicBlock.Targets.begin()->Destination,
+    auto LinkSize = linkSize(*BasicBlock.Targets.begin(),
                              Binary,
                              PrefixSize.W + 1,
                              BasicBlock.NextAddress);
@@ -178,7 +178,7 @@ targetFooterSize(const yield::BasicBlock &BasicBlock,
                                Configuration));
   }
 
-  for (const auto &[Target, Type] : BasicBlock.Targets)
+  for (const MetaAddress &Target : BasicBlock.Targets)
     if (Target.isValid())
       appendSize(Result,
                  fontSize(linkSize(Target,

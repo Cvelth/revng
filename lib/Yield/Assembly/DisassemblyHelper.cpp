@@ -134,9 +134,15 @@ yield::Function DH::disassemble(const model::Function &Function,
     if (!ResultBasicBlock.Instructions.empty()) {
       if (!BasicBlock.Successors.empty()) {
         auto TargetInserter = ResultBasicBlock.Targets.batch_insert();
-        for (auto &SuccessorEdgePair : BasicBlock.Successors)
-          TargetInserter.insert(yield::Edge(SuccessorEdgePair->Destination,
-                                            SuccessorEdgePair->Type));
+        auto CallInserter = ResultBasicBlock.Calls.batch_insert();
+        for (auto &SuccessorEdgePair : BasicBlock.Successors) {
+          if (efa::FunctionEdgeType::isCall(SuccessorEdgePair->Type))
+            CallInserter.insert(SuccessorEdgePair->Destination);
+          else
+            TargetInserter.insert(SuccessorEdgePair->Destination);
+          if (efa::FunctionEdgeType::needsFallthrough(SuccessorEdgePair->Type))
+            TargetInserter.insert(ResultBasicBlock.NextAddress);
+        }
       }
     }
 
