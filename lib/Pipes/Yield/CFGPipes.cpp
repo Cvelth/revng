@@ -42,7 +42,8 @@ YieldControlFlowPipe::getContract() const {
                                    pipeline::Exactness::Exact,
                                    0,
                                    FunctionControlFlowGraphSVG,
-                                   1) };
+                                   1,
+                                   pipeline::InputPreservation::Preserve) };
 }
 
 } // end namespace revng::pipes

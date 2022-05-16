@@ -283,6 +283,16 @@ static std::string calls(const SortedVector<MetaAddress> &CallAddresses,
   return comment(BasicBlock, std::move(Result));
 }
 
+static std::string tailCall(const MetaAddress &Address,
+                            const yield::BasicBlock &BasicBlock,
+                            const yield::Function &Function,
+                            const model::Binary &Binary) {
+  std::string Result = "tail call to "
+                       + targetLink(Address, BasicBlock, Function, Binary);
+
+  return comment(BasicBlock, std::move(Result));
+}
+
 struct TargetPair {
   std::string Value;
   size_t Count;
@@ -382,8 +392,20 @@ static TargetPair targets(const yield::BasicBlock &BasicBlock,
                           size_t TailOffset = 0) {
   TargetPair Result;
   if (BasicBlock.Targets.size() == 0) {
-    revng_assert(BasicBlock.Calls.size() == 0);
-    Result = { "", 0 };
+    revng_assert(BasicBlock.Calls.size() < 2);
+    if (!BasicBlock.Calls.empty() && BasicBlock.Calls.begin()->isValid()) {
+      // There's a single call but no targets - must be a tail call.
+      std::string Result = tailCall(*BasicBlock.Calls.begin(),
+                                    BasicBlock,
+                                    Function,
+                                    Binary);
+      return { std::move(Result), 1 };
+    } else {
+      // No targets and no calls, nothing is known - nothing to produce.
+      Result = { "", 0 };
+    }
+    const auto &Calls = BasicBlock.Calls;
+    revng_assert(Calls.size() == 0 || Calls.begin()->isInvalid());
   } else if (BasicBlock.Targets.size() == 1) {
     Result = singleTarget(*BasicBlock.Targets.begin(),
                           BasicBlock,

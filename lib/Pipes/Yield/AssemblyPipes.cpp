@@ -102,7 +102,8 @@ std::array<pipeline::ContractGroup, 1> YieldAssemblyPipe::getContract() const {
                                    pipeline::Exactness::Exact,
                                    0,
                                    FunctionAssemblyHTML,
-                                   1) };
+                                   1,
+                                   pipeline::InputPreservation::Preserve) };
 }
 
 } // end namespace revng::pipes
