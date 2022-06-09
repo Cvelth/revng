@@ -20,9 +20,29 @@ namespace revng::pipes {
 class FunctionStringMap : public pipeline::Container<FunctionStringMap> {
 public:
   /// Wrapper for std::string that allows YAML-serialization as multiline string
-  struct String {
-    std::string TheString;
-    operator std::string() const { return TheString; }
+  struct String : public std::string {
+    using std::string::string;
+    String(const String &Another) : std::string(Another) {}
+    String(String &&Another) : std::string(std::move(Another)) {}
+    String(const std::string &Another) : std::string(Another) {}
+    String(std::string &&Another) : std::string(std::move(Another)) {}
+
+    String &operator=(const String &Another) {
+      std::string::operator=(Another);
+      return *this;
+    }
+    String &operator=(String &&Another) {
+      std::string::operator=(std::move(Another));
+      return *this;
+    }
+    String &operator=(const std::string &Another) {
+      std::string::operator=(Another);
+      return *this;
+    }
+    String &operator=(std::string &&Another) {
+      std::string::operator=(std::move(Another));
+      return *this;
+    }
   };
 
 public:
@@ -82,10 +102,10 @@ protected:
 public:
   /// std::map-like methods
 
-  std::string &operator[](MetaAddress M) { return Map[M].TheString; };
+  std::string &operator[](MetaAddress M) { return Map[M]; };
 
-  std::string &at(MetaAddress M) { return Map.at(M).TheString; };
-  const std::string &at(MetaAddress M) const { return Map.at(M).TheString; };
+  std::string &at(MetaAddress M) { return Map.at(M); };
+  const std::string &at(MetaAddress M) const { return Map.at(M); };
 
   std::pair<Iterator, bool> insert(const ValueType &V) {
     return Map.insert(V);
@@ -96,11 +116,11 @@ public:
 
   std::pair<Iterator, bool>
   insert_or_assign(MetaAddress Key, const std::string &Value) {
-    return Map.insert_or_assign(Key, String{ Value });
+    return Map.insert_or_assign(Key, Value);
   };
   std::pair<Iterator, bool>
   insert_or_assign(MetaAddress Key, std::string &&Value) {
-    return Map.insert_or_assign(Key, String{ std::move(Value) });
+    return Map.insert_or_assign(Key, std::move(Value));
   };
 
   bool contains(MetaAddress Key) const { return Map.contains(Key); }
