@@ -21,8 +21,11 @@ class FunctionStringMap : public pipeline::Container<FunctionStringMap> {
 public:
   /// Wrapper for std::string that allows YAML-serialization as multiline string
   struct String {
-    std::string TheString;
-    operator std::string() const { return TheString; }
+    std::string Value;
+
+    String() : Value() {}
+    String(const std::string &NewValue) : Value(NewValue) {}
+    String(std::string &&NewValue) : Value(std::move(NewValue)) {}
   };
 
 public:
@@ -82,10 +85,10 @@ protected:
 public:
   /// std::map-like methods
 
-  std::string &operator[](MetaAddress M) { return Map[M].TheString; };
+  std::string &operator[](MetaAddress M) { return Map[M].Value; };
 
-  std::string &at(MetaAddress M) { return Map.at(M).TheString; };
-  const std::string &at(MetaAddress M) const { return Map.at(M).TheString; };
+  std::string &at(MetaAddress M) { return Map.at(M).Value; };
+  const std::string &at(MetaAddress M) const { return Map.at(M).Value; };
 
   std::pair<Iterator, bool> insert(const ValueType &V) {
     return Map.insert(V);
@@ -96,11 +99,11 @@ public:
 
   std::pair<Iterator, bool>
   insert_or_assign(MetaAddress Key, const std::string &Value) {
-    return Map.insert_or_assign(Key, String{ Value });
+    return Map.insert_or_assign(Key, Value);
   };
   std::pair<Iterator, bool>
   insert_or_assign(MetaAddress Key, std::string &&Value) {
-    return Map.insert_or_assign(Key, String{ std::move(Value) });
+    return Map.insert_or_assign(Key, std::move(Value));
   };
 
   bool contains(MetaAddress Key) const { return Map.contains(Key); }
