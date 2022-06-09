@@ -9,7 +9,8 @@ Steps:
    Pipes:
      - Type:             LLVMPipe
        UsedContainers: [module.ll]
-       Passes: [collect-cfg,
+       Passes: [detect-abi,
+                collect-cfg,
                 isolate,
                 invoke-isolated-functions]
    Artifacts:

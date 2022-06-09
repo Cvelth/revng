@@ -75,20 +75,3 @@ macro(artifact_handler CATEGORY INPUT_FILE CONFIGURATION OUTPUT TARGET_NAME)
 endmacro()
 register_derived_artifact("lifted" "abi-enforced-for-decompilation" ".bc"
                           "FILE")
-
-macro(artifact_handler CATEGORY INPUT_FILE CONFIGURATION OUTPUT TARGET_NAME)
-  if("${CATEGORY}" STREQUAL "tests_runtime" AND NOT "${CONFIGURATION}" STREQUAL
-                                                "static_native")
-    set(COMMAND_TO_RUN
-        "./bin/revng"
-        pipeline
-        Lift:DetectABI:module.ll::Root
-        YieldAssembly:assembly.html.yml:*:FunctionAssemblyHTML
-        -i
-        "begin:input:${INPUT_FILE}"
-        -o
-        "YieldAssembly:assembly.html.yml:${OUTPUT}")
-    set(DEPEND_ON revng-all-binaries)
-  endif()
-endmacro()
-register_derived_artifact("compiled" "assembly-html" ".yml" "FILE")
