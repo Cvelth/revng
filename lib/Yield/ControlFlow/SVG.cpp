@@ -304,3 +304,8 @@ std::string yield::svg::controlFlow(const yield::Function &InternalFunction,
 
   return exportCFG(ControlFlowGraph, InternalFunction, Binary, Configuration);
 }
+
+std::string yield::svg::calls(const yield::CallGraph &CallGraph,
+                              const model::Binary &Binary) {
+  revng_abort("WIP");
+}

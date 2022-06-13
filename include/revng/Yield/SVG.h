@@ -11,8 +11,9 @@ namespace model {
 class Binary;
 }
 namespace yield {
+class CallGraph;
 class Function;
-}
+} // namespace yield
 
 namespace yield {
 
@@ -20,6 +21,8 @@ namespace svg {
 
 std::string controlFlow(const yield::Function &InternalFunction,
                         const model::Binary &Binary);
+
+std::string calls(const yield::CallGraph &Graph, const model::Binary &Binary);
 
 } // namespace svg
 

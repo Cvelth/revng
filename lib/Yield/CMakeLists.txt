@@ -24,6 +24,7 @@ revng_add_analyses_library_internal(
   Support/SugiyamaStyleGraphLayout/TopologicalOrdering.cpp
   Support/SugiyamaStyleGraphLayout/VerticalPositions.cpp
   Support/SugiyamaStyleGraphLayout.cpp
+  CallGraph.cpp
   Dump.cpp
   Verify.cpp)
 
@@ -61,7 +62,10 @@ target_tuple_tree_generator(
   "MetaAddress"
   HEADERS
   "${INTERNAL_ASSEMBLY_HEADERS}/BasicBlock.h"
+  "${INTERNAL_ASSEMBLY_HEADERS}/CallGraph.h"
   "${INTERNAL_ASSEMBLY_HEADERS}/Function.h"
+  "${INTERNAL_ASSEMBLY_HEADERS}/FunctionNode.h"
   "${INTERNAL_ASSEMBLY_HEADERS}/Instruction.h"
+  "${INTERNAL_ASSEMBLY_HEADERS}/RelationNode.h"
   "${INTERNAL_ASSEMBLY_HEADERS}/Tag.h"
   "${INTERNAL_ASSEMBLY_HEADERS}/TagType.h")
