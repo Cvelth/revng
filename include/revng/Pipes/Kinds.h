@@ -30,11 +30,4 @@ inline TaggedFunctionKind
 inline pipeline::Kind Object("Object", &RootRank);
 inline pipeline::Kind Translated("Translated", &RootRank);
 
-inline FunctionKind
-  FunctionAssemblyInternal("FunctionAssemblyInternal", &FunctionsRank);
-inline FunctionKind
-  FunctionAssemblyPTML("FunctionAssemblyPTML", &FunctionsRank);
-inline FunctionKind
-  FunctionControlFlowGraphSVG("FunctionControlFlowGraphSVG", &FunctionsRank);
-
 } // namespace revng::pipes
