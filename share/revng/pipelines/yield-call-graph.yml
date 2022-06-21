@@ -1,0 +1,26 @@
+#
+# This file is distributed under the MIT License. See LICENSE.md for details.
+#
+
+Containers:
+ - Name:            call-graph-internal.yml
+   Type:            BinaryCallGraphInternal
+ - Name:            call-graph-svg.yml
+   Type:            BinaryCallGraphSVG
+Branches:
+ - From:            Isolate
+   Steps:
+    - Name:            ProcessCallGraph
+      Pipes:
+        - Type:             process-call-graph
+          UsedContainers: [module.ll, call-graph-internal.yml]
+      Artifacts:
+        Container: call-graph-internal.yml
+        Kind: BinaryCallGraphInternal
+    - Name:            YieldCallGraph
+      Pipes:
+        - Type:             yield-call-graph
+          UsedContainers: [call-graph-internal.yml, call-graph-svg.yml]
+      Artifacts:
+        Container: call-graph-svg.yml
+        Kind: BinaryCallGraphSVG

@@ -15,4 +15,8 @@ inline pipeline::Kind
 inline pipeline::Kind
   FunctionControlFlowGraphSVG("FunctionControlFlowGraphSVG", &FunctionsRank);
 
+inline pipeline::Kind
+  BinaryCallGraphInternal("BinaryCallGraphInternal", &RootRank);
+inline pipeline::Kind BinaryCallGraphSVG("BinaryCallGraphSVG", &RootRank);
+
 } // namespace revng::pipes
