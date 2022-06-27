@@ -13,6 +13,7 @@
 #include "revng/Pipes/Yield/ProcessCallGraphPipe.h"
 #include "revng/Pipes/Yield/YieldCallGraphPipe.h"
 #include "revng/Yield/CallGraph.h"
+#include "revng/Yield/SVG.h"
 
 namespace revng::pipes {
 
@@ -67,7 +68,34 @@ ProcessCallGraphPipe::getContract() const {
 void YieldCallGraphPipe::run(pipeline::Context &Context,
                              const FileContainer &Input,
                              FileContainer &Output) {
-  revng_abort("WIP");
+  // Access the model
+  const auto &Model = revng::pipes::getModelFromContext(Context);
+
+  // Open the input file.
+  auto MaybeInputPath = Input.path();
+  revng_assert(MaybeInputPath.has_value());
+  auto MaybeBuffer = llvm::MemoryBuffer::getFile(MaybeInputPath.value());
+  revng_assert(MaybeBuffer);
+  llvm::yaml::Input YAMLInput(**MaybeBuffer);
+
+  // Deserialize the graph data.
+  yield::CallGraph CallGraph;
+  YAMLInput >> CallGraph;
+
+  // Convert the graph to SVG.
+  auto Result = yield::svg::calls(CallGraph, *Model);
+
+  // Open the output file.
+  std::error_code ErrorCode;
+  llvm::raw_fd_ostream Stream(Output.getOrCreatePath(), ErrorCode);
+  if (ErrorCode)
+    revng_abort(ErrorCode.message().c_str());
+
+  // Print the result.
+  Stream << Result;
+  Stream.flush();
+  if ((ErrorCode = Stream.error()))
+    revng_abort(ErrorCode.message().c_str());
 }
 
 void YieldCallGraphPipe::print(const pipeline::Context &,
