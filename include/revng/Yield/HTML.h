@@ -23,6 +23,7 @@ std::string functionAssembly(const yield::Function &InternalFunction,
 std::string controlFlowNode(const MetaAddress &BasicBlockAddress,
                             const yield::Function &Function,
                             const model::Binary &Binary);
+std::string functionLink(const MetaAddress Entry, const model::Binary &Binary);
 
 } // namespace html
 

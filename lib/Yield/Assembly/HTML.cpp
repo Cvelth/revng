@@ -760,3 +760,17 @@ std::string yield::html::controlFlowNode(const MetaAddress &Address,
 
   return Result;
 }
+
+constexpr auto CallGraphTemplate = R"(<div data-token="function-name" )"
+                                   R"(data-references="{0}">{1}</div>)";
+std::string yield::html::functionLink(const MetaAddress EntryAddress,
+                                      const model::Binary &Binary) {
+  if (EntryAddress.isInvalid())
+    return "";
+
+  auto Iterator = Binary.Functions.find(EntryAddress);
+  revng_assert(Iterator != Binary.Functions.end());
+  return llvm::formatv(CallGraphTemplate,
+                       "/function/" + address(EntryAddress),
+                       Iterator->name());
+}
