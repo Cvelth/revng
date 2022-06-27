@@ -114,10 +114,46 @@ yield::CallGraph::CallGraph(const SortedVector<efa::FunctionMetadata> &Metadata,
 
 template<IsGenericGraph GenericGraphType>
 static GenericGraphType
-convertToGenericGraphImpl(const yield::CallGraph &Graph) {
+makeStraightforwardGraph(const yield::CallGraph &InternalGraph) {
   GenericGraphType Result;
 
-  revng_abort("WIP");
+  std::map<MetaAddress, typename GenericGraphType::Node *> Lookup;
+  for (const auto &[Address, _] : InternalGraph.Relations) {
+    revng_assert(Address.isValid());
+    Lookup.emplace(Address, Result.addNode(Address));
+  }
+
+  for (const auto &[Address, Successors] : InternalGraph.Relations) {
+    auto FromIterator = Lookup.find(Address);
+    revng_assert(FromIterator != Lookup.end());
+
+    for (const auto &[SuccessorAddress] : Successors) {
+      auto ToIterator = Lookup.find(SuccessorAddress);
+      revng_assert(ToIterator != Lookup.end());
+
+      FromIterator->second->addSuccessor(ToIterator->second);
+    }
+  }
+
+  Result.setEntryNode(Result.addNode(MetaAddress::invalid()));
+  using FN = const yield::FunctionNode;
+  auto AllTheRoots = llvm::concat<FN>(InternalGraph.Roots,
+                                      InternalGraph.LoopPreventionRoots);
+  for (const auto &[RootAddress] : AllTheRoots) {
+    auto Iterator = Lookup.find(RootAddress);
+    revng_assert(Iterator != Lookup.end());
+    Result.getEntryNode()->addSuccessor(Iterator->second);
+  }
+
+  return Result;
+}
+
+template<IsGenericGraph GenericGraphType>
+static GenericGraphType
+convertToGenericGraphImpl(const yield::CallGraph &GraphData) {
+  auto Result = makeStraightforwardGraph<GenericGraphType>(GraphData);
+
+  // TODO: tree conversion.
 
   return Result;
 }
