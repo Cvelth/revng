@@ -79,6 +79,8 @@ void route(const OrderedEdgeContainer &OrderedListOfEdges,
            float MarginSize,
            float EdgeDistance);
 
+void routeWithStraightLines(const OrderedEdgeContainer &OrderedListOfEdges);
+
 /// Computes the layout given a graph and the configuration.
 ///
 /// \note: it only works with `MutableEdgeNode`s.
@@ -125,7 +127,9 @@ inline bool calculateSugiyamaLayout(ExternalGraph &Graph,
   setVerticalCoordinates(Layers, Lanes, Margin, EdgeGap);
 
   // Route edges forming backwards facing corners.
-  auto Prerouted = routeBackwardsCorners(DAG, Ranks, Lanes, Margin, EdgeGap);
+  CornerContainer Prerouted;
+  if (Configuration.UseOrthogonalBends)
+    Prerouted = routeBackwardsCorners(DAG, Ranks, Lanes, Margin, EdgeGap);
 
   // Now that the corners are routed, the DAG representation is not needed
   // anymore, both the graph and the routed corners get consumed to construct
@@ -134,7 +138,10 @@ inline bool calculateSugiyamaLayout(ExternalGraph &Graph,
   auto Edges = orderEdges(std::move(DAG), std::move(Prerouted), Ranks, Lanes);
 
   // Route the edges.
-  route(Edges, Margin, EdgeGap);
+  if (Configuration.UseOrthogonalBends)
+    route(Edges, Margin, EdgeGap);
+  else
+    routeWithStraightLines(Edges);
 
   return true;
 }
