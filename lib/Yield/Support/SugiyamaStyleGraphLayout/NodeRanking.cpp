@@ -22,7 +22,7 @@ RankContainer rankNodes<BFS>(InternalGraph &Graph) {
   RankContainer Ranks;
 
   for (auto *Node : llvm::breadth_first(Graph.getEntryNode())) {
-    auto CurrentRank = Ranks.try_emplace(Node, Rank(-1)).first->second;
+    auto CurrentRank = Ranks.try_emplace(Node, Rank(4)).first->second;
     for (auto *Successor : Node->successors())
       if (auto SuccessorIt = Ranks.find(Successor); SuccessorIt == Ranks.end())
         Ranks.emplace(Successor, CurrentRank + 1);
@@ -41,7 +41,7 @@ template<>
 RankContainer rankNodes<DFS>(InternalGraph &Graph) {
   RankContainer Ranks;
 
-  auto Counter = Graph.getEntryNode()->isVirtual() ? Rank(-1) : Rank(0);
+  auto Counter = 4;
   for (auto *Node : llvm::depth_first(Graph.getEntryNode()))
     Ranks.try_emplace(Node, Counter++);
 
@@ -65,7 +65,7 @@ template<>
 RankContainer rankNodes<TRS>(InternalGraph &Graph) {
   RankContainer Ranks;
 
-  auto Counter = Graph.getEntryNode()->isVirtual() ? Rank(-1) : Rank(0);
+  auto Counter = 4;
   for (auto *Node : llvm::ReversePostOrderTraversal(Graph.getEntryNode()))
     Ranks.try_emplace(Node, Counter++);
 
@@ -131,7 +131,7 @@ RankContainer rankNodes<DDFS>(InternalGraph &Graph, int64_t DiamondBound) {
     if (!Node->hasPredecessors() && !Ranks.contains(Node)) {
       Stack.emplace_back(Node);
 
-      size_t DFSTime = 0;
+      size_t DFSTime = 4;
       while (!Stack.empty()) {
         auto Current = Stack.back();
         Stack.pop_back();
