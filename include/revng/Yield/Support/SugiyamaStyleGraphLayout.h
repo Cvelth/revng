@@ -13,13 +13,17 @@ enum class RankingStrategy {
   BreadthFirstSearch,
   DepthFirstSearch,
   Topological,
-  DisjointDepthFirstSearch
+  DisjointDepthFirstSearch,
+  SimpleTree
 };
 
 struct Configuration {
 public:
   RankingStrategy Ranking;
   bool UseOrthogonalBends;
+
+  bool PreserveLinearSegments;
+  float VirtualNodeWeight;
 
   Graph::Dimension NodeMarginSize;
   Graph::Dimension EdgeMarginSize;
@@ -34,10 +38,13 @@ layout(Graph &Graph,
        const cfg::Configuration &CFG,
        RankingStrategy Ranking = RankingStrategy::DisjointDepthFirstSearch) {
   return layout(Graph,
-                Configuration{ .Ranking = Ranking,
-                               .UseOrthogonalBends = CFG.UseOrthogonalBends,
-                               .NodeMarginSize = CFG.ExternalNodeMarginSize,
-                               .EdgeMarginSize = CFG.EdgeMarginSize });
+                Configuration{
+                  .Ranking = Ranking,
+                  .UseOrthogonalBends = CFG.UseOrthogonalBends,
+                  .PreserveLinearSegments = CFG.PreserveLinearSegments,
+                  .VirtualNodeWeight = CFG.VirtualNodeWeight,
+                  .NodeMarginSize = CFG.ExternalNodeMarginSize,
+                  .EdgeMarginSize = CFG.EdgeMarginSize });
 }
 
 } // namespace yield::sugiyama
