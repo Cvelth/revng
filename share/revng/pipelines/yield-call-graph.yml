@@ -7,6 +7,8 @@ Containers:
    Type:            BinaryCallGraphInternal
  - Name:            call-graph-svg.yml
    Type:            BinaryCallGraphSVG
+ - Name:            call-graph-slice-svg.yml
+   Type:            FunctionCallGraphSVG
 Branches:
  - From:            Isolate
    Steps:
@@ -24,3 +26,12 @@ Branches:
       Artifacts:
         Container: call-graph-svg.yml
         Kind: BinaryCallGraphSVG
+ - From:            ProcessCallGraph
+   Steps:
+    - Name:            YieldCallGraphSlice
+      Pipes:
+        - Type:             yield-call-graph-slice
+          UsedContainers: [module.ll, call-graph-internal.yml, call-graph-slice-svg.yml]
+      Artifacts:
+        Container: call-graph-slice-svg.yml
+        Kind: FunctionCallGraphSVG

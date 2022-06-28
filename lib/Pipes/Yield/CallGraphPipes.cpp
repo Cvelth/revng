@@ -12,6 +12,7 @@
 #include "revng/Pipes/Yield/Kinds.h"
 #include "revng/Pipes/Yield/ProcessCallGraphPipe.h"
 #include "revng/Pipes/Yield/YieldCallGraphPipe.h"
+#include "revng/Pipes/Yield/YieldCallGraphSlicePipe.h"
 #include "revng/Yield/CallGraph.h"
 #include "revng/Yield/SVG.h"
 
@@ -113,18 +114,79 @@ std::array<pipeline::ContractGroup, 1> YieldCallGraphPipe::getContract() const {
                                    pipeline::InputPreservation::Preserve) };
 }
 
+void YieldCallGraphSlicePipe::run(pipeline::Context &Context,
+                                  const pipeline::LLVMContainer &TargetList,
+                                  const FileContainer &Input,
+                                  FunctionStringMap &Output) {
+  // Access the model
+  const auto &Model = revng::pipes::getModelFromContext(Context);
+
+  // Open the input file.
+  auto MaybeInputPath = Input.path();
+  revng_assert(MaybeInputPath.has_value());
+  auto MaybeBuffer = llvm::MemoryBuffer::getFile(MaybeInputPath.value());
+  revng_assert(MaybeBuffer);
+  llvm::yaml::Input YAMLInput(**MaybeBuffer);
+
+  // Deserialize the graph data.
+  yield::CallGraph CallGraph;
+  YAMLInput >> CallGraph;
+
+  // Access the llvm module
+  const llvm::Module &Module = TargetList.getModule();
+
+  for (const auto &LLVMFunction : FunctionTags::Isolated.functions(&Module)) {
+    auto Metadata = extractFunctionMetadata(&LLVMFunction);
+
+    // Convert a slice of the graph to SVG.
+    Output.insert_or_assign(Metadata->Entry,
+                            yield::svg::callsSlice(Metadata->Entry,
+                                                   CallGraph,
+                                                   *Model));
+  }
+}
+
+void YieldCallGraphSlicePipe::print(const pipeline::Context &,
+                                    llvm::raw_ostream &OS,
+                                    llvm::ArrayRef<std::string>) const {
+  OS << *revng::ResourceFinder.findFile("bin/revng") << " magic ^_^\n";
+}
+
+std::array<pipeline::ContractGroup, 1>
+YieldCallGraphSlicePipe::getContract() const {
+  pipeline::Contract FunctionContract(Isolated,
+                                      pipeline::Exactness::Exact,
+                                      0,
+                                      FunctionCallGraphSVG,
+                                      2,
+                                      pipeline::InputPreservation::Preserve);
+
+  pipeline::Contract GraphContract(BinaryCallGraphInternal,
+                                   pipeline::Exactness::Exact,
+                                   1,
+                                   pipeline::InputPreservation::Preserve);
+
+  return { pipeline::ContractGroup{ std::move(FunctionContract),
+                                    std::move(GraphContract) } };
+}
+
 static pipeline::RegisterContainerFactory
   InternalContainer("BinaryCallGraphInternal",
                     makeFileContainerFactory(BinaryCallGraphInternal,
                                              "application/"
                                              "x.yaml.call-graph.internal"));
 static pipeline::RegisterContainerFactory
-  SVGGraphContainer("BinaryCallGraphSVG",
-                    makeFileContainerFactory(BinaryCallGraphSVG,
-                                             "application/"
-                                             "x.yaml.call-graph.svg-body"));
+  BinaryGraphContainer("BinaryCallGraphSVG",
+                       makeFileContainerFactory(BinaryCallGraphSVG,
+                                                "application/"
+                                                "x.yaml.call-graph.svg-body"));
+static revng::pipes::RegisterFunctionStringMap
+  FunctionGraphContainer("FunctionCallGraphSVG",
+                         "application/x.yaml.call-graph-slice.svg-body",
+                         revng::pipes::FunctionCallGraphSVG);
 
 static pipeline::RegisterPipe<ProcessCallGraphPipe> ProcessPipe;
 static pipeline::RegisterPipe<YieldCallGraphPipe> YieldPipe;
+static pipeline::RegisterPipe<YieldCallGraphSlicePipe> YieldSlicePipe;
 
 } // end namespace revng::pipes

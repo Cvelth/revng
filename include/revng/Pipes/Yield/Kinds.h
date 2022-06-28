@@ -18,5 +18,7 @@ inline pipeline::Kind
 inline pipeline::Kind
   BinaryCallGraphInternal("BinaryCallGraphInternal", &RootRank);
 inline pipeline::Kind BinaryCallGraphSVG("BinaryCallGraphSVG", &RootRank);
+inline pipeline::Kind
+  FunctionCallGraphSVG("FunctionCallGraphSVG", &FunctionsRank);
 
 } // namespace revng::pipes
