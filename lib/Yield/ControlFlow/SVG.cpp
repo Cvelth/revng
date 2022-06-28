@@ -397,11 +397,11 @@ static void rotateTheGraph(yield::Graph &InternalGraph) {
 constexpr yield::cfg::Configuration defaultCallGraphConfiguration() {
   auto Result = yield::cfg::Configuration::getDefault();
 
-  Result.UseOrthogonalBends = false;
-  Result.ExternalNodeMarginSize = 10.f;
-  Result.EdgeMarginSize = 40.f;
-  Result.PreserveLinearSegments = false;
-  Result.VirtualNodeWeight = 1.f;
+  Result.UseOrthogonalBends = true;
+  Result.ExternalNodeMarginSize = 20.f;
+  Result.EdgeMarginSize = 15.f;
+  Result.PreserveLinearSegments = true;
+  // Result.VirtualNodeWeight = 1.f;
 
   return Result;
 }
@@ -515,6 +515,8 @@ std::string yield::svg::callsSlice(const MetaAddress &SlicePoint,
       Label->Type = yield::Graph::EdgeType::Taken;
   callGraphNodeSizeHelper(ForwardsSlice, Binary, Configuration);
   using RankingStrategy = sugiyama::RankingStrategy;
+  
+  rotateTheGraph(ForwardsSlice);
   sugiyama::layout(ForwardsSlice,
                    Configuration,
                    RankingStrategy::BreadthFirstSearch);
@@ -526,6 +528,8 @@ std::string yield::svg::callsSlice(const MetaAddress &SlicePoint,
       Label->Type = yield::Graph::EdgeType::Refused;
   callGraphNodeSizeHelper(BackwardsSlice, Binary, Configuration);
   using RankingStrategy = sugiyama::RankingStrategy;
+  
+  rotateTheGraph(BackwardsSlice);
   sugiyama::layout(BackwardsSlice,
                    Configuration,
                    RankingStrategy::BreadthFirstSearch);
@@ -534,6 +538,6 @@ std::string yield::svg::callsSlice(const MetaAddress &SlicePoint,
   auto Combined = combineHalvesHelper(SlicePoint,
                                       std::move(ForwardsSlice),
                                       std::move(BackwardsSlice));
-  rotateTheGraph(Combined);
+  // rotateTheGraph(Combined);
   return exportCallGraph(Combined, Binary, Configuration);
 }

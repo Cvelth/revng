@@ -23,6 +23,8 @@ bool yield::sugiyama::layout(Graph &Graph, const Configuration &Configuration) {
   case RS::DisjointDepthFirstSearch:
     return calculateSugiyamaLayout<RS::DisjointDepthFirstSearch>(Graph,
                                                                  Configuration);
+  // case RS::SimpleTree:
+  //   return calculateSugiyamaLayout<RS::SimpleTree>(Graph, Configuration);
   default:
     revng_abort("Unknown ranking strategy");
   }
