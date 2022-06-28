@@ -24,6 +24,10 @@ std::string controlFlow(const yield::Function &InternalFunction,
 
 std::string calls(const yield::CallGraph &Graph, const model::Binary &Binary);
 
+std::string callsSlice(const MetaAddress &SlicePoint,
+                       const yield::CallGraph &Graph,
+                       const model::Binary &Binary);
+
 } // namespace svg
 
 } // namespace yield
