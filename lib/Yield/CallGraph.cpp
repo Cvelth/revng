@@ -5,6 +5,7 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include "revng/ADT/Concepts.h"
 #include "revng/Model/Binary.h"
 #include "revng/Yield/CallGraph.h"
 
@@ -166,4 +167,74 @@ yield::CallGraph::toGenericGraph() const {
 
 yield::Graph yield::CallGraph::toYieldGraph() const {
   return convertToGenericGraphImpl<yield::Graph>(*this);
+}
+
+static auto
+addNodeHelper(yield::CallGraph &OutputGraph, const MetaAddress &Address) {
+  auto Iterator = OutputGraph.Relations.find(Address);
+  if (Iterator == OutputGraph.Relations.end()) {
+    yield::RelationNode NewNode(Address);
+    return OutputGraph.Relations.insert(std::move(NewNode)).first;
+  } else {
+    return Iterator;
+  }
+}
+
+template<bool IsForwards, typename NodeType>
+static yield::CallGraph &
+addEdgesHelper(yield::CallGraph &OutputGraph, const NodeType &CurrentNode) {
+  revng_assert(CurrentNode.FunctionWithEntryAt.isValid());
+
+  auto SuccessorRange = IsForwards ? CurrentNode.successors() :
+                                     CurrentNode.predecessors();
+  for (const auto &Successor : SuccessorRange) {
+    revng_assert(Successor != nullptr);
+    const MetaAddress &NextAddress = Successor->FunctionWithEntryAt;
+
+    if (NextAddress.isValid()) {
+      addNodeHelper(OutputGraph, NextAddress);
+
+      auto From = OutputGraph.Relations.find(CurrentNode.FunctionWithEntryAt);
+      revng_assert(From != OutputGraph.Relations.end());
+      if (From->Callees.count(NextAddress) == 0) {
+        From->Callees.insert(NextAddress);
+        addEdgesHelper<IsForwards>(OutputGraph, *Successor);
+      }
+    }
+  }
+
+  return OutputGraph;
+}
+
+template<bool IsForwards>
+static yield::CallGraph callGraphSliceImpl(const MetaAddress &SlicePoint,
+                                           const yield::CallGraph &Calls) {
+  revng_assert(SlicePoint.isValid());
+
+  const auto Generic = Calls.toGenericGraph();
+
+  auto Iterator = llvm::find_if(Generic.nodes(), [&SlicePoint](auto *Node) {
+    if (!Node || Node->FunctionWithEntryAt.isInvalid())
+      return false;
+    else
+      return Node->FunctionWithEntryAt == SlicePoint;
+  });
+  revng_assert(Iterator != Generic.nodes().end(),
+               "The slice point is not a known function");
+
+  yield::CallGraph Result;
+  Result.Relations.insert(SlicePoint);
+
+  revng_assert(*Iterator != nullptr);
+  return addEdgesHelper<IsForwards>(Result, **Iterator);
+}
+
+yield::CallGraph
+yield::CallGraph::forwardsSlice(const MetaAddress &SlicePoint) const {
+  return callGraphSliceImpl<true>(SlicePoint, *this);
+}
+
+yield::CallGraph
+yield::CallGraph::backwardsSlice(const MetaAddress &SlicePoint) const {
+  return callGraphSliceImpl<false>(SlicePoint, *this);
 }

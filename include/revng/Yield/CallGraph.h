@@ -45,6 +45,9 @@ public:
   GenericGraph<BidirectionalNode<FunctionNode>, 16, true>
   toGenericGraph() const;
   yield::Graph toYieldGraph() const;
+
+  CallGraph forwardsSlice(const MetaAddress &SlicePoint) const;
+  CallGraph backwardsSlice(const MetaAddress &SlicePoint) const;
 };
 
 } // namespace yield
