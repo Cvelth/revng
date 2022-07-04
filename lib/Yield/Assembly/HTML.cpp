@@ -28,6 +28,7 @@ static constexpr auto scope = "data-scope";
 static constexpr auto token = "data-token";
 static constexpr auto locationDefinition = "data-location-definition";
 static constexpr auto locationReferences = "data-location-references";
+static constexpr auto modelEditPath = "data-model-edit-path";
 
 } // namespace attributes
 
@@ -72,17 +73,22 @@ static std::string label(const yield::BasicBlock &BasicBlock,
                          const yield::Function &Function,
                          const model::Binary &Binary) {
   std::string LabelName;
+  std::string FunctionPath;
   if (auto Iterator = Binary.Functions.find(BasicBlock.Start);
       Iterator != Binary.Functions.end()) {
     LabelName = Iterator->name().str().str();
+    FunctionPath = "/Functions/" + Iterator->Entry.toString() + "/CustomName";
   } else {
     LabelName = "basic_block_at_" + labelAddress(BasicBlock.Start);
   }
   using model::Architecture::getAssemblyLabelIndicator;
   auto LabelIndicator = getAssemblyLabelIndicator(Binary.Architecture);
-  return Tag(tags::Span, LabelName)
-           .add(attributes::token, tokenTypes::Label)
-           .serialize()
+  Tag LabelTag(tags::Span, LabelName);
+  LabelTag.add(attributes::token, tokenTypes::Label);
+  if (!FunctionPath.empty())
+    LabelTag.add(attributes::modelEditPath, FunctionPath);
+
+  return LabelTag.serialize()
          + Tag(tags::Span, LabelIndicator)
              .add(attributes::token, tokenTypes::LabelIndicator)
              .serialize();
