@@ -108,6 +108,14 @@ public:
                                 "/Types/" + getNameFromYAMLScalar(T->key()));
   }
 
+  model::TypePath getTypePath(const model::Type::Key &Key) {
+    return TypePath::fromString(this, "/Types/" + getNameFromYAMLScalar(Key));
+  }
+
+  model::TypePath getTypePath(const model::Type::Key &Key) const {
+    return TypePath::fromString(this, "/Types/" + getNameFromYAMLScalar(Key));
+  }
+
   model::TypePath recordNewType(UpcastablePointer<Type> &&T);
 
   model::TypePath
