@@ -38,6 +38,12 @@ bool rp_initialize(int argc,
                    const char *libraries_path[]);
 
 /**
+ * Should be called on clean exit to clean up all LLVM-related stuff used by
+ * revng-pipeline.
+ */
+bool rp_shutdown();
+
+/**
  * Free a string return by a rp_*_create_* method.
  */
 void rp_string_destroy(char *string);
