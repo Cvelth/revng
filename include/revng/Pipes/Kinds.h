@@ -34,4 +34,7 @@ inline FunctionKind
 inline FunctionKind
   FunctionControlFlowGraphSVG("FunctionControlFlowGraphSVG", &rank::Function);
 
+inline pipeline::Kind
+  BinaryCrossRelations("BinaryCrossRelations", &rank::Binary);
+
 } // namespace revng::pipes
