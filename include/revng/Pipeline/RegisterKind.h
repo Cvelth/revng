@@ -28,8 +28,10 @@ public:
   ~RegisterKind() override = default;
 
 public:
-  void registerContainersAndPipes(Loader &) override {}
   void registerKinds(KindsRegistry &KindDictionary) override;
+
+  void registerContainersAndPipes(Loader &) override {}
+  void registerLocations(ArtifactLocationRegistry &Dictionary) override {}
   void libraryInitialization() override {}
 };
 

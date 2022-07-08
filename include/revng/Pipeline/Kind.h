@@ -6,6 +6,7 @@
 
 #include <set>
 
+#include "revng/Pipeline/ArtifactLocationKind.h"
 #include "revng/Pipeline/GlobalTupleTreeDiff.h"
 #include "revng/Pipeline/PathComponent.h"
 #include "revng/Pipeline/Rank.h"
@@ -38,14 +39,27 @@ private:
   RegisterKind Register;
   const Rank *TheRank;
 
+  llvm::SmallVector<const ArtifactLocationKindBase *, 4> Locations;
+
 public:
-  Kind(llvm::StringRef Name, const Rank *TheRank) :
-    DynamicHierarchy<Kind>(Name), Register(*this), TheRank(TheRank) {
+  Kind(llvm::StringRef Name,
+       const Rank *TheRank,
+       std::initializer_list<const ArtifactLocationKindBase *> Locations = {}) :
+    DynamicHierarchy<Kind>(Name),
+    Register(*this),
+    TheRank(TheRank),
+    Locations(Locations) {
     revng_assert(TheRank != nullptr);
   }
 
-  Kind(llvm::StringRef Name, Kind &Parent, const Rank *TheRank) :
-    DynamicHierarchy<Kind>(Name, Parent), Register(*this), TheRank(TheRank) {
+  Kind(llvm::StringRef Name,
+       Kind &Parent,
+       const Rank *TheRank,
+       std::initializer_list<const ArtifactLocationKindBase *> Locations = {}) :
+    DynamicHierarchy<Kind>(Name, Parent),
+    Register(*this),
+    TheRank(TheRank),
+    Locations(Locations) {
     revng_assert(TheRank != nullptr);
   }
 
@@ -59,6 +73,8 @@ public:
   size_t depth() const { return TheRank->depth(); }
 
   const Rank &rank() const { return *TheRank; }
+
+  const auto &locations() { return Locations; }
 
 public:
   virtual ~Kind() = default;

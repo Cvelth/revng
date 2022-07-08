@@ -73,6 +73,7 @@ public:
   }
 
   void registerKinds(KindsRegistry &KindDictionary) override {}
+  void registerLocations(ArtifactLocationRegistry &Dictionary) override {}
 
   void libraryInitialization() override {
 

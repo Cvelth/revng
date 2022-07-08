@@ -164,6 +164,8 @@ public:
     Loader.addContainerFactory(Name, Factory);
   }
   void registerKinds(pipeline::KindsRegistry &KindDictionary) override {}
+  void
+  registerLocations(pipeline::ArtifactLocationRegistry &Dictionary) override {}
   void libraryInitialization() override {}
 };
 

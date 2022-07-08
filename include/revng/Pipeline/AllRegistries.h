@@ -13,6 +13,7 @@
 #include "revng/Pipeline/Loader.h"
 #include "revng/Pipeline/Pipe.h"
 #include "revng/Pipeline/RegisterAnalysis.h"
+#include "revng/Pipeline/RegisterArtifactLocation.h"
 #include "revng/Pipeline/RegisterContainerFactory.h"
 #include "revng/Pipeline/RegisterKind.h"
 #include "revng/Pipeline/RegisterLLVMPass.h"

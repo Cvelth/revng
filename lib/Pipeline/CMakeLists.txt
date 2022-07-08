@@ -14,6 +14,7 @@ revng_add_library_internal(
   LLVMContainer.cpp
   Loader.cpp
   Runner.cpp
+  RegisterArtifactLocation.cpp
   RegisterKind.cpp
   Registry.cpp
   Step.cpp

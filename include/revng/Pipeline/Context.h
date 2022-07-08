@@ -15,6 +15,7 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "revng/Pipeline/ArtifactLocationRegistry.h"
 #include "revng/Pipeline/Container.h"
 #include "revng/Pipeline/ContainerSet.h"
 #include "revng/Pipeline/Global.h"
@@ -34,23 +35,29 @@ private:
   GlobalsMap Globals;
   llvm::StringMap<std::any> Contexts;
   KindsRegistry TheKindRegistry;
+  ArtifactLocationRegistry TheLocationRegistry;
 
   llvm::StringMap<const ContainerSet::value_type *> ReadOnlyContainers;
 
 private:
-  explicit Context(KindsRegistry Registry) :
-    TheKindRegistry(std::move(Registry)) {}
+  explicit Context(KindsRegistry Kinds, ArtifactLocationRegistry Locations) :
+    TheKindRegistry(std::move(Kinds)),
+    TheLocationRegistry(std::move(Locations)) {}
 
 public:
   Context();
 
 public:
-  static Context fromRegistry(KindsRegistry Registry) {
-    return Context(std::move(Registry));
+  static Context
+  fromRegistries(KindsRegistry Kinds, ArtifactLocationRegistry Locations) {
+    return Context(std::move(Kinds), std::move(Locations));
   }
 
 public:
   const KindsRegistry &getKindsRegistry() const { return TheKindRegistry; }
+  const ArtifactLocationRegistry &getLocationRegistry() const {
+    return TheLocationRegistry;
+  }
 
   template<typename T>
   llvm::Expected<T *> getGlobal(llvm::StringRef Name) const {

@@ -14,6 +14,7 @@ namespace pipeline {
 
 class Loader;
 class KindsRegistry;
+class ArtifactLocationRegistry;
 
 /// A registry is the general way of registering factories and kinds from down
 /// stream libraries.
@@ -48,10 +49,12 @@ public:
   }
 
   static KindsRegistry registerAllKinds();
+  static ArtifactLocationRegistry registerAllLocations();
 
 public:
   virtual void registerContainersAndPipes(Loader &Loader) = 0;
   virtual void registerKinds(KindsRegistry &KindDictionary) = 0;
+  virtual void registerLocations(ArtifactLocationRegistry &Dictionary) = 0;
   virtual void libraryInitialization() = 0;
 };
 

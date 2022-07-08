@@ -873,7 +873,8 @@ BOOST_AUTO_TEST_CASE(LoaderTest) {
   PipelineDeclaration PDeclaration{ { { CName, "MapContainer" } },
                                     { move(BDeclaration) } };
 
-  auto Ctx = Context::fromRegistry(Registry::registerAllKinds());
+  auto Ctx = Context::fromRegistries(Registry::registerAllKinds(),
+                                     Registry::registerAllLocations());
   Loader Loader(Ctx);
   Loader.addDefaultConstructibleContainer<MapContainer>("MapContainer");
   Loader.registerPipe<FineGranerPipe>("FineGranerPipe");
