@@ -8,11 +8,22 @@
 
 namespace revng::pipes {
 
-inline FunctionKind
-  FunctionAssemblyInternal("FunctionAssemblyInternal", &FunctionsRank);
-inline FunctionKind
-  FunctionAssemblyPTML("FunctionAssemblyPTML", &FunctionsRank);
-inline FunctionKind
-  FunctionControlFlowGraphSVG("FunctionControlFlowGraphSVG", &FunctionsRank);
+inline FunctionKind FunctionAssemblyInternal("FunctionAssemblyInternal",
+                                             &FunctionsRank,
+                                             { &location::Function,
+                                               &location::BasicBlock,
+                                               &location::Instruction });
+
+inline FunctionKind FunctionAssemblyPTML("FunctionAssemblyPTML",
+                                         &FunctionsRank,
+                                         { &location::Function });
+
+inline FunctionKind FunctionControlFlowGraphSVG("FunctionControlFlowGraphSVG",
+                                                &FunctionsRank,
+                                                { &location::Function });
+
+inline pipeline::Kind BinaryCrossRelations("BinaryCrossRelations",
+                                           &RootRank,
+                                           { &location::Binary });
 
 } // namespace revng::pipes
