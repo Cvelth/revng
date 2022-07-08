@@ -2,6 +2,7 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -53,12 +54,34 @@ static bool loadLibraryPermanently(const char *LibraryPath) {
   return llvm::sys::DynamicLibrary::LoadLibraryPermanently(LibraryPath, &Msg);
 }
 
+typedef void (*sighandler_t)(int);
 static std::optional<revng::InitRevng> InitRevngInstance = std::nullopt;
+static std::map<int, llvm::SmallVector<sighandler_t, 2>> SigHandlers;
+
+inline void handle_signal(int signum) {
+  if (SigHandlers.contains(signum)) {
+    for (auto Handler : SigHandlers[signum]) {
+      Handler(signum);
+    }
+  }
+}
 
 bool rp_initialize(int argc,
                    char *argv[],
                    int libraries_count,
-                   const char *libraries_path[]) {
+                   const char *libraries_path[],
+                   int signals_to_preserve_count,
+                   int signals_to_preserve[]) {
+  if (argc != 0)
+    revng_check(argv != nullptr);
+  if (libraries_count != 0)
+    revng_check(libraries_path != nullptr);
+
+  for (int i = 0; i < signals_to_preserve_count; i++) {
+    sighandler_t OldSignal = signal(signals_to_preserve[i], SIG_DFL);
+    SigHandlers[signals_to_preserve[i]].push_back(OldSignal);
+  }
+
   if (Initialized)
     return false;
 
@@ -73,6 +96,16 @@ bool rp_initialize(int argc,
   Initialized = true;
 
   Registry::runAllInitializationRoutines();
+
+  for (const auto &[SignalNo, HandlerList] : SigHandlers) {
+    sighandler_t OldHandler = HandlerList[0];
+    sighandler_t NewHandler = signal(SignalNo, SIG_DFL);
+    if (OldHandler != NewHandler) {
+      SigHandlers[SignalNo].push_back(NewHandler);
+    }
+    signal(SignalNo, handle_signal);
+  }
+
   return true;
 }
 
