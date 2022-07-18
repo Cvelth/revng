@@ -11,26 +11,12 @@
 #include "revng/Yield/ControlFlow/FallthroughDetection.h"
 #include "revng/Yield/Function.h"
 #include "revng/Yield/HTML.h"
-#include "revng/Yield/Support/Tag.h"
+#include "revng/Yield/Support/PTML.h"
 
-using yield::htmlTag::Tag;
-
-namespace tags {
-
-static constexpr auto Div = "div";
-static constexpr auto Span = "span";
-
-} // namespace tags
-
-namespace attributes {
-
-static constexpr auto scope = "data-scope";
-static constexpr auto token = "data-token";
-static constexpr auto locationDefinition = "data-location-definition";
-static constexpr auto locationReferences = "data-location-references";
-static constexpr auto modelEditPath = "data-model-edit-path";
-
-} // namespace attributes
+using yield::ptml::Tag;
+namespace attributes = yield::ptml::attributes;
+namespace ptmlScopes = yield::ptml::scopes;
+namespace tags = yield::ptml::tags;
 
 namespace tokenTypes {
 
@@ -48,7 +34,6 @@ static constexpr auto Register = "asm.register";
 
 namespace scopes {
 
-static constexpr auto Indentation = "indentation";
 static constexpr auto Function = "asm.function";
 static constexpr auto BasicBlock = "asm.basic-block";
 static constexpr auto Instruction = "asm.instruction";
@@ -96,7 +81,7 @@ static std::string label(const yield::BasicBlock &BasicBlock,
 
 static std::string indent() {
   return Tag(tags::Span, "  ")
-    .add(attributes::scope, scopes::Indentation)
+    .add(attributes::scope, ptmlScopes::Indentation)
     .serialize();
 }
 
