@@ -17,24 +17,30 @@ namespace yield::ptml {
 
 namespace tags {
 
-static constexpr auto Div = "div";
-static constexpr auto Span = "span";
+inline constexpr auto Div = "div";
+inline constexpr auto Span = "span";
 
 } // namespace tags
 
 namespace attributes {
 
-static constexpr auto scope = "data-scope";
-static constexpr auto token = "data-token";
-static constexpr auto locationDefinition = "data-location-definition";
-static constexpr auto locationReferences = "data-location-references";
-static constexpr auto modelEditPath = "data-model-edit-path";
+inline constexpr auto scope = "data-scope";
+inline constexpr auto token = "data-token";
+inline constexpr auto locationDefinition = "data-location-definition";
+inline constexpr auto locationReferences = "data-location-references";
+inline constexpr auto modelEditPath = "data-model-edit-path";
+
+inline constexpr auto htmlExclusiveMetadata = "data-html-exclusive";
 
 } // namespace attributes
 
 namespace scopes {
 
-static constexpr auto Indentation = "indentation";
+inline constexpr auto Annotation = "annotation";
+inline constexpr auto Comment = "comment";
+inline constexpr auto Error = "error";
+inline constexpr auto Indentation = "indentation";
+inline constexpr auto Link = "link";
 
 }
 
@@ -45,8 +51,10 @@ private:
   llvm::StringMap<std::string> Attributes;
 
 public:
-  explicit Tag(llvm::StringRef Tag, llvm::StringRef Content = "") :
-    TheTag(Tag.str()), Content(Content.str()) {}
+  explicit Tag(llvm::StringRef TheTag, std::string &&Content) :
+    TheTag(TheTag.str()), Content(std::move(Content)) {}
+  explicit Tag(llvm::StringRef TheTag, llvm::StringRef Content = "") :
+    Tag(TheTag, Content.str()) {}
 
   Tag &add(llvm::StringRef Name, llvm::StringRef Value) {
     Attributes[Name] = Value.str();
