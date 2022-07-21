@@ -98,6 +98,14 @@ public:
   using generated::Binary::Binary;
 
 public:
+  model::TypePath getTypePath(const model::Type::Key &Key) {
+    return TypePath::fromString(this, "/Types/" + getNameFromYAMLScalar(Key));
+  }
+
+  model::TypePath getTypePath(const model::Type::Key &Key) const {
+    return TypePath::fromString(this, "/Types/" + getNameFromYAMLScalar(Key));
+  }
+
   model::TypePath getTypePath(const model::Type *T) {
     return TypePath::fromString(this,
                                 "/Types/" + getNameFromYAMLScalar(T->key()));

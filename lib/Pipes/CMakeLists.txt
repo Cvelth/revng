@@ -58,3 +58,23 @@ target_link_libraries(
   revngYield
   revngEarlyFunctionAnalysis
   ${LLVM_LIBRARIES})
+
+set(INTERNAL_ASSEMBLY_HEADERS
+    "${CMAKE_SOURCE_DIR}/include/revng/Pipes/Location")
+target_tuple_tree_generator(
+  revngPipes
+  INSTALL
+  HEADER_DIRECTORY
+  "Pipes/Location"
+  NAMESPACE
+  "revng::pipes::location::detail"
+  SCHEMA_PATH
+  "${CMAKE_BINARY_DIR}/location-schema.yml"
+  SEPARATE_STRING_TYPES
+  "MetaAddress"
+  HEADERS
+  "${INTERNAL_ASSEMBLY_HEADERS}/BasicBlock.h"
+  "${INTERNAL_ASSEMBLY_HEADERS}/Function.h"
+  "${INTERNAL_ASSEMBLY_HEADERS}/Instruction.h"
+  "${INTERNAL_ASSEMBLY_HEADERS}/Type.h"
+  "${INTERNAL_ASSEMBLY_HEADERS}/TypeField.h")
