@@ -12,23 +12,23 @@
 
 namespace revng::pipes {
 
-inline pipeline::Kind Binary("Binary", &RootRank);
+inline pipeline::Kind Binary("Binary", &rank::Root);
 
-inline RootKind Root("Root", &RootRank);
+inline RootKind Root("Root", &rank::Root);
 inline IsolatedRootKind IsolatedRoot("IsolatedRoot", Root);
 
 inline TaggedFunctionKind
-  Isolated("Isolated", &FunctionsRank, FunctionTags::Isolated);
+  Isolated("Isolated", &rank::Function, FunctionTags::Isolated);
 inline TaggedFunctionKind
-  ABIEnforced("ABIEnforced", &FunctionsRank, FunctionTags::ABIEnforced);
+  ABIEnforced("ABIEnforced", &rank::Function, FunctionTags::ABIEnforced);
 inline TaggedFunctionKind
-  CSVsPromoted("CSVsPromoted", &FunctionsRank, FunctionTags::CSVsPromoted);
+  CSVsPromoted("CSVsPromoted", &rank::Function, FunctionTags::CSVsPromoted);
 
-inline pipeline::Kind Object("Object", &RootRank);
-inline pipeline::Kind Translated("Translated", &RootRank);
+inline pipeline::Kind Object("Object", &rank::Root);
+inline pipeline::Kind Translated("Translated", &rank::Root);
 
 inline FunctionKind
-  FunctionAssemblyInternal("FunctionAssemblyInternal", &FunctionsRank);
+  FunctionAssemblyInternal("FunctionAssemblyInternal", &rank::Function);
 inline FunctionKind
   FunctionAssemblyPTML("FunctionAssemblyPTML", &FunctionsRank);
 inline FunctionKind
