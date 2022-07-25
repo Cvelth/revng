@@ -12,9 +12,9 @@
 
 namespace revng::pipes {
 
-inline pipeline::Kind Binary("Binary", &rank::Root);
+inline pipeline::Kind Binary("Binary", &rank::Binary);
 
-inline RootKind Root("Root", &rank::Root);
+inline RootKind Root("Root", &rank::Binary);
 inline IsolatedRootKind IsolatedRoot("IsolatedRoot", Root);
 
 inline TaggedFunctionKind
@@ -24,14 +24,14 @@ inline TaggedFunctionKind
 inline TaggedFunctionKind
   CSVsPromoted("CSVsPromoted", &rank::Function, FunctionTags::CSVsPromoted);
 
-inline pipeline::Kind Object("Object", &rank::Root);
-inline pipeline::Kind Translated("Translated", &rank::Root);
+inline pipeline::Kind Object("Object", &rank::Binary);
+inline pipeline::Kind Translated("Translated", &rank::Binary);
 
 inline FunctionKind
   FunctionAssemblyInternal("FunctionAssemblyInternal", &rank::Function);
 inline FunctionKind
-  FunctionAssemblyPTML("FunctionAssemblyPTML", &FunctionsRank);
+  FunctionAssemblyPTML("FunctionAssemblyPTML", &rank::Function);
 inline FunctionKind
-  FunctionControlFlowGraphSVG("FunctionControlFlowGraphSVG", &FunctionsRank);
+  FunctionControlFlowGraphSVG("FunctionControlFlowGraphSVG", &rank::Function);
 
 } // namespace revng::pipes
