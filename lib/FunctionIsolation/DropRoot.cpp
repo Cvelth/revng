@@ -40,10 +40,10 @@ struct DropRootPipe {
 
   std::vector<pipeline::ContractGroup> getContract() const {
     using namespace pipeline;
-    static constexpr auto *RootRank = &::revng::pipes::rank::Root;
+    namespace Rank = ::revng::pipes::rank;
     return { ContractGroup::transformOnlyArgument(::revng::pipes::Root,
                                                   Exactness::DerivedFrom,
-                                                  Kind::deadKind<RootRank>(),
+                                                  Kind::deadKind(Rank::Binary),
                                                   InputPreservation::Erase) };
   }
 
