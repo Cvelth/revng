@@ -5,6 +5,7 @@
 //
 
 #include <array>
+#include <optional>
 #include <type_traits>
 
 #include "llvm/ADT/ArrayRef.h"
@@ -310,4 +311,51 @@ template<std::size_t IterationCount, typename CallableType>
 constexpr bool constexprOr(CallableType &&Callable) {
   return detail::constexprOrImpl(std::make_index_sequence<IterationCount>(),
                                  std::forward<CallableType>(Callable));
+}
+
+//
+// constexpr split
+//
+
+namespace detail {
+
+template<std::size_t N, std::size_t I = 0>
+inline constexpr bool
+constexprSplitHelper(std::array<std::string_view, N> &Result,
+                     std::string_view Separator,
+                     std::string_view Input) {
+  std::size_t Position = Input.find(Separator);
+  if constexpr (I < N - 1) {
+    if (Position == std::string_view::npos)
+      return false;
+
+    Result[I] = Input.substr(0, Position);
+    return constexprSplitHelper<N, I + 1>(Result,
+                                          Separator,
+                                          Input.substr(Position + 1));
+  } else {
+    if (Position != std::string_view::npos)
+      return false;
+
+    Result[I] = Input;
+    return true;
+  }
+}
+
+} // namespace detail
+
+/// I'm forced to implement my own split because `llvm::StringRef`'s alternative
+/// is not `constexpr`-compatible.
+///
+/// This also uses `std::string_view` instead of `llvm::StringRef` because its
+/// `find` member is constexpr - hence at least that member doesn't have to be
+/// reimplemented
+template<std::size_t N>
+inline constexpr std::optional<std::array<std::string_view, N>>
+constexprSplit(std::string_view Separator, std::string_view Input) {
+  if (std::array<std::string_view, N> Result;
+      detail::constexprSplitHelper<N>(Result, Separator, Input))
+    return Result;
+  else
+    return std::nullopt;
 }
