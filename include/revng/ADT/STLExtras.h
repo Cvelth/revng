@@ -267,3 +267,47 @@ auto append(FromType &&From, ToType &To) {
   To.resize(ExistingElementCount + From.size());
   return llvm::copy(From, std::next(To.begin(), ExistingElementCount));
 }
+
+//
+// constexpr repeat
+//
+
+namespace detail {
+
+template<typename TemplatedCallableType, std::size_t... Indices>
+constexpr void constexprRepeatImpl(std::index_sequence<Indices...>,
+                                   TemplatedCallableType &&Callable) {
+  (Callable.template operator()<Indices>(), ...);
+}
+
+template<typename TemplatedCallableType, std::size_t... Indices>
+constexpr bool constexprAndImpl(std::index_sequence<Indices...>,
+                                TemplatedCallableType &&Callable) {
+  return (Callable.template operator()<Indices>() && ...);
+}
+
+template<typename TemplatedCallableType, std::size_t... Indices>
+constexpr bool constexprOrImpl(std::index_sequence<Indices...>,
+                               TemplatedCallableType &&Callable) {
+  return (Callable.template operator()<Indices>() || ...);
+}
+
+} // namespace detail
+
+template<std::size_t IterationCount, typename CallableType>
+constexpr void constexprRepeat(CallableType &&Callable) {
+  detail::constexprRepeatImpl(std::make_index_sequence<IterationCount>(),
+                              std::forward<CallableType>(Callable));
+}
+
+template<std::size_t IterationCount, typename CallableType>
+constexpr bool constexprAnd(CallableType &&Callable) {
+  return detail::constexprAndImpl(std::make_index_sequence<IterationCount>(),
+                                  std::forward<CallableType>(Callable));
+}
+
+template<std::size_t IterationCount, typename CallableType>
+constexpr bool constexprOr(CallableType &&Callable) {
+  return detail::constexprOrImpl(std::make_index_sequence<IterationCount>(),
+                                 std::forward<CallableType>(Callable));
+}
