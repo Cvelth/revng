@@ -5,12 +5,12 @@
 #include "revng/EarlyFunctionAnalysis/FunctionMetadata.h"
 #include "revng/EarlyFunctionAnalysis/IRHelpers.h"
 #include "revng/Model/Binary.h"
+#include "revng/Pipeline/Location.h"
 #include "revng/Pipeline/Pipe.h"
 #include "revng/Pipeline/RegisterContainerFactory.h"
 #include "revng/Pipeline/RegisterPipe.h"
-#include "revng/Pipes/Locations.h"
+#include "revng/Pipes/Kinds.h"
 #include "revng/Pipes/ModelGlobal.h"
-#include "revng/Pipes/Yield/Kinds.h"
 #include "revng/Pipes/Yield/ProcessCallGraphPipe.h"
 #include "revng/Yield/CrossRelations.h"
 
@@ -69,6 +69,9 @@ static pipeline::RegisterContainerFactory
                     makeFileContainerFactory(BinaryCrossRelations,
                                              "application/"
                                              "x.yaml.cross-relations"));
+
+static pipeline::RegisterRole
+  Role("BinaryCrossRelations", BinaryCrossRelationsRole);
 
 static pipeline::RegisterPipe<ProcessCallGraphPipe> ProcessPipe;
 
