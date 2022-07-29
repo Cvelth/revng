@@ -1224,8 +1224,27 @@ public:
   const_nodes_iterator findNode(Node const *NodePtr) const {
     auto Comparator = [&NodePtr](auto &N) { return N.get() == NodePtr; };
     auto InternalIt = std::find_if(Nodes.begin(), Nodes.end(), Comparator);
-    return nodes_iterator(InternalIt, getConstNode);
+    return const_nodes_iterator(InternalIt, getConstNode);
   }
+
+  // clang-format off
+  template<typename ...Ts>
+    requires (std::is_constructible_v<Node, Ts...> && EqualityComparable<Node>)
+  nodes_iterator findNode(Ts &&...Values) {
+    Node Expected(Values...);
+    auto Comparator = [&Expected](auto &N) { return *N == Expected; };
+    auto InternalIt = std::find_if(Nodes.begin(), Nodes.end(), Comparator);
+    return nodes_iterator(InternalIt, getNode);
+  }
+  template<typename ...Ts>
+    requires (std::is_constructible_v<Node, Ts...> && EqualityComparable<Node>)
+  const_nodes_iterator findNode(Ts &&...Values) const {
+    Node Expected(Values...);
+    auto Comparator = [&Expected](auto &N) { return *N == Expected; };
+    auto InternalIt = std::find_if(Nodes.begin(), Nodes.end(), Comparator);
+    return const_nodes_iterator(InternalIt, getConstNode);
+  }
+  // clang-format on
 
 public:
   bool hasNodes() const { return Nodes.size() != 0; }
