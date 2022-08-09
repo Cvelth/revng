@@ -355,8 +355,8 @@ std::string yield::svg::calls(const yield::CrossRelations &Relations,
 
   sugiyama::layout(InternalGraph,
                    Configuration,
-                   sugiyama::RankingStrategy::BreadthFirstSearch,
-                   sugiyama::LayoutOrientation::LeftToRight);
+                   sugiyama::LayoutOrientation::LeftToRight,
+                   sugiyama::RankingStrategy::BreadthFirstSearch);
 
   auto ContentHelper = [&Binary](const yield::Graph::Node &Node) {
     revng_assert(Node.Address.isValid());

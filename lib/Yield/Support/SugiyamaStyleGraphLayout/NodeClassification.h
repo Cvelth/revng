@@ -4,6 +4,7 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include <optional>
 #include <unordered_set>
 
 #include "InternalGraph.h"
@@ -11,26 +12,29 @@
 namespace detail {
 // Contains helper classes for `NodeClassifier`.
 
-class PartialClassifierStorage {
+template<RankingStrategy RS>
+class NodeClassifierStorage;
+
+template<>
+class NodeClassifierStorage<RankingStrategy::BreadthFirstSearch> {
 protected:
   std::unordered_set<NodeView> BackwardsEdgeNodes;
 };
 
-class FullNodeClassifierStorage : public PartialClassifierStorage {
+template<>
+class NodeClassifierStorage<RankingStrategy::DepthFirstSearch>
+  : protected NodeClassifierStorage<RankingStrategy::BreadthFirstSearch> {
 protected:
   std::unordered_set<NodeView> LongEdgeNodes;
 };
 
-namespace detail {
-template<RankingStrategy RS>
-constexpr bool Condition = RS == RankingStrategy::DepthFirstSearch
-                           || RS == RankingStrategy::Topological;
-}
+template<>
+class NodeClassifierStorage<RankingStrategy::Topological>
+  : protected NodeClassifierStorage<RankingStrategy::DepthFirstSearch> {};
 
-template<RankingStrategy Strategy>
-using NodeClassifierStorage = std::conditional_t<detail::Condition<Strategy>,
-                                                 FullNodeClassifierStorage,
-                                                 PartialClassifierStorage>;
+template<>
+class NodeClassifierStorage<RankingStrategy::DisjointDepthFirstSearch>
+  : protected NodeClassifierStorage<RankingStrategy::BreadthFirstSearch> {};
 
 } // namespace detail
 
@@ -38,7 +42,7 @@ using NodeClassifierStorage = std::conditional_t<detail::Condition<Strategy>,
 /// on its neighbors. This helps to make routes with edges routed accross
 /// multiple "virtual" nodes that require less bends.
 template<RankingStrategy RS>
-class NodeClassifier : public detail::NodeClassifierStorage<RS> {
+class NodeClassifier : protected detail::NodeClassifierStorage<RS> {
   using Storage = detail::NodeClassifierStorage<RS>;
 
   enum Cluster { Left = 0, Middle = 1, Right = 2 };
@@ -68,3 +72,6 @@ public:
       return !Storage::BackwardsEdgeNodes.contains(Node) ? Left : Right;
   }
 };
+
+template<RankingStrategy Strategy>
+using MaybeClassifier = std::optional<NodeClassifier<Strategy>>;
