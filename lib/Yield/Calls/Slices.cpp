@@ -5,120 +5,64 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include <unordered_map>
+
+#include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/ADT/PostOrderIterator.h"
 
 #include "revng/Yield/Calls/Slices.h"
 
-/// TODO: rework
-template<typename NodeT, typename TraitT = NodeT>
-void graphToTree(NodeT N0, auto EmitNodeCallable, auto EmitEdgeCallable) {
-  using Trait = llvm::GraphTraits<TraitT>;
-  using ITrait = llvm::GraphTraits<llvm::Inverse<TraitT>>;
-  std::map<NodeT, uint32_t> Ranks;
+yield::Graph yield::calls::vettedSlice(const yield::Graph &Input) {
+  if (Input.size() == 0)
+    return {};
 
-  if (N0 == nullptr)
-    return;
-
-  using NodeRef = typename Trait::NodeRef;
-  using SmallPtrs = llvm::SmallPtrSet<typename Trait::NodeRef, 8>;
-  using PoIterator = llvm::po_iterator<NodeT, SmallPtrs, false, Trait>;
-
-  std::vector<NodeRef> PO;
-  NodeRef EntryNode = Trait::getEntryNode(N0);
-  std::copy(PoIterator::begin(EntryNode),
-            PoIterator::end(EntryNode),
-            std::back_inserter(PO));
+  revng_assert(Input.getEntryNode() != nullptr);
+  const yield::Graph::Node *Entry = Input.getEntryNode();
 
   // For each node, store in Ranks[N] the highest rank of all its children
-  for (auto NN = PO.rbegin(); NN != PO.rend(); NN++) {
-    auto *N = *NN;
-    uint32_t Rank = 0;
-    uint32_t PredCount = 0;
-    for (auto I = ITrait::child_begin(N); I != ITrait::child_end(N); I++) {
-      const auto CP = Ranks.find(*I);
-      if (CP != Ranks.end())
-        Rank = std::max(Rank, CP->second + 1);
-      PredCount++;
+  std::unordered_map<const yield::Graph::Node *, uint64_t> Ranks;
+  llvm::ReversePostOrderTraversal<const yield::Graph::Node *> RPOT(Entry);
+  for (auto Iterator = RPOT.begin(); Iterator != RPOT.end(); ++Iterator) {
+    uint64_t &CurrentRank = Ranks[*Iterator];
+
+    CurrentRank = 0;
+    for (auto *Child : (*Iterator)->predecessors()) {
+      auto ChildIterator = Ranks.find(Child);
+      if (ChildIterator != Ranks.end())
+        if (ChildIterator->second + 1 > CurrentRank)
+          CurrentRank = ChildIterator->second + 1;
     }
-    Ranks[N] = Rank;
   }
 
-  /* -------------- */
+  yield::Graph Result;
+  std::unordered_map<const yield::Graph::Node *, yield::Graph::Node *> Lookup;
+  for (auto NodeIt = llvm::df_begin(Entry); NodeIt != llvm::df_end(Entry);) {
+    revng_assert(NodeIt.getPathLength() >= 1);
+    const auto *Node = *NodeIt;
+    if (Ranks.at(Node) == NodeIt.getPathLength() - 1) {
+      revng_assert(!Lookup.contains(Node));
 
-  std::stack<std::pair<NodeT, decltype(Trait::child_begin(N0))>> DFSStack;
-  std::set<NodeT> CurrentPath;
-  std::vector<NodeT> CurrentPathV;
+      auto New = std::make_unique<yield::Graph::Node>(Node->data());
+      auto [NewIt, _] = Lookup.emplace(Node, Result.addNode(std::move(New)));
+      if (NodeIt.getPathLength() > 1) {
 
-  DFSStack.emplace(std::make_pair(N0, Trait::child_begin(N0)));
-  CurrentPath.insert(N0);
-  CurrentPathV.emplace_back(N0);
-
-  while (!DFSStack.empty()) {
-    // Each iteration processes one node at time.
-    // It starts from N0, it goes to each children.
-    // Each visited children enqueues the first level of its own children.
-
-    auto &CurrentNode = DFSStack.top();
-    revng_assert(CurrentNode.first != nullptr);
-    bool SkipNode = false;
-
-    if (CurrentNode.second == Trait::child_begin(CurrentNode.first)) {
-      revng_assert(CurrentPath.size() >= 1);
-      if (Ranks[CurrentNode.first] == CurrentPath.size() - 1) {
         // Emit the node as 'Chosen' (with all its children) only if
         // the rank of the node is the path size. TODO: why?
-        Ranks[CurrentNode.first] = -1; // mark as visited
-        EmitNodeCallable(CurrentNode.first);
-        if (CurrentPathV.size() >= 2)
-          EmitEdgeCallable(CurrentPathV[CurrentPathV.size() - 2],
-                           CurrentPathV.back(),
-                           true);
-      } else {
-        EmitNodeCallable(CurrentNode.first);
-        revng_assert(CurrentPathV.size() >= 2);
-        EmitEdgeCallable(CurrentPathV[CurrentPathV.size() - 2],
-                         CurrentPathV.back(),
-                         false);
-        SkipNode = true;
+
+        auto ChildIt = Lookup.find(NodeIt.getPath(NodeIt.getPathLength() - 2));
+        revng_assert(ChildIt != Lookup.end());
+        ChildIt->second->addSuccessor(NewIt->second);
       }
-    }
 
-    if (SkipNode || CurrentNode.second == Trait::child_end(CurrentNode.first)) {
-      // Finished processing children: Pop from DFS Stack.
-      CurrentPath.erase(CurrentNode.first);
-      revng_assert(CurrentPathV.back() == CurrentNode.first);
-      CurrentPathV.pop_back();
-
-      DFSStack.pop();
+      ++NodeIt;
     } else {
-      auto *NewNode = *(CurrentNode.second);
-      CurrentNode.second++;
-
-      revng_assert(NewNode != nullptr);
-      if (NewNode) {
-        auto PP = std::make_pair(NewNode, Trait::child_begin(NewNode));
-        if (CurrentPath.find(NewNode) == CurrentPath.end()) {
-          DFSStack.emplace(std::move(PP));
-          CurrentPath.insert(NewNode);
-          CurrentPathV.emplace_back(NewNode);
-        }
-      }
+      NodeIt.skipChildren();
     }
   }
-}
 
-yield::Graph yield::calls::vettedSlice(const yield::Graph &Input) {
-  yield::Graph Result;
-  auto EmitNodeHelper = [&Result](yield::Graph::Node *Node) {
-    Result.addNode(std::make_unique<yield::Graph::Node>(*Node));
-  };
-  constexpr auto EmitEdgeHelper =
-    [](yield::Graph::Node *From, yield::Graph::Node *To, bool Chosen) {
-      if (Chosen)
-        From->addSuccessor(To);
-    };
-
-  graphToTree(Input.getEntryNode(), EmitNodeHelper, EmitEdgeHelper);
+  auto EntryIterator = Lookup.find(Entry);
+  revng_assert(EntryIterator != Lookup.end());
+  Result.setEntryNode(EntryIterator->second);
 
   return Result;
 }
