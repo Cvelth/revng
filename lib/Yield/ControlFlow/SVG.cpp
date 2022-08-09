@@ -11,6 +11,7 @@
 #include "llvm/Support/FormatVariadic.h"
 
 #include "revng/Model/Binary.h"
+#include "revng/Yield/Calls/Slices.h"
 #include "revng/Yield/ControlFlow/Configuration.h"
 #include "revng/Yield/ControlFlow/Extraction.h"
 #include "revng/Yield/ControlFlow/NodeSizeCalculation.h"
