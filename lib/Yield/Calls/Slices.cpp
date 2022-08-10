@@ -7,79 +7,121 @@
 
 #include <unordered_map>
 
-#include "llvm/ADT/DepthFirstIterator.h"
+#include "llvm/ADT/BreadthFirstIterator.h"
 #include "llvm/ADT/PostOrderIterator.h"
 
 #include "revng/Yield/Calls/Slices.h"
 
-yield::Graph yield::calls::vettedSlice(const yield::Graph &Input) {
-  if (Input.size() == 0)
-    return {};
+using NodeView = const yield::Graph::Node *;
 
-  revng_assert(Input.getEntryNode() != nullptr);
-  const yield::Graph::Node *Entry = Input.getEntryNode();
+struct NodeLookupHelper {
+  const MetaAddress &TargetAddress;
+  bool operator()(NodeView Node) { return Node->Address == TargetAddress; }
+};
 
-  // For each node, store in Ranks[N] the highest rank of all its children
-  std::unordered_map<const yield::Graph::Node *, uint64_t> Ranks;
-  llvm::ReversePostOrderTraversal<const yield::Graph::Node *> RPOT(Entry);
+static yield::Graph::Node *
+nodeHelper(yield::Graph &Graph, const yield::Graph::Node *Source) {
+  auto New = std::make_unique<yield::Graph::Node>(Source->data());
+  return Graph.addNode(std::move(New));
+}
+
+template<bool IsForwards>
+yield::Graph
+preservingSliceImpl(const yield::Graph &Input, const MetaAddress &SlicePoint) {
+  auto Entry = llvm::find_if(Input.nodes(), NodeLookupHelper{ SlicePoint });
+  revng_assert(Entry != Input.nodes().end());
+
+  using NV = std::conditional_t<IsForwards, NodeView, llvm::Inverse<NodeView>>;
+  using INV = std::conditional_t<IsForwards, llvm::Inverse<NodeView>, NodeView>;
+
+  // using Trait = llvm::GraphTraits<NV>;
+  using InverseTrait = llvm::GraphTraits<INV>;
+
+  // Find the rank of each node, such that for any node its rank is equal to
+  // the highest rank among its children plus one.
+  std::unordered_map<const yield::Graph::Node *, size_t> Ranks;
+  llvm::ReversePostOrderTraversal<NodeView, InverseTrait> RPOT(*Entry);
   for (auto Iterator = RPOT.begin(); Iterator != RPOT.end(); ++Iterator) {
     uint64_t &CurrentRank = Ranks[*Iterator];
 
     CurrentRank = 0;
-    for (auto *Child : (*Iterator)->predecessors()) {
-      auto ChildIterator = Ranks.find(Child);
-      if (ChildIterator != Ranks.end())
-        if (ChildIterator->second + 1 > CurrentRank)
-          CurrentRank = ChildIterator->second + 1;
+    for (auto ChildIterator = InverseTrait::child_begin(*Iterator);
+         ChildIterator != InverseTrait::child_end(*Iterator);
+         ++ChildIterator) {
+      auto RankIterator = Ranks.find(*ChildIterator);
+      if (RankIterator != Ranks.end())
+        if (RankIterator->second + 1 > CurrentRank)
+          CurrentRank = RankIterator->second + 1;
+    }
+  }
+
+  // For each node, select a single neighbour.
+  // TODO: We should choose a better selection algorithm.
+  std::unordered_map<NodeView, NodeView> RealEdges;
+  for (const yield::Graph::Node *Node : Input.nodes()) {
+    auto Helper = [&Ranks, Node](NodeView Neighbour) {
+      auto NodeIt = Ranks.find(Node);
+      auto NeighbourIt = Ranks.find(Neighbour);
+      if (NodeIt == Ranks.end() || NeighbourIt == Ranks.end())
+        return false;
+      else
+        return NodeIt->second > NeighbourIt->second;
+    };
+
+    auto It = std::find_if(InverseTrait::child_begin(Node),
+                           InverseTrait::child_end(Node),
+                           Helper);
+    if (It != InverseTrait::child_end(Node)) {
+      auto [_, Success] = RealEdges.try_emplace(Node, *It);
+      revng_assert(Success);
+    } else {
+      auto [_, Success] = RealEdges.try_emplace(Node, nullptr);
+      revng_assert(Success);
     }
   }
 
   yield::Graph Result;
-  std::unordered_map<const yield::Graph::Node *, yield::Graph::Node *> Lookup;
-  for (auto NodeIt = llvm::df_begin(Entry); NodeIt != llvm::df_end(Entry);) {
-    revng_assert(NodeIt.getPathLength() >= 1);
-    const auto *Node = *NodeIt;
-    if (Ranks.at(Node) == NodeIt.getPathLength() - 1) {
-      revng_assert(!Lookup.contains(Node));
+  std::unordered_map<NodeView, yield::Graph::Node *> Lookup;
+  auto FindOrAddHelper = [&Result, &Lookup](NodeView OldNode) {
+    if (auto NewNode = Lookup.find(OldNode); NewNode != Lookup.end())
+      return NewNode->second;
+    else
+      return Lookup.emplace(OldNode, nodeHelper(Result, OldNode)).first->second;
+  };
 
-      auto New = std::make_unique<yield::Graph::Node>(Node->data());
-      auto [NewIt, _] = Lookup.emplace(Node, Result.addNode(std::move(New)));
-      if (NodeIt.getPathLength() > 1) {
-
-        // Emit the node as 'Chosen' (with all its children) only if
-        // the rank of the node is the path size. TODO: why?
-
-        auto ChildIt = Lookup.find(NodeIt.getPath(NodeIt.getPathLength() - 2));
-        revng_assert(ChildIt != Lookup.end());
-        ChildIt->second->addSuccessor(NewIt->second);
+  for (auto NodeIterator = llvm::bf_begin(NV{ *Entry });
+       NodeIterator != llvm::bf_end(NV{ *Entry });
+       ++NodeIterator) {
+    for (auto NeighbourIterator = InverseTrait::child_begin(*NodeIterator);
+         NeighbourIterator != InverseTrait::child_end(*NodeIterator);
+         ++NeighbourIterator) {
+      auto *NewNeighbour = FindOrAddHelper(*NeighbourIterator);
+      if (RealEdges.at(*NodeIterator) == *NeighbourIterator) {
+        // Emit a real edge.
+        NewNeighbour->addSuccessor(FindOrAddHelper(*NodeIterator));
+      } else {
+        // Emit a fake node.
+        auto NewNode = nodeHelper(Result, *NodeIterator);
+        NewNode->NextAddress = NewNode->Address;
+        NewNeighbour->addSuccessor(NewNode);
       }
-
-      ++NodeIt;
-    } else {
-      NodeIt.skipChildren();
     }
   }
 
-  auto EntryIterator = Lookup.find(Entry);
-  revng_assert(EntryIterator != Lookup.end());
-  Result.setEntryNode(EntryIterator->second);
+  auto EntryIterator = Lookup.find(*Entry);
+  if (EntryIterator != Lookup.end())
+    Result.setEntryNode(EntryIterator->second);
 
   return Result;
 }
 
-yield::Graph yield::calls::pointSlice(yield::Graph &&InputGraph,
-                                      const MetaAddress &SlicePoint) {
-  return yield::Graph{};
-}
-
 yield::Graph
-yield::calls::pointSliceWithNoBackedges(yield::Graph &&Input,
-                                        const MetaAddress &SlicePoint) {
-  return yield::Graph{};
+yield::calls::calleePreservingSlice(const yield::Graph &Input,
+                                    const MetaAddress &SlicePoint) {
+  return preservingSliceImpl<true>(Input, SlicePoint);
 }
-
 yield::Graph
-yield::calls::pointSliceWithFakeBackedges(yield::Graph &&Input,
-                                          const MetaAddress &SlicePoint) {
-  return yield::Graph{};
+yield::calls::callerPreservingSlice(const yield::Graph &Input,
+                                    const MetaAddress &SlicePoint) {
+  return preservingSliceImpl<false>(Input, SlicePoint);
 }
