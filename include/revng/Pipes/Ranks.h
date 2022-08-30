@@ -23,4 +23,9 @@ inline auto TypeField = defineRank<"type-field", uint64_t>(Type);
 inline auto RawByte = defineRank<"raw-byte", MetaAddress>(Binary);
 inline auto RawByteRange = defineRank<"raw-byte-range", MetaAddress>(RawByte);
 
+// clang-format off
+inline auto DynamicFunction = defineRank<"dynamic-function",
+                                         std::string>(Binary);
+// clang-format on
+
 } // namespace revng::pipes::ranks
