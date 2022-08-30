@@ -106,6 +106,11 @@ public:
     return GlobalTupleTreeDiff(std::move(Diff));
   }
 
+  llvm::Error applyDiff(const TupleTreeDiff<Object> &Diff) {
+    Diff.apply(Value);
+    return llvm::Error::success();
+  }
+
   llvm::Error applyDiff(const llvm::MemoryBuffer &Diff) override {
     auto MaybeDiff = ::deserialize<TupleTreeDiff<Object>>(Diff.getBuffer());
     if (not MaybeDiff)
