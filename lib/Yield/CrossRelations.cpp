@@ -20,32 +20,52 @@ CR::CrossRelations(const SortedVector<efa::FunctionMetadata> &Metadata,
 
   namespace ranks = revng::pipes::ranks;
 
+  // Make sure all the functions are present.
   for (auto Inserter = Relations.batch_insert();
        const auto &Function : Binary.Functions) {
-    const auto Location = pipeline::location(ranks::Function, Function.Entry);
-    Inserter.insert(yield::RelationDescription(Location.toString(), {}));
+    const auto Location = pipeline::serializedLocation(ranks::Function,
+                                                       Function.Entry);
+    Inserter.insert(yield::RelationDescription(Location, {}));
+  }
+
+  // Make sure all the dynamic functions are present
+  for (auto Inserter = Relations.batch_insert();
+       const auto &Function : Binary.ImportedDynamicFunctions) {
+    const auto Location = pipeline::serializedLocation(ranks::DynamicFunction,
+                                                       Function.OriginalName);
+    Inserter.insert(yield::RelationDescription(Location, {}));
   }
 
   for (const auto &[EntryAddress, ControlFlowGraph] : Metadata) {
-    auto CallLocation = pipeline::location(ranks::Instruction,
-                                           EntryAddress,
-                                           MetaAddress::invalid(),
-                                           MetaAddress::invalid());
-
     for (const auto &BasicBlock : ControlFlowGraph) {
-      for (const auto &Edge : BasicBlock.Successors) {
-        if (efa::FunctionEdgeType::isCall(Edge->Type)) {
-          if (const auto &Callee = Edge->Destination; Callee.isValid()) {
-            // TODO: embed information about the call instruction into
-            //       `CallLocation` after efa starts providing it.
+      // TODO: embed information about the call instruction into
+      //       `CallLocation` after metadata starts providing it.
+      auto CallLocation = pipeline::serializedLocation(ranks::BasicBlock,
+                                                       EntryAddress,
+                                                       BasicBlock.Start);
 
-            auto L = pipeline::location(ranks::Function, Callee).toString();
+      for (const auto &Edge : BasicBlock.Successors) {
+        if (auto *CallEdge = llvm::dyn_cast<efa::CallEdge>(Edge.get())) {
+          if (const auto &Callee = CallEdge->Destination; Callee.isValid()) {
+            auto L = pipeline::serializedLocation(ranks::Function, Callee);
             if (auto It = Relations.find(L); It != Relations.end()) {
               yield::RelationTarget T(yield::RelationType::IsCalledFrom,
-                                      CallLocation.toString());
+                                      CallLocation);
               It->Related.insert(std::move(T));
             }
+          } else if (!CallEdge->DynamicFunction.empty()) {
+            auto L = pipeline::serializedLocation(ranks::DynamicFunction,
+                                                  CallEdge->DynamicFunction);
+            if (auto It = Relations.find(L); It != Relations.end()) {
+              using namespace yield::RelationType;
+              yield::RelationTarget T(IsDynamicallyCalledFrom, CallLocation);
+              It->Related.insert(std::move(T));
+            }
+          } else {
+            // Ignore indirect calls.
           }
+        } else {
+          // Ignore non-call edges.
         }
       }
     }
