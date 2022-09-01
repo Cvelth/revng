@@ -48,7 +48,19 @@ template<typename T, size_t Index>
 using ArgTypeImpl = std::decay_t<decltype(getOptionInfo<T, Index>())>;
 
 template<typename InvokableType, size_t Index>
-using OptionType = typename ArgTypeImpl<InvokableType, Index>::Type;
+using OptionTypeImpl = typename ArgTypeImpl<InvokableType, Index>::Type;
+
+// clang-format off
+template<typename InvokableType, size_t Index>
+constexpr bool IsConstCharPtr = std::is_same_v<OptionTypeImpl<InvokableType,
+                                                              Index>,
+                                               const char *>;
+
+template<typename InvokableType, size_t Index>
+using OptionType = std::conditional_t<IsConstCharPtr<InvokableType, Index>,
+                                      std::string,
+                                      OptionTypeImpl<InvokableType, Index>>;
+// clang-format on
 
 template<typename Invokable, size_t Index>
 llvm::StringRef getTypeName() {
@@ -56,7 +68,7 @@ llvm::StringRef getTypeName() {
 }
 
 template<typename InvokableType, size_t Index>
-const OptionType<InvokableType, Index> &getOptionDefault() {
+OptionType<InvokableType, Index> getOptionDefault() {
   return getOptionInfo<InvokableType, Index>().Default;
 }
 } // namespace detail
