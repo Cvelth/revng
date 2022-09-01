@@ -60,6 +60,8 @@ using StatusMap = llvm::StringMap<ContainerToTargetsMap>;
 
 static void explainPipeline(const ContainerToTargetsMap &Targets,
                             ArrayRef<PipelineExecutionEntry> Requirements) {
+  if (Requirements.empty())
+    return;
 
   ExplanationLogger << "OBJECTIVES requested\n";
   indent(ExplanationLogger, 1);
