@@ -54,8 +54,12 @@ class SchemaGenerator:
 
     @staticmethod
     def _generate_analysis_parameters(analysis: Analysis) -> str:
-        return ", ".join(
-            f"{normalize(argument.name)}: String!" for argument in analysis.arguments()
+        if len(list(analysis.arguments())) == 0:
+            return ""
+        return (
+            "("
+            + ", ".join(f"{normalize(argument.name)}: String!" for argument in analysis.arguments())
+            + ")"
         )
 
     @staticmethod
