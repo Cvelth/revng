@@ -1343,7 +1343,7 @@ computeEquivalentSymbols(const llvm::object::ObjectFile &ELF) {
   return Result;
 }
 
-// TODO: it wuold be beneficial to do this even at other levels
+// TODO: it would be beneficial to do this even at other levels
 inline void detectAliases(const llvm::object::ObjectFile &ELF,
                           TupleTree<model::Binary> &Model) {
   EquivalenceClasses<StringRef> Aliases = computeEquivalentSymbols(ELF);
