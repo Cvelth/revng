@@ -124,6 +124,9 @@ public:
   model::TypePath
   getPrimitiveType(PrimitiveTypeKind::Values V, uint8_t ByteSize) const;
 
+  std::optional<model::TypePath>
+  tryGetPrimitiveType(PrimitiveTypeKind::Values V, uint8_t ByteSize) const;
+
   model::QualifiedType getPointerTo(const model::QualifiedType &Type) const {
     QualifiedType Result = Type;
     Result.Qualifiers.insert(Result.Qualifiers.begin(),
