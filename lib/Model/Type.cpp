@@ -1189,10 +1189,10 @@ RecursiveCoroutine<bool> Type::verify(VerifyHelper &VH) const {
     rc_return true;
 
   // Ensure we have not infinite recursion
-  if (VH.isVerificationInProgess(this))
+  if (VH.isVerificationInProgress(this))
     rc_return VH.fail();
 
-  VH.verificationInProgess(this);
+  VH.verificationInProgress(this);
 
   if (ID == 0)
     rc_return VH.fail();
