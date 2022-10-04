@@ -339,3 +339,19 @@ replaceAll(std::string &Input, const std::string &From, const std::string &To) {
     Start += To.length();
   }
 }
+
+//
+// `constexpr` versions of the llvm algorithm adaptors.
+//
+
+/// \note use `llvm::find` instead after it's made `constexpr`.
+template<typename R, typename T>
+constexpr decltype(auto) constexprFind(R &&Range, const T &Value) {
+  return std::find(std::begin(Range), std::end(Range), Value);
+}
+
+/// \note use `llvm::is_contained` instead after it's made `constexpr`.
+template<typename R, typename T>
+constexpr bool constexprIsContained(R &&Range, const T &Value) {
+  return constexprFind(Range, Value) != std::end(Range);
+}
