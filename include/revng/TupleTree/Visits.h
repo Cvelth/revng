@@ -67,13 +67,11 @@ void visitTupleTree(Visitor &V, T &Element) {
 }
 
 template<typename Pre, typename Post, typename T>
-void visitTupleTree(T &Element,
-                    const Pre &PreVisitor,
-                    const Post &PostVisitor) {
+void visitTupleTree(T &Element, Pre &&PreVisitor, Post &&PostVisitor) {
   struct {
-    const Pre &PreVisit;
-    const Post &PostVisit;
-  } Visitor{ PreVisitor, PostVisitor };
+    Pre PreVisit;
+    Post PostVisit;
+  } Visitor{ std::forward<Pre>(PreVisitor), std::forward<Post>(PostVisitor) };
   visitTupleTree(Visitor, Element);
 }
 
