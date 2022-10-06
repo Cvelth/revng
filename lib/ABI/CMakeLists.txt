@@ -3,8 +3,8 @@
 #
 
 revng_add_analyses_library_internal(
-  revngABI DefaultFunctionPrototype.cpp FunctionType.cpp Predefined.cpp
-  RegisterStateDeductions.cpp)
+  revngABI DefaultFunctionPrototype.cpp FunctionType.cpp ModelAlignment.cpp
+  Predefined.cpp RegisterStateDeductions.cpp)
 
 target_link_libraries(revngABI revngSupport revngModel ${LLVM_LIBRARIES})
 
