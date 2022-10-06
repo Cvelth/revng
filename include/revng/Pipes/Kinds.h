@@ -18,10 +18,6 @@ inline RootKind Root("Root", &ranks::Binary);
 inline IsolatedRootKind IsolatedRoot("IsolatedRoot", Root);
 
 inline TaggedFunctionKind
-  Isolated("Isolated", &ranks::Function, FunctionTags::Isolated);
-inline TaggedFunctionKind
-  ABIEnforced("ABIEnforced", &ranks::Function, FunctionTags::ABIEnforced);
-inline TaggedFunctionKind
   CSVsPromoted("CSVsPromoted", &ranks::Function, FunctionTags::CSVsPromoted);
 
 inline pipeline::SingleElementKind Object("Object", &ranks::Binary);
