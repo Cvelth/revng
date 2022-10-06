@@ -6,7 +6,7 @@ commands:
   - type: revng.qemu-run
     from:
       - type: revng-qa.compiled-with-debug-info
-        filter: for-runtime and cross-compiler
+        filter: (for-runtime or abi-describe-functions) and cross-compiler
     suffix: /
     command: |-
       ( grep RUN $SOURCE || true ) | sed 's|/\* RUN-\(.*\): \(.*\) \*/|\1,\2|' | while IFS=',' read -r NAME ARGUMENTS; do
