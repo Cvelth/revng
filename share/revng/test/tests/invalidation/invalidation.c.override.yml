@@ -1,0 +1,549 @@
+#
+# This file is distributed under the MIT License. See LICENSE.md for details.
+#
+
+---
+Functions:
+  - CustomName: "prefix__init"
+    OriginalName: _init
+    Prototype: "/Types/RawFunctionType-9667465713015393209"
+  - CustomName: "prefix__start"
+    OriginalName: _start
+    Prototype: "/Types/RawFunctionType-5455806011655077114"
+    CallSitePrototypes:
+      - CallerBlockAddress: "0x40058c:Code_x86_64"
+        Prototype: "/Types/RawFunctionType-13249674034365130107"
+  - CustomName: "call_gmon_start"
+    OriginalName: call_gmon_start
+    Prototype: "/Types/RawFunctionType-13356794998907191406"
+    CallSitePrototypes:
+      - CallerBlockAddress: "0x40058c:Code_x86_64"
+        Prototype: "/Types/RawFunctionType-13738274497118195048"
+  - CustomName: "deregister_tm_clones"
+    OriginalName: deregister_tm_clones
+    Prototype: "/Types/RawFunctionType-2778437799259994668"
+    CallSitePrototypes:
+      - CallerBlockAddress: "0x4005b7:Code_x86_64"
+        Prototype: "/Types/RawFunctionType-9962509551946142788"
+  - CustomName: "register_tm_clones"
+    OriginalName: register_tm_clones
+    Prototype: "/Types/RawFunctionType-7854404332740908969"
+    CallSitePrototypes:
+      - CallerBlockAddress: "0x4005f9:Code_x86_64"
+        Prototype: "/Types/RawFunctionType-13110133275654168689"
+  - CustomName: "prefix___do_global_dtors_aux"
+    OriginalName: __do_global_dtors_aux
+    Prototype: "/Types/RawFunctionType-11170078239128250382"
+  - CustomName: "frame_dummy"
+    OriginalName: frame_dummy
+    Prototype: "/Types/RawFunctionType-17138208424907825843"
+    CallSitePrototypes:
+      - CallerBlockAddress: "0x4005f9:Code_x86_64"
+        Prototype: "/Types/RawFunctionType-7770963548660208484"
+  - CustomName: "bar"
+    OriginalName: bar
+    Prototype: "/Types/RawFunctionType-13090241523659220176"
+  - CustomName: "foo"
+    OriginalName: foo
+    Prototype: "/Types/RawFunctionType-15357695279870196297"
+  - CustomName: "qux"
+    OriginalName: qux
+    Prototype: "/Types/RawFunctionType-6494433326490644482"
+  - CustomName: "baz"
+    OriginalName: baz
+    Prototype: "/Types/RawFunctionType-12005182500180626567"
+  - CustomName: "main"
+    OriginalName: main
+    Prototype: "/Types/CABIFunctionType-17140048229552705196"
+  - CustomName: "prefix___libc_csu_init"
+    OriginalName: __libc_csu_init
+    Prototype: "/Types/RawFunctionType-6151406879436631588"
+    CallSitePrototypes:
+      - CallerBlockAddress: "0x400710:Code_x86_64"
+        Prototype: "/Types/RawFunctionType-8312299274526223951"
+  - CustomName: "prefix___libc_csu_fini"
+    OriginalName: __libc_csu_fini
+    Prototype: "/Types/RawFunctionType-8714393330176696350"
+  - CustomName: "prefix__fini"
+    OriginalName: _fini
+    Prototype: "/Types/RawFunctionType-6698390238894063969"
+ImportedDynamicFunctions:
+  - OriginalName: __libc_start_main
+    CustomName: "prefix___libc_start_main"
+    Prototype: "/Types/CABIFunctionType-3475954398804502039"
+    Relocations:
+      - Address: "0x402000:Generic64"
+        Type: WriteAbsoluteAddress64
+        Addend: 0
+  - OriginalName: puts
+    CustomName: "puts"
+    Prototype: "/Types/CABIFunctionType-2425851358607508017"
+    Relocations:
+      - Address: "0x402008:Generic64"
+        Type: WriteAbsoluteAddress64
+        Addend: 0
+Types:
+  - Kind: CABIFunctionType
+    ID: 3475954398804502039
+    ABI: SystemV_x86_64
+    ReturnType:
+      UnqualifiedType: "/Types/PrimitiveType-256"
+    Arguments: []
+  - Kind: CABIFunctionType
+    ID: 2425851358607508017
+    ABI: SystemV_x86_64
+    ReturnType:
+      UnqualifiedType: "/Types/PrimitiveType-256"
+    Arguments: []
+  - Kind: CABIFunctionType
+    ID: 17140048229552705196
+    ABI: SystemV_x86_64
+    ReturnType:
+      UnqualifiedType: "/Types/PrimitiveType-1540"
+    Arguments:
+      - Index: 0
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-1540"
+        CustomName: "argc"
+        OriginalName: argc
+      - Index: 1
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-1537"
+          Qualifiers:
+            - Kind: Pointer
+              Size: 8
+            - Kind: Pointer
+              Size: 8
+            - Kind: Const
+        CustomName: "argv"
+        OriginalName: argv
+  - Kind: PrimitiveType
+    ID: 256
+    PrimitiveKind: Void
+    Size: 0
+  - Kind: PrimitiveType
+    ID: 513
+    PrimitiveKind: Generic
+    Size: 1
+  - Kind: PrimitiveType
+    ID: 514
+    PrimitiveKind: Generic
+    Size: 2
+  - Kind: PrimitiveType
+    ID: 516
+    PrimitiveKind: Generic
+    Size: 4
+  - Kind: PrimitiveType
+    ID: 520
+    PrimitiveKind: Generic
+    Size: 8
+  - Kind: PrimitiveType
+    ID: 528
+    PrimitiveKind: Generic
+    Size: 16
+  - Kind: PrimitiveType
+    ID: 769
+    PrimitiveKind: PointerOrNumber
+    Size: 1
+  - Kind: PrimitiveType
+    ID: 770
+    PrimitiveKind: PointerOrNumber
+    Size: 2
+  - Kind: PrimitiveType
+    ID: 772
+    PrimitiveKind: PointerOrNumber
+    Size: 4
+  - Kind: PrimitiveType
+    ID: 776
+    PrimitiveKind: PointerOrNumber
+    Size: 8
+  - Kind: PrimitiveType
+    ID: 784
+    PrimitiveKind: PointerOrNumber
+    Size: 16
+  - Kind: PrimitiveType
+    ID: 1025
+    PrimitiveKind: Number
+    Size: 1
+  - Kind: PrimitiveType
+    ID: 1026
+    PrimitiveKind: Number
+    Size: 2
+  - Kind: PrimitiveType
+    ID: 1028
+    PrimitiveKind: Number
+    Size: 4
+  - Kind: PrimitiveType
+    ID: 1032
+    PrimitiveKind: Number
+    Size: 8
+  - Kind: PrimitiveType
+    ID: 1040
+    PrimitiveKind: Number
+    Size: 16
+  - Kind: PrimitiveType
+    ID: 1281
+    PrimitiveKind: Unsigned
+    Size: 1
+  - Kind: PrimitiveType
+    ID: 1282
+    PrimitiveKind: Unsigned
+    Size: 2
+  - Kind: PrimitiveType
+    ID: 1284
+    PrimitiveKind: Unsigned
+    Size: 4
+  - Kind: PrimitiveType
+    ID: 1288
+    PrimitiveKind: Unsigned
+    Size: 8
+  - Kind: PrimitiveType
+    ID: 1296
+    PrimitiveKind: Unsigned
+    Size: 16
+  - Kind: PrimitiveType
+    ID: 1537
+    PrimitiveKind: Signed
+    Size: 1
+  - Kind: PrimitiveType
+    ID: 1538
+    PrimitiveKind: Signed
+    Size: 2
+  - Kind: PrimitiveType
+    ID: 1540
+    PrimitiveKind: Signed
+    Size: 4
+  - Kind: PrimitiveType
+    ID: 1544
+    PrimitiveKind: Signed
+    Size: 8
+  - Kind: PrimitiveType
+    ID: 1552
+    PrimitiveKind: Signed
+    Size: 16
+  - Kind: RawFunctionType
+    ID: 2778437799259994668
+    Arguments: []
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 5455806011655077114
+    Arguments:
+      - Location: rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: rsi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: rdi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 0
+  - Kind: RawFunctionType
+    ID: 6151406879436631588
+    Arguments:
+      - Location: rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: rsi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: rdi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 6494433326490644482
+    Arguments:
+      - Location: rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: rsi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: rdi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+    ReturnValues:
+      - Location: rax_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 6698390238894063969
+    Arguments: []
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 7770963548660208484
+    Arguments:
+      - Location: rsi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: rdi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 7854404332740908969
+    Arguments: []
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 8312299274526223951
+    Arguments: []
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 8714393330176696350
+    Arguments: []
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 9667465713015393209
+    Arguments: []
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 9962509551946142788
+    Arguments:
+      - Location: rdi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 11170078239128250382
+    Arguments: []
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 12005182500180626567
+    Arguments: []
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 13090241523659220176
+    Arguments:
+      - Location: rdi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+    ReturnValues:
+      - Location: rax_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 13110133275654168689
+    Arguments:
+      - Location: rsi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: rdi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 13249674034365130107
+    Arguments:
+      - Location: rcx_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: rdx_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: rsi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: rdi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: r8_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: r9_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 13356794998907191406
+    Arguments: []
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 13738274497118195048
+    Arguments: []
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 15357695279870196297
+    Arguments:
+      - Location: rsi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+      - Location: rdi_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+    ReturnValues:
+      - Location: rax_x86_64
+        Type:
+          UnqualifiedType: "/Types/PrimitiveType-520"
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: RawFunctionType
+    ID: 17138208424907825843
+    Arguments: []
+    ReturnValues: []
+    PreservedRegisters:
+      - rbx_x86_64
+      - rbp_x86_64
+      - r12_x86_64
+      - r13_x86_64
+      - r14_x86_64
+      - r15_x86_64
+    FinalStackOffset: 8
+  - Kind: StructType
+    ID: 4792049831567920326
+    Fields: []
+    Size: 633
+  - Kind: StructType
+    ID: 16725818086107061416
+    Fields: []
+    Size: 2280
