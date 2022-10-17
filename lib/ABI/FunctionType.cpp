@@ -8,7 +8,10 @@
 #include <unordered_set>
 
 #include "revng/ABI/FunctionType.h"
+#include "revng/ABI/ModelAlignment.h"
 #include "revng/ABI/Predefined.h"
+#include "revng/ABI/RegisterOrder.h"
+#include "revng/ABI/RegisterStateDeductions.h"
 #include "revng/ADT/STLExtras.h"
 #include "revng/ADT/SmallMap.h"
 #include "revng/Model/Binary.h"
@@ -69,32 +72,6 @@ buildGenericType(model::Register::Values Register, model::Binary &TheBinary) {
   return model::QualifiedType(TheBinary.getPrimitiveType(Kind, Size), {});
 }
 
-static std::optional<model::QualifiedType>
-buildDoubleType(model::Register::Values UpperRegister,
-                model::Register::Values LowerRegister,
-                model::PrimitiveTypeKind::Values CustomKind,
-                model::Binary &TheBinary) {
-  model::PrimitiveTypeKind::Values UpperKind = selectTypeKind(UpperRegister);
-  model::PrimitiveTypeKind::Values LowerKind = selectTypeKind(LowerRegister);
-  if (UpperKind != LowerKind)
-    return std::nullopt;
-
-  size_t UpperSize = model::Register::getSize(UpperRegister);
-  size_t LowerSize = model::Register::getSize(LowerRegister);
-  return model::QualifiedType(TheBinary.getPrimitiveType(CustomKind,
-                                                         UpperSize + LowerSize),
-                              {});
-}
-
-static model::QualifiedType getTypeOrDefault(const model::QualifiedType &Type,
-                                             model::Register::Values Register,
-                                             model::Binary &Binary) {
-  if (Type.UnqualifiedType.get() != nullptr)
-    return Type;
-  else
-    return buildType(Register, Binary);
-}
-
 static void replaceReferences(const model::Type::Key &OldKey,
                               const model::TypePath &NewTypePath,
                               TupleTree<model::Binary> &Model) {
@@ -127,7 +104,8 @@ class ConversionHelper {
   };
   using DistributedArguments = llvm::SmallVector<DistributedArgument, 4>;
 
-  using ArgumentContainer = SortedVector<model::Argument>;
+  using ArgumentVector = SortedVector<model::Argument>;
+  using TypeVector = llvm::SmallVector<UpcastablePointer<model::Type>, 16>;
 
 public:
   static std::optional<model::TypePath>
@@ -152,42 +130,50 @@ public:
       revng_assert(model::Register::getArchitecture(SavedRegister) == Arch);
 
     model::CABIFunctionType Result;
+    Result.ID = Function.ID;
     Result.CustomName = Function.CustomName;
     Result.OriginalName = Function.OriginalName;
     Result.ABI = ABI;
 
-    if (!verifyArgumentsToBeConvertible(Function.Arguments,
-                                        D.GeneralPurposeArgumentRegisters,
-                                        *TheBinary))
+    // A single place to conveniently store all the types that need to be added
+    // to the model in order for the new function prototype to be valid.
+    TypeVector TypeDependencies;
+
+    // Convert all the arguments.
+    const auto &GPAR = D.GeneralPurposeArgumentRegisters;
+    auto RegisterArguments = tryConvertingRegisterArguments(Function.Arguments,
+                                                            GPAR,
+                                                            *TheBinary,
+                                                            TypeDependencies);
+    if (RegisterArguments == std::nullopt)
       return std::nullopt;
 
-    if (!verifyReturnValueToBeConvertible(Function.ReturnValues,
-                                          D.GeneralPurposeReturnValueRegisters,
-                                          D.ReturnValueLocationRegister,
-                                          *TheBinary))
+    for (auto &Argument : *RegisterArguments)
+      Result.Arguments.insert(Argument);
+
+    auto Stack = tryConvertingStackArguments(Function.StackArgumentsType,
+                                             RegisterArguments->size());
+    if (Stack == std::nullopt)
       return std::nullopt;
 
-    auto ArgumentList = convertArguments(Function.Arguments,
-                                         D.GeneralPurposeArgumentRegisters,
-                                         *TheBinary);
-    revng_assert(ArgumentList != std::nullopt);
-    for (auto &Argument : *ArgumentList)
+    for (auto &Argument : *Stack)
       Result.Arguments.insert(Argument);
 
-    auto StackArgumentList = convertStackArguments(Function.StackArgumentsType,
-                                                   Result.Arguments.size());
-    for (auto &Argument : StackArgumentList)
-      Result.Arguments.insert(Argument);
-
-    auto ReturnValue = convertReturnValue(Function.ReturnValues,
-                                          D.GeneralPurposeReturnValueRegisters,
-                                          D.ReturnValueLocationRegister,
-                                          *TheBinary);
-    revng_assert(ReturnValue != std::nullopt);
+    // Convert the return type.
+    const auto &GPRVR = D.GeneralPurposeReturnValueRegisters;
+    const auto &RVLR = D.ReturnValueLocationRegister;
+    auto ReturnValue = tryConvertingReturnValue(Function.ReturnValues,
+                                                GPRVR,
+                                                RVLR,
+                                                *TheBinary,
+                                                TypeDependencies);
+    if (ReturnValue == std::nullopt)
+      return std::nullopt;
     Result.ReturnType = *ReturnValue;
 
-    // Steal the ID
-    Result.ID = Function.ID;
+    // The convertion is a success, merge all the dependencies into the model.
+    for (auto &&Type : TypeDependencies)
+      TheBinary->recordNewType(std::move(Type));
 
     // Add converted type to the model.
     using UT = model::UpcastableType;
@@ -260,9 +246,9 @@ public:
                                     {} };
     }
 
-    Result.FinalStackOffset = finalStackOffset(Arguments);
-
     const abi::Definition &D = abi::predefined::get(ABI);
+    Result.FinalStackOffset = finalStackOffset(Arguments, D);
+
     if (!Function.ReturnType.isVoid()) {
       auto ReturnValue = distributeReturnValue(Function.ReturnType);
       if (!ReturnValue.Registers.empty()) {
@@ -357,11 +343,10 @@ public:
     return NewTypePath;
   }
 
-  static uint64_t finalStackOffset(const DistributedArguments &Arguments) {
+  static uint64_t finalStackOffset(const DistributedArguments &Arguments,
+                                   const abi::Definition &D) {
     constexpr auto Architecture = model::ABI::getArchitecture(ABI);
     uint64_t Result = model::Architecture::getCallPushSize(Architecture);
-
-    const abi::Definition &D = abi::predefined::get(ABI);
     if (D.CalleeIsResponsibleForStackCleanup) {
       for (auto &Argument : Arguments)
         Result += Argument.SizeOnStack;
@@ -399,192 +384,401 @@ private:
     return RealSize;
   }
 
-  template<typename RegisterType, bool DryRun = false>
+  /// Makes sure the expected primitive type is available.
+  ///
+  /// If the type is not present in the binary, it's added to
+  /// the \ref Dependencies.
+  ///
+  /// \param Kind Kind of the primitive type
+  /// \param Size Size of the primitive type
+  /// \param Binary Reference binary to do type lookup on
+  /// \param Dependencies The container to add the type to if it's not present.
+  ///
+  /// \return The \ref model::QualifiedType reference to the specified type.
+  static model::QualifiedType
+  ensurePrimitiveTypeIsAvailable(const model::PrimitiveTypeKind::Values &Kind,
+                                 std::size_t Size,
+                                 const model::Binary &Binary,
+                                 TypeVector &Dependencies) {
+    if (auto MaybeType = Binary.tryGetPrimitiveType(Kind, Size)) {
+      revng_assert(MaybeType->isValid());
+      return { MaybeType.value(), {} };
+    } else {
+      using UT = model::UpcastableType;
+      Dependencies.emplace_back(UT::make<model::PrimitiveType>(Kind, Size));
+      auto Result = Binary.getTypePath(Dependencies.back().get());
+      revng_assert(!Result.path().empty());
+      return { Binary.getTypePath(Dependencies.back().get()), {} };
+    }
+  }
+
+  /// Checks if the input type is valid.
+  ///
+  /// If the type is not present in the binary, it's added to
+  /// the \ref Dependencies.
+  ///
+  /// \param Type The type to be checked.
+  /// \param Register The register to pull value size from.
+  /// \param Binary Reference binary to do type lookup on.
+  /// \param Dependencies The container to add the type to if it's not present.
+  ///
+  /// \return
+  static model::QualifiedType
+  ensureTypeIsAvailable(const model::QualifiedType &Type,
+                        model::Register::Values Register,
+                        const model::Binary &Binary,
+                        TypeVector &Dependencies) {
+    const auto Kind = model::Register::primitiveKind(Register);
+    const std::size_t Size = model::Register::getSize(Register);
+    if (Type.UnqualifiedType.get() != nullptr)
+      return Type;
+    else
+      return ensurePrimitiveTypeIsAvailable(Kind, Size, Binary, Dependencies);
+  }
+
+  /// Helper used for converting register arguments to the c-style
+  /// representation
+  ///
+  /// \param Used a set of registers confirmed to be in use by the function in
+  ///        question.
+  /// \param Allowed an ordered list of registers allowed to be used for passing
+  ///        parameters by the ABI.
+  /// \param Binary a const reference to the binary containing information
+  ///        about already present types.
+  /// \param TypeDependencies a list of types that need to be added to the model
+  ///        for all the returned arguments to be valid.
+  ///
+  /// \tparam RegisterType type of a register, should be deduced from
+  ///         the \ref Used.
+  ///
+  /// \return an optional list of arguments or `std::nullopt` if the conversion
+  ///         was not successful.
+  template<typename RegisterType>
   static std::optional<llvm::SmallVector<model::Argument, 8>>
-  convertArguments(const SortedVector<RegisterType> &UsedRegisters,
-                   const RegisterVector &AllowedRegisters,
-                   model::Binary &TheBinary) {
+  tryConvertingRegisterArguments(const SortedVector<RegisterType> &Used,
+                                 const RegisterVector &Allowed,
+                                 const model::Binary &Binary,
+                                 TypeVector &TypeDependencies) {
     llvm::SmallVector<model::Argument, 8> Result;
 
+    // A flag used to differentiate state of the analysis. It is set to `true`,
+    // if there is at least one used register to the right of the current
+    // one making it very likely to be either used or skipped over as padding.
     bool MustUseTheNextOne = false;
-    auto AllowedRange = llvm::enumerate(llvm::reverse(AllowedRegisters));
-    for (auto Pair : AllowedRange) {
-      size_t Index = AllowedRegisters.size() - Pair.index() - 1;
+
+    // Enumerate all the registers dedicated by the ABI for passing parameters
+    // in reverse order (last register is looked at first).
+    for (auto Pair : llvm::enumerate(llvm::reverse(Allowed))) {
+      size_t Index = Allowed.size() - Pair.index() - 1;
       model::Register::Values Register = Pair.value();
-      bool IsUsed = UsedRegisters.find(Register) != UsedRegisters.end();
-      if (IsUsed) {
-        model::Argument Temporary;
-        if constexpr (!DryRun)
-          Temporary.Type = getTypeOrDefault(UsedRegisters.at(Register).Type,
-                                            Register,
-                                            TheBinary);
-        Temporary.CustomName = UsedRegisters.at(Register).CustomName;
-        Result.emplace_back(Temporary);
+      auto CurrentRegisterIterator = Used.find(Register);
+      if (CurrentRegisterIterator != Used.end()) {
+        // If the current register is confirmed to be in use, convert it into
+        // an argument.
+        auto &Current = Result.emplace_back();
+        Current.Type = ensureTypeIsAvailable(Used.at(Register).Type,
+                                             Register,
+                                             Binary,
+                                             TypeDependencies);
+        Current.CustomName = Used.at(Register).CustomName;
       } else if (MustUseTheNextOne) {
+        // If at least one register to the right of the current one is confirmed
+        // to be in use
+
+        // Specifically handle the case where the ABI defines explicit rules for
+        // passing a single argument in a pair of registers
+        bool WasHandledSpecifically = false;
         const abi::Definition &D = abi::predefined::get(ABI);
-        if (!D.OnlyStartDoubleArgumentsFromAnEvenRegister) {
-          return std::nullopt;
-        } else if ((Index & 1) == 0) {
-          return std::nullopt;
-        } else if (Result.size() > 1 && Index > 1) {
-          auto &First = Result[Result.size() - 1];
-          auto &Second = Result[Result.size() - 2];
+        if (D.OnlyStartDoubleArgumentsFromAnEvenRegister) {
+          // Only applicable for oddly-numbered registers (2nd, 4th, etc)
+          // except for the 0th.
+          if (Index != 0 && (Index & 1) == 0) {
+            // There had to be at least two valid registers added to
+            // the `Result` already
+            if (Result.size() > 1) {
+              auto UpperRegister = Allowed.at(Index - 2);
+              auto LowerRegister = Allowed.at(Index - 1);
 
-          // TODO: see what can be done to preserve names better
-          if (First.CustomName.empty() && !Second.CustomName.empty())
-            First.CustomName = Second.CustomName;
+              // Both registers should be of the same kind for them to be merged
+              auto UpperKind = model::Register::primitiveKind(UpperRegister);
+              auto LowerKind = model::Register::primitiveKind(LowerRegister);
+              if (UpperKind == LowerKind) {
+                auto &Upper = Result[Result.size() - 2];
+                auto &Lower = Result[Result.size() - 1];
 
-          if constexpr (!DryRun) {
-            auto NewType = buildDoubleType(AllowedRegisters[Index - 2],
-                                           AllowedRegisters[Index - 1],
-                                           model::PrimitiveTypeKind::Generic,
-                                           TheBinary);
-            if (NewType == std::nullopt)
-              return std::nullopt;
+                // TODO: see what can be done to preserve names better
+                if (Upper.CustomName.empty() && !Lower.CustomName.empty())
+                  Upper.CustomName = Lower.CustomName;
 
-            First.Type = *NewType;
+                // Merge two registers into a single argument.
+                size_t Size = model::Register::getSize(UpperRegister)
+                              + model::Register::getSize(LowerRegister);
+                Upper.Type = ensurePrimitiveTypeIsAvailable(UpperKind,
+                                                            Size,
+                                                            Binary,
+                                                            TypeDependencies);
+
+                // Drop the merged half of the current type from the list.
+                Result.pop_back();
+
+                WasHandledSpecifically = true;
+              }
+            }
           }
-
-          Result.pop_back();
-        } else {
-          return std::nullopt;
         }
+
+        if (!WasHandledSpecifically) {
+          // TODO: It might still be worth it to add this unused register as
+          // an argument to indicate the register ordering.
+        }
+      } else {
+        // Ignore this register, it's most like unused.
       }
 
+      bool IsUsed = (CurrentRegisterIterator != Used.end());
       MustUseTheNextOne = MustUseTheNextOne || IsUsed;
     }
 
+    // Ensure all the indices are consistent.
     for (auto Pair : llvm::enumerate(llvm::reverse(Result)))
       Pair.value().Index = Pair.index();
 
     return Result;
   }
 
-  static llvm::SmallVector<model::Argument, 8>
-  convertStackArguments(model::QualifiedType StackArgumentTypes,
-                        size_t IndexOffset) {
+  /// Helper used for converting stack argument struct into
+  /// the c-style representation
+  ///
+  /// \param StackArgumentTypes The qualified type of the relevant part of
+  ///        the stack.
+  /// \param IndexOffset The index of the first argument (indicates the register
+  ///        argument count).
+  ///
+  /// \return An ordered list of arguments.
+  static std::optional<llvm::SmallVector<model::Argument, 8>>
+  tryConvertingStackArguments(model::QualifiedType StackArgumentTypes,
+                              size_t IndexOffset) {
+    // Qualifiers here are not allowed since this must point to a simple struct.
     revng_assert(StackArgumentTypes.Qualifiers.empty());
+
     auto *Unqualified = StackArgumentTypes.UnqualifiedType.get();
-    if (not Unqualified)
-      return {};
+    if (!Unqualified) {
+      // If there is no type, it means that the importer responsible for this
+      // function didn't detect any stack arguments and avoided creating
+      // a new empty type.
+      return llvm::SmallVector<model::Argument, 8>{};
+    }
 
     auto *Pointer = llvm::dyn_cast<model::StructType>(Unqualified);
     revng_assert(Pointer != nullptr,
                  "`RawFunctionType::StackArgumentsType` must be a struct");
     const model::StructType &Types = *Pointer;
 
+    // If the struct is empty, there's no arguments to extract from it.
+    if (Types.Fields.empty()) {
+      revng_assert(Types.size() == 0);
+      return llvm::SmallVector<model::Argument, 8>{};
+    }
+
+    // Compute the alignment of the first argument.
+    auto CurrentAlignment = *abi::naturalAlignment(Types.Fields.begin()->Type,
+                                                   ABI);
+    if ((CurrentAlignment & (CurrentAlignment - 1)) == 0) {
+      // Abandon cases where alignment is equal to 0 or is not a power of two.
+      return std::nullopt;
+    }
+
+    // Process each of the fields, converting them into arguments separately.
     llvm::SmallVector<model::Argument, 8> Result;
-    for (const model::StructField &Field : Types.Fields) {
+    for (auto Iterator = Types.Fields.begin();
+         Iterator != std::prev(Types.Fields.end());
+         ++Iterator) {
+      const auto &CurrentArgument = *Iterator;
+      auto MaybeSize = CurrentArgument.Type.size();
+      revng_assert(MaybeSize.has_value() && MaybeSize.value() != 0);
+      uint64_t CurrentSize = paddedSizeOnStack(MaybeSize.value());
+
+      const auto &NextArgument = *std::next(Iterator);
+      auto NextAlignment = *abi::naturalAlignment(NextArgument.Type, ABI);
+      if ((CurrentAlignment & (CurrentAlignment - 1)) == 0) {
+        // Abandon cases where alignment is equal to 0 or is not a power of two.
+        return std::nullopt;
+      }
+
+      if (CurrentArgument.Offset + CurrentSize != NextArgument.Offset
+          || (CurrentArgument.Offset + CurrentSize) % NextAlignment != 0) {
+        // Abandon any cases where natural alignment causes a padding "hole"
+        // to be required.
+        //
+        // TODO: we should probably preprocess the input to fill such holes in
+        //       before trying to convert the functions.
+        return std::nullopt;
+      }
+
+      // Create the argument from this field.
       model::Argument &New = Result.emplace_back();
       New.Index = IndexOffset++;
-      New.Type = Field.Type;
-      New.CustomName = Field.CustomName;
-      New.OriginalName = Field.OriginalName;
+      New.Type = CurrentArgument.Type;
+      New.CustomName = CurrentArgument.CustomName;
+      New.OriginalName = CurrentArgument.OriginalName;
+
+      CurrentAlignment = NextAlignment;
     }
 
     return Result;
   }
 
+  /// Helper used for converting return value representation to
+  /// the c-style
+  ///
+  /// \param Used a set of registers confirmed to be in use by
+  ///        the function in question.
+  /// \param Allowed an ordered list of registers allowed to be used
+  ///        for returning values by the ABI.
+  /// \param PointerToCopyLocation an optional register used for pointing to
+  ///        return values in memory on some architectures. It is set to
+  ///        `model::Register::Invalid` if it's not applicable.
+  /// \param Binary a const reference to the binary containing information
+  ///        about already present types.
+  /// \param TypeDependencies a list of types that need to be added to the model
+  ///        for the returned return value to be valid.
+  ///
+  /// \tparam RegisterType type of a register, should be deduced from
+  ///         the \ref Used.
+  ///
+  /// \return
   template<typename RegisterType, bool DryRun = false>
   static std::optional<model::QualifiedType>
-  convertReturnValue(const SortedVector<RegisterType> &UsedRegisters,
-                     const RegisterVector &AllowedRegisters,
-                     const model::Register::Values PointerToCopyLocation,
-                     model::Binary &TheBinary) {
-    if (UsedRegisters.size() == 0) {
-      auto Void = TheBinary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0);
-      return model::QualifiedType{ Void, {} };
+  tryConvertingReturnValue(const SortedVector<RegisterType> &Used,
+                           const RegisterVector &Allowed,
+                           const model::Register::Values PointerToCopyLocation,
+                           const model::Binary &Binary,
+                           TypeVector &TypeDependencies) {
+    if (Used.size() == 0) {
+      // Short-circuit the functions that don't return anything (`void`).
+      return ensurePrimitiveTypeIsAvailable(model::PrimitiveTypeKind::Void,
+                                            0,
+                                            Binary,
+                                            TypeDependencies);
     }
 
-    if (UsedRegisters.size() == 1) {
-      if (UsedRegisters.begin()->Location == PointerToCopyLocation) {
-        if constexpr (DryRun)
-          return model::QualifiedType{};
-        else
-          return getTypeOrDefault(UsedRegisters.begin()->Type,
-                                  PointerToCopyLocation,
-                                  TheBinary);
-      } else {
-        if (AllowedRegisters.empty())
-          return std::nullopt;
+    if (Allowed.empty()) {
+      // A return value is expected on an ABI that doesn't dedicate any
+      // registers to be used for those.
+      return std::nullopt;
+    }
 
-        if (AllowedRegisters.front() == UsedRegisters.begin()->Location) {
-          if constexpr (DryRun)
-            return model::QualifiedType{};
-          else
-            return getTypeOrDefault(UsedRegisters.begin()->Type,
-                                    UsedRegisters.begin()->Location,
-                                    TheBinary);
-        } else {
-          return std::nullopt;
-        }
+    // Special case where the only used register is the pointer-to-copy location
+    if (Used.size() == 1 && Used.begin()->Location == PointerToCopyLocation) {
+      if (Used.begin()->Type.isPointer()) {
+        // If the type is already a pointer, preserve it.
+        return Used.begin()->Type;
+      } else {
+        // Otherwise return a `void *` pointer as the return value type.
+        static constexpr auto VoidKind = model::PrimitiveTypeKind::Void;
+        auto Result = ensurePrimitiveTypeIsAvailable(VoidKind,
+                                                     0,
+                                                     Binary,
+                                                     TypeDependencies);
+        using model::Qualifier;
+        Result.Qualifiers.emplace_back(Qualifier::createPointer(Architecture));
+        return Result;
       }
+    }
+
+    // TODO: there are some cases where preserving the total structure of
+    // the return value can be benefitial, this needs more work.
+    // For now, just determine the total size of the return value and if it
+    // fits into a primitive value - emit it, otherwise show those values as
+    // a struct (/note: positional ABIs need a whole lot of extra love in this
+    // regard).
+    llvm::SmallVector<std::optional<model::QualifiedType>, 4> ResultingTypes;
+    bool MustUseTheNextOne = false;
+    auto AllowedRange = llvm::enumerate(llvm::reverse(Allowed));
+    for (auto Pair : AllowedRange) {
+      size_t Index = Allowed.size() - Pair.index() - 1;
+      model::Register::Values Register = Pair.value();
+      auto UsedIterator = Used.find(Register);
+      if (UsedIterator != Used.end())
+        ResultingTypes.emplace_back(UsedIterator->Type);
+      else if (MustUseTheNextOne)
+        ResultingTypes.emplace_back(std::nullopt);
+
+      MustUseTheNextOne = MustUseTheNextOne || (UsedIterator != Used.end());
+    }
+
+    revng_assert(ResultingTypes.size() != 0);
+    if (ResultingTypes.size() == 1) {
+      // Short-circuit for a single register return value.
+      auto Kind = model::Register::primitiveKind(Allowed.at(0));
+      if (ResultingTypes.front() != std::nullopt) {
+        return ensureTypeIsAvailable(*ResultingTypes.front(),
+                                     Allowed.at(0),
+                                     Binary,
+                                     TypeDependencies);
+      } else {
+        // No information about the type of this register, use the default.
+        return ensureTypeIsAvailable(model::QualifiedType{},
+                                     Allowed.at(0),
+                                     Binary,
+                                     TypeDependencies);
+      }
+    } else if (ResultingTypes.size() == 2) {
+      // Short-circuit for a double register return value.
+      if (Allowed.size() < 2) {
+        // The ABI doesn't support double register return values.
+        // There's a good chance the ABI was not detected correctly.
+        return std::nullopt;
+      }
+
+      auto UpperKind = model::Register::primitiveKind(Allowed.at(0));
+      auto LowerKind = model::Register::primitiveKind(Allowed.at(1));
+      if (UpperKind != LowerKind)
+        return std::nullopt;
+
+      // Merge two registers together.
+      size_t UpperSize = model::Register::getSize(Allowed.at(0));
+      size_t LowerSize = model::Register::getSize(Allowed.at(1));
+      return ensurePrimitiveTypeIsAvailable(UpperKind,
+                                            UpperSize + LowerSize,
+                                            Binary,
+                                            TypeDependencies);
     } else {
+      // Make struct for now, but there should be better options.
       model::UpcastableType Result = model::makeType<model::StructType>();
       auto ReturnStruct = llvm::dyn_cast<model::StructType>(Result.get());
+      for (const auto &MaybeType : ResultingTypes) {
+        model::QualifiedType Qualified;
+        if (MaybeType.has_value())
+          Qualified = MaybeType.value();
 
-      bool MustUseTheNextOne = false;
-      auto AllowedRange = llvm::enumerate(llvm::reverse(AllowedRegisters));
-      for (auto Pair : AllowedRange) {
-        size_t Index = AllowedRegisters.size() - Pair.index() - 1;
-        model::Register::Values Register = Pair.value();
-        auto UsedIterator = UsedRegisters.find(Register);
+        model::StructField CurrentField;
+        CurrentField.Offset = ReturnStruct->Size;
+        CurrentField.Type = ensureTypeIsAvailable(Qualified,
+                                                  Allowed.at(0),
+                                                  Binary,
+                                                  TypeDependencies);
+        ReturnStruct->Fields.insert(std::move(CurrentField));
 
-        bool IsCurrentRegisterUsed = UsedIterator != UsedRegisters.end();
-        if (IsCurrentRegisterUsed) {
-          model::StructField CurrentField;
-          CurrentField.Offset = ReturnStruct->Size;
-          if constexpr (!DryRun)
-            CurrentField.Type = getTypeOrDefault(UsedIterator->Type,
-                                                 UsedIterator->Location,
-                                                 TheBinary);
-          ReturnStruct->Fields.insert(std::move(CurrentField));
+        auto MaybeSize = CurrentField.Type.size();
+        revng_assert(MaybeSize.has_value());
 
-          ReturnStruct->Size += model::Register::getSize(Register);
-        } else if (MustUseTheNextOne) {
-          const abi::Definition &D = abi::predefined::get(ABI);
-          if (!D.OnlyStartDoubleArgumentsFromAnEvenRegister)
-            return std::nullopt;
-          else if ((Index & 1) == 0 || ReturnStruct->Fields.size() <= 1
-                   || Index <= 1)
-            return std::nullopt;
-        }
-
-        MustUseTheNextOne = MustUseTheNextOne || IsCurrentRegisterUsed;
+        ReturnStruct->Size += MaybeSize.value();
       }
 
       revng_assert(ReturnStruct->Size != 0 && !ReturnStruct->Fields.empty());
 
-      if constexpr (!DryRun) {
-        auto ReturnStructTypePath = TheBinary.recordNewType(std::move(Result));
-        revng_assert(ReturnStructTypePath.isValid());
-        return model::QualifiedType{ ReturnStructTypePath, {} };
-      } else {
-        return model::QualifiedType{};
-      }
+      model::QualifiedType QualifiedResult(Binary.getTypePath(Result.get()),
+                                           {});
+      TypeDependencies.emplace_back(std::move(Result));
+      return QualifiedResult;
     }
 
     return std::nullopt;
   }
 
-  template<typename RType>
-  static bool verifyArgumentsToBeConvertible(const SortedVector<RType> &UR,
-                                             const RegisterVector &AR,
-                                             model::Binary &B) {
-    return convertArguments<RType, true>(UR, AR, B).has_value();
-  }
-
-  template<typename RType>
-  static bool
-  verifyReturnValueToBeConvertible(const SortedVector<RType> &UR,
-                                   const RegisterVector &AR,
-                                   const model::Register::Values PtC,
-                                   model::Binary &B) {
-    return convertReturnValue<RType, true>(UR, AR, PtC, B).has_value();
-  }
-
   static DistributedArguments
-  distributePositionBasedArguments(const ArgumentContainer &Arguments,
+  distributePositionBasedArguments(const ArgumentVector &Arguments,
                                    const abi::Definition &D) {
     DistributedArguments Result;
 
@@ -672,8 +866,8 @@ private:
   }
 
   static DistributedArguments
-  distributeNonPositionBasedArguments(const ArgumentContainer &Arguments,
-                                      const abi::Definition &D) {
+  distributeNonPositionBasedArguments(const ArgumentVector &Arguments,
+                                   const abi::Definition &D) {
     DistributedArguments Result;
     size_t UsedGeneralPurposeRegisterCounter = 0;
     size_t UsedVectorRegisterCounter = 0;
@@ -733,7 +927,7 @@ private:
 
 public:
   static DistributedArguments
-  distributeArguments(const ArgumentContainer &Arguments) {
+  distributeArguments(const ArgumentVector &Arguments) {
     const abi::Definition &D = abi::predefined::get(ABI);
     if (D.ArgumentsArePositionBased)
       return distributePositionBasedArguments(Arguments, D);
@@ -841,7 +1035,7 @@ Layout::Layout(const model::CABIFunctionType &Function) :
     Result.CalleeSavedRegisters.resize(D.CalleeSavedRegisters.size());
     llvm::copy(D.CalleeSavedRegisters, Result.CalleeSavedRegisters.begin());
 
-    Result.FinalStackOffset = ConversionHelper<A>::finalStackOffset(Args);
+    Result.FinalStackOffset = ConversionHelper<A>::finalStackOffset(Args, D);
 
     return Result;
   })) {
