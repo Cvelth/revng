@@ -166,74 +166,13 @@ public:
 
   static model::TypePath toRaw(const model::CABIFunctionType &Function,
                                TupleTree<model::Binary> &TheBinary) {
-    auto Arguments = distributeArguments(Function.Arguments);
-
     model::RawFunctionType Result;
     Result.CustomName = Function.CustomName;
     Result.OriginalName = Function.OriginalName;
 
-    model::StructType StackArguments;
-    uint64_t CombinedStackArgumentSize = 0;
-    for (size_t ArgIndex = 0; ArgIndex < Arguments.size(); ++ArgIndex) {
-      auto &ArgumentStorage = Arguments[ArgIndex];
-      const auto &ArgumentType = Function.Arguments.at(ArgIndex).Type;
-      if (!ArgumentStorage.Registers.empty()) {
-        // Handle the registers
-        auto ArgumentName = Function.Arguments.at(ArgIndex).name();
-        for (size_t Index = 0; auto Register : ArgumentStorage.Registers) {
-          model::NamedTypedRegister Argument(Register);
-
-          TypeVector TypeDependencies;
-          Argument.Type = chooseArgumentType(ArgumentType,
-                                             Register,
-                                             ArgumentStorage.Registers,
-                                             *TheBinary,
-                                             TypeDependencies);
-          for (auto &&Dependency : TypeDependencies)
-            TheBinary->recordNewType(std::move(Dependency));
-
-          // TODO: see what can be done to preserve names better
-          if (llvm::StringRef{ ArgumentName.str() }.take_front(8) != "unnamed_")
-            Argument.CustomName = ArgumentName;
-
-          Result.Arguments.insert(Argument);
-        }
-      }
-
-      if (ArgumentStorage.SizeOnStack != 0) {
-        // Handle the stack
-        auto ArgumentIterator = Function.Arguments.find(ArgIndex);
-        revng_assert(ArgumentIterator != Function.Arguments.end());
-        const model::Argument &Argument = *ArgumentIterator;
-
-        model::StructField Field;
-        Field.Offset = CombinedStackArgumentSize;
-        Field.CustomName = Argument.CustomName;
-        Field.OriginalName = Argument.OriginalName;
-        Field.Type = Argument.Type;
-        StackArguments.Fields.insert(std::move(Field));
-
-        // Compute the full size of the argument (including padding if needed).
-        auto MaybeSize = Argument.Type.size();
-        revng_assert(MaybeSize.has_value() && MaybeSize.value() != 0);
-        CombinedStackArgumentSize += paddedSizeOnStack(MaybeSize.value());
-      }
-    }
-
-    if (CombinedStackArgumentSize != 0) {
-      StackArguments.Size = CombinedStackArgumentSize;
-
-      using namespace model;
-      auto Type = UpcastableType::make<StructType>(std::move(StackArguments));
-      Result.StackArgumentsType = { TheBinary->recordNewType(std::move(Type)),
-                                    {} };
-    }
-
     const abi::Definition &D = abi::predefined::get(ABI);
-    Result.FinalStackOffset = finalStackOffset(Arguments, D);
-
+    auto ReturnValue = distributeReturnValue(Function.ReturnType);
     if (!Function.ReturnType.isVoid()) {
-      auto ReturnValue = distributeReturnValue(Function.ReturnType);
       if (!ReturnValue.Registers.empty()) {
         // Handle a register-based return value.
         for (model::Register::Values Register : ReturnValue.Registers) {
@@ -312,6 +251,68 @@ public:
         Result.ReturnValues.insert(std::move(ReturnPointer));
       }
     }
+
+    auto Arguments = distributeArguments(Function.Arguments,
+                                         ReturnValue.SizeOnStack != 0);
+
+    model::StructType StackArguments;
+    uint64_t CombinedStackArgumentSize = 0;
+    for (size_t ArgIndex = 0; ArgIndex < Arguments.size(); ++ArgIndex) {
+      auto &ArgumentStorage = Arguments[ArgIndex];
+      const auto &ArgumentType = Function.Arguments.at(ArgIndex).Type;
+      if (!ArgumentStorage.Registers.empty()) {
+        // Handle the registers
+        auto ArgumentName = Function.Arguments.at(ArgIndex).name();
+        for (size_t Index = 0; auto Register : ArgumentStorage.Registers) {
+          model::NamedTypedRegister Argument(Register);
+
+          TypeVector TypeDependencies;
+          Argument.Type = chooseArgumentType(ArgumentType,
+                                             Register,
+                                             ArgumentStorage.Registers,
+                                             *TheBinary,
+                                             TypeDependencies);
+          for (auto &&Dependency : TypeDependencies)
+            TheBinary->recordNewType(std::move(Dependency));
+
+          // TODO: see what can be done to preserve names better
+          if (llvm::StringRef{ ArgumentName.str() }.take_front(8) != "unnamed_")
+            Argument.CustomName = ArgumentName;
+
+          Result.Arguments.insert(Argument);
+        }
+      }
+
+      if (ArgumentStorage.SizeOnStack != 0) {
+        // Handle the stack
+        auto ArgumentIterator = Function.Arguments.find(ArgIndex);
+        revng_assert(ArgumentIterator != Function.Arguments.end());
+        const model::Argument &Argument = *ArgumentIterator;
+
+        model::StructField Field;
+        Field.Offset = CombinedStackArgumentSize;
+        Field.CustomName = Argument.CustomName;
+        Field.OriginalName = Argument.OriginalName;
+        Field.Type = Argument.Type;
+        StackArguments.Fields.insert(std::move(Field));
+
+        // Compute the full size of the argument (including padding if needed).
+        auto MaybeSize = Argument.Type.size();
+        revng_assert(MaybeSize.has_value() && MaybeSize.value() != 0);
+        CombinedStackArgumentSize += paddedSizeOnStack(MaybeSize.value());
+      }
+    }
+
+    if (CombinedStackArgumentSize != 0) {
+      StackArguments.Size = CombinedStackArgumentSize;
+
+      using namespace model;
+      auto Type = UpcastableType::make<StructType>(std::move(StackArguments));
+      Result.StackArgumentsType = { TheBinary->recordNewType(std::move(Type)),
+                                    {} };
+    }
+
+    Result.FinalStackOffset = finalStackOffset(Arguments, D);
 
     // Populate the list of preserved registers
     for (model::Register::Values Register : D.CalleeSavedRegisters)
@@ -767,28 +768,30 @@ private:
 
   static DistributedArguments
   distributePositionBasedArguments(const ArgumentVector &Arguments,
-                                   const abi::Definition &D) {
+                                   const abi::Definition &D,
+                                   std::size_t SkippedRegisters = 0) {
     DistributedArguments Result;
 
     for (const model::Argument &Argument : Arguments) {
-      if (Result.size() <= Argument.Index)
-        Result.resize(Argument.Index + 1);
-      auto &Distributed = Result[Argument.Index];
+      std::size_t RegisterIndex = Argument.Index + SkippedRegisters;
+      if (Result.size() <= RegisterIndex)
+        Result.resize(RegisterIndex + 1);
+      auto &Distributed = Result[RegisterIndex];
 
       auto MaybeSize = Argument.Type.size();
       revng_assert(MaybeSize.has_value());
       Distributed.Size = *MaybeSize;
 
       if (Argument.Type.isFloat()) {
-        if (Argument.Index < D.VectorArgumentRegisters.size()) {
-          auto Register = D.VectorArgumentRegisters[Argument.Index];
+        if (RegisterIndex < D.VectorArgumentRegisters.size()) {
+          auto Register = D.VectorArgumentRegisters[RegisterIndex];
           Distributed.Registers.emplace_back(Register);
         } else {
           Distributed.SizeOnStack = Distributed.Size;
         }
       } else {
-        if (Argument.Index < D.GeneralPurposeArgumentRegisters.size()) {
-          auto Reg = D.GeneralPurposeArgumentRegisters[Argument.Index];
+        if (RegisterIndex < D.GeneralPurposeArgumentRegisters.size()) {
+          auto Reg = D.GeneralPurposeArgumentRegisters[RegisterIndex];
           Distributed.Registers.emplace_back(Reg);
         } else {
           Distributed.SizeOnStack = Distributed.Size;
@@ -855,9 +858,10 @@ private:
 
   static DistributedArguments
   distributeNonPositionBasedArguments(const ArgumentVector &Arguments,
-                                   const abi::Definition &D) {
+                                      const abi::Definition &D,
+                                      std::size_t SkippedRegisters = 0) {
     DistributedArguments Result;
-    size_t UsedGeneralPurposeRegisterCounter = 0;
+    size_t UsedGeneralPurposeRegisterCounter = SkippedRegisters;
     size_t UsedVectorRegisterCounter = 0;
 
     for (const model::Argument &Argument : Arguments) {
@@ -915,12 +919,21 @@ private:
 
 public:
   static DistributedArguments
-  distributeArguments(const ArgumentVector &Arguments) {
+  distributeArguments(const ArgumentVector &Arguments,
+                      bool PassesReturnValueLocationAsAnArgument) {
+    bool SkippedCount = 0;
+
     const abi::Definition &D = abi::predefined::get(ABI);
+    if (PassesReturnValueLocationAsAnArgument == true) {
+      const auto &GPRs = D.GeneralPurposeArgumentRegisters;
+      if (!GPRs.empty() && D.ReturnValueLocationRegister == GPRs[0])
+        SkippedCount = 1;
+    }
+
     if (D.ArgumentsArePositionBased)
-      return distributePositionBasedArguments(Arguments, D);
+      return distributePositionBasedArguments(Arguments, D, SkippedCount);
     else
-      return distributeNonPositionBasedArguments(Arguments, D);
+      return distributeNonPositionBasedArguments(Arguments, D, SkippedCount);
   }
 
   static DistributedArgument
@@ -1015,15 +1028,36 @@ Layout::Layout(const model::CABIFunctionType &Function) :
   Layout(skippingEnumSwitch<1>(Function.ABI, [&]<model::ABI::Values A>() {
     Layout Result;
 
+    const abi::Definition &D = abi::predefined::get(A);
+    auto RV = ConversionHelper<A>::distributeReturnValue(Function.ReturnType);
+    if (RV.SizeOnStack == 0) {
+      // Nothing on the stack, the return value fits into the registers.
+      Result.ReturnValue.Registers = std::move(RV.Registers);
+      Result.ReturnValue.Type = Function.ReturnType;
+    } else {
+      revng_assert(RV.Registers.empty(),
+                   "Register and stack return values should never be present "
+                   "at the same time.");
+
+      revng_assert(D.ReturnValueLocationRegister != model::Register::Invalid,
+                   "Big return values are not supported by the current ABI");
+      auto &RVLocationArg = Result.Arguments.emplace_back();
+      RVLocationArg.Registers.emplace_back(D.ReturnValueLocationRegister);
+
+      static constexpr auto Architecture = model::ABI::getArchitecture(A);
+      RVLocationArg.Type = Function.ReturnType.getPointerTo(Architecture);
+    }
+
     size_t CurrentOffset = 0;
-    auto Args = ConversionHelper<A>::distributeArguments(Function.Arguments);
+    auto Args = ConversionHelper<A>::distributeArguments(Function.Arguments,
+                                                         RV.SizeOnStack != 0);
     revng_assert(Args.size() == Function.Arguments.size());
     for (size_t Index = 0; Index < Args.size(); ++Index) {
       auto &Current = Result.Arguments.emplace_back();
       Current.Type = Function.Arguments.at(Index).Type;
       Current.Registers = std::move(Args[Index].Registers);
       if (Args[Index].SizeOnStack != 0) {
-        // TODO: maybe some kind of alignment considerations are needed here.
+        // TODO: further alignment considerations are needed here.
         Current.Stack = typename Layout::Argument::StackSpan{
           CurrentOffset, Args[Index].SizeOnStack
         };
@@ -1031,12 +1065,6 @@ Layout::Layout(const model::CABIFunctionType &Function) :
       }
     }
 
-    auto RV = ConversionHelper<A>::distributeReturnValue(Function.ReturnType);
-    revng_assert(RV.SizeOnStack == 0);
-    Result.ReturnValue.Registers = std::move(RV.Registers);
-    Result.ReturnValue.Type = Function.ReturnType;
-
-    const abi::Definition &D = abi::predefined::get(A);
     Result.CalleeSavedRegisters.resize(D.CalleeSavedRegisters.size());
     llvm::copy(D.CalleeSavedRegisters, Result.CalleeSavedRegisters.begin());
 
