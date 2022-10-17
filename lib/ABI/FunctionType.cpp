@@ -50,28 +50,6 @@ bool verify(const SortedVector<RegisterType> &UsedRegisters,
   return true;
 }
 
-constexpr static model::PrimitiveTypeKind::Values
-selectTypeKind(model::Register::Values) {
-  // TODO: implement a way to determine the register type. At the very least
-  // we should be able to differentiate GPRs from the vector registers.
-
-  return model::PrimitiveTypeKind::PointerOrNumber;
-}
-
-static model::QualifiedType
-buildType(model::Register::Values Register, model::Binary &TheBinary) {
-  model::PrimitiveTypeKind::Values Kind = selectTypeKind(Register);
-  size_t Size = model::Register::getSize(Register);
-  return model::QualifiedType(TheBinary.getPrimitiveType(Kind, Size), {});
-}
-
-static model::QualifiedType
-buildGenericType(model::Register::Values Register, model::Binary &TheBinary) {
-  constexpr auto Kind = model::PrimitiveTypeKind::Generic;
-  size_t Size = model::Register::getSize(Register);
-  return model::QualifiedType(TheBinary.getPrimitiveType(Kind, Size), {});
-}
-
 static void replaceReferences(const model::Type::Key &OldKey,
                               const model::TypePath &NewTypePath,
                               TupleTree<model::Binary> &Model) {
@@ -204,10 +182,15 @@ public:
         auto ArgumentName = Function.Arguments.at(ArgIndex).name();
         for (size_t Index = 0; auto Register : ArgumentStorage.Registers) {
           model::NamedTypedRegister Argument(Register);
+
+          TypeVector TypeDependencies;
           Argument.Type = chooseArgumentType(ArgumentType,
                                              Register,
                                              ArgumentStorage.Registers,
-                                             *TheBinary);
+                                             *TheBinary,
+                                             TypeDependencies);
+          for (auto &&Dependency : TypeDependencies)
+            TheBinary->recordNewType(std::move(Dependency));
 
           // TODO: see what can be done to preserve names better
           if (llvm::StringRef{ ArgumentName.str() }.take_front(8) != "unnamed_")
@@ -256,10 +239,15 @@ public:
         for (model::Register::Values Register : ReturnValue.Registers) {
           model::TypedRegister ReturnValueRegister;
           ReturnValueRegister.Location = Register;
+
+          TypeVector TypeDependencies;
           ReturnValueRegister.Type = chooseArgumentType(Function.ReturnType,
                                                         Register,
                                                         ReturnValue.Registers,
-                                                        *TheBinary);
+                                                        *TheBinary,
+                                                        TypeDependencies);
+          for (auto &&Dependency : TypeDependencies)
+            TheBinary->recordNewType(std::move(Dependency));
 
           Result.ReturnValues.insert(std::move(ReturnValueRegister));
         }
@@ -964,21 +952,38 @@ private:
   chooseArgumentType(const model::QualifiedType &ArgumentType,
                      model::Register::Values Register,
                      const RegisterList &RegisterList,
-                     model::Binary &TheBinary) {
+                     model::Binary &Binary,
+                     TypeVector &Dependencies) {
     if (RegisterList.size() > 1) {
-      return buildGenericType(Register, TheBinary);
+      // TODO: this can be considerably improved, we can preserve more
+      //       information here over just labeling it as `Generic`.
+      return ensurePrimitiveTypeIsAvailable(model::PrimitiveTypeKind::Generic,
+                                            model::Register::getSize(Register),
+                                            Binary,
+                                            Dependencies);
     } else {
       auto ResultType = ArgumentType;
-      auto MaybeSize = ArgumentType.size();
+      auto MaybeSize = ResultType.size();
       auto TargetSize = model::Register::getSize(Register);
 
       if (!MaybeSize.has_value()) {
-        return buildType(Register, TheBinary);
+        using namespace model;
+        return ensurePrimitiveTypeIsAvailable(Register::primitiveKind(Register),
+                                              Register::getSize(Register),
+                                              Binary,
+                                              Dependencies);
       } else if (*MaybeSize > TargetSize) {
+        // TODO: some considerations should be made for position-based ABIs here
         auto Qualifier = model::Qualifier::createPointer(TargetSize);
         ResultType.Qualifiers.emplace_back(Qualifier);
       } else if (!ResultType.isScalar()) {
-        return buildGenericType(Register, TheBinary);
+        // TODO: this can be considerably improved, we can preserve more
+        //       information here over just labeling it as `Generic`.
+        const auto Size = model::Register::getSize(Register);
+        return ensurePrimitiveTypeIsAvailable(model::PrimitiveTypeKind::Generic,
+                                              Size,
+                                              Binary,
+                                              Dependencies);
       }
 
       return ResultType;
