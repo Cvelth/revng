@@ -7,6 +7,8 @@
 
 #include <unordered_set>
 
+#include "llvm/ADT/SmallSet.h"
+
 #include "revng/ABI/FunctionType.h"
 #include "revng/ABI/ModelAlignment.h"
 #include "revng/ABI/Predefined.h"
@@ -94,14 +96,30 @@ static bool verifyReturnValueLocationHelper(const abi::Definition &D) {
   return true;
 }
 
-static void replaceReferences(const model::Type::Key &OldKey,
-                              const model::TypePath &NewTypePath,
-                              TupleTree<model::Binary> &Model) {
+/// Replace all the references to `OldKey` with the references to
+/// the newly added `NewType`. Also erases the original type.
+///
+/// \param OldKey The type references of which should be replaced.
+/// \param NewType The new type to replace the references to. It is added to
+///        the model implicitly, no need to do so before calling this function.
+/// \param Model The tuple tree where replacement should take place in.
+///
+/// \return The new path to the added type.
+static model::TypePath
+fullTypeReplacement(const model::Type::Key &OldKey,
+                    UpcastablePointer<model::Type> &&NewType,
+                    TupleTree<model::Binary> &Model) {
+  // A temporary workaround to the problem of inability to replace constant
+  // references.
+  Model.initializeReferences();
+
+  auto NewTypePath = Model->recordNewType(std::move(NewType));
+
   auto Visitor = [&](model::TypePath &Visited) {
     if (!Visited.isValid())
       return; // Ignore empty references
 
-    model::Type *Current = Visited.get();
+    const model::Type *Current = Visited.getConst();
     revng_assert(Current != nullptr);
 
     if (Current->key() == OldKey)
@@ -109,6 +127,8 @@ static void replaceReferences(const model::Type::Key &OldKey,
   };
   Model.visitReferences(Visitor);
   Model->Types.erase(OldKey);
+
+  return NewTypePath;
 }
 
 namespace ModelArch = model::Architecture;
@@ -193,13 +213,8 @@ public:
 
     // Carefully replace all the mentions of the old type with the new one.
     using UT = model::UpcastableType;
-    auto Ptr = UT::make<model::CABIFunctionType>(std::move(Result));
-    auto NewTypePath = Binary->recordNewType(std::move(Ptr));
-
-    // Replace all references to the old type with references to the new one.
-    replaceReferences(Function.key(), NewTypePath, Binary);
-
-    return NewTypePath;
+    auto Pointer = UT::make<model::CABIFunctionType>(std::move(Result));
+    return fullTypeReplacement(Function.key(), std::move(Pointer), Binary);
   }
 
   static model::TypePath toRaw(const model::CABIFunctionType &Function,
@@ -367,11 +382,8 @@ public:
 
     // Carefully replace all the mentions of the old type with the new one.
     using UT = model::UpcastableType;
-    auto Ptr = UT::make<model::RawFunctionType>(std::move(Result));
-    auto NewTypePath = Binary->recordNewType(std::move(Ptr));
-    replaceReferences(Function.key(), NewTypePath, Binary);
-
-    return NewTypePath;
+    auto Upcastable = UT::make<model::RawFunctionType>(std::move(Result));
+    return fullTypeReplacement(Function.key(), std::move(Upcastable), Binary);
   }
 
   static uint64_t finalStackOffset(const DistributedArguments &Arguments,
