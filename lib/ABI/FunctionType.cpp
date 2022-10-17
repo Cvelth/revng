@@ -50,6 +50,50 @@ bool verify(const SortedVector<RegisterType> &UsedRegisters,
   return true;
 }
 
+/// A helper used to differentiate vector registers.
+///
+/// \param Register Any CPU register the model is aware of.
+///
+/// \return `true` if `Register` is a vector register, `false` otherwise.
+constexpr bool isVectorRegisterHelper(model::Register::Values Register) {
+  namespace PrimitiveTypeKind = model::PrimitiveTypeKind;
+  return model::Register::primitiveKind(Register) == PrimitiveTypeKind::Float;
+}
+
+/// Helps detecting unsupported ABI trait definition with respect to
+/// the way they return the return values.
+///
+/// This is an important piece of abi trait verification. For more information
+/// see the `static_assert` that invokes it in \ref distributeArguments
+///
+/// \note Make this function `consteval` after clang-14 is available.
+///
+/// \return `true` if the ABI is valid, `false` otherwise.
+static bool verifyReturnValueLocationHelper(const abi::Definition &D) {
+  // Skip ABIs that do not allow returning big values.
+  // They do not benefit from this check.
+  if (D.ReturnValueLocationRegister != model::Register::Invalid) {
+    if (isVectorRegisterHelper(D.ReturnValueLocationRegister)) {
+      // Vector register used as the return value locations are not supported.
+      return false;
+    } else if (llvm::is_contained(D.CalleeSavedRegisters,
+                                  D.ReturnValueLocationRegister)) {
+      // Using callee saved register as a return value location doesn't make
+      // much sense: filter those out.
+      return false;
+    } else {
+      // The return value location register can optionally also be the first
+      // GPRs, but only the first one.
+      const auto &GPRs = D.GeneralPurposeArgumentRegisters;
+      const auto Iterator = llvm::find(GPRs, D.ReturnValueLocationRegister);
+      if (Iterator != GPRs.end() && Iterator != GPRs.begin())
+        return false;
+    }
+  }
+
+  return true;
+}
+
 static void replaceReferences(const model::Type::Key &OldKey,
                               const model::TypePath &NewTypePath,
                               TupleTree<model::Binary> &Model) {
@@ -925,6 +969,11 @@ public:
 
     const abi::Definition &D = abi::predefined::get(ABI);
     if (PassesReturnValueLocationAsAnArgument == true) {
+      revng_assert(verifyReturnValueLocationHelper(D),
+                   "ABIs where non-first argument GPR is used for passing the "
+                   "address of the space allocated for big return values are "
+                   "not currently supported.");
+
       const auto &GPRs = D.GeneralPurposeArgumentRegisters;
       if (!GPRs.empty() && D.ReturnValueLocationRegister == GPRs[0])
         SkippedCount = 1;
