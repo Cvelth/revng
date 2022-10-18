@@ -63,7 +63,10 @@ static void explainPipeline(const ContainerToTargetsMap &Targets,
 
   ExplanationLogger << "OBJECTIVES requested\n";
   indent(ExplanationLogger, 1);
-  ExplanationLogger << Requirements.back().ToExecute->getName() << ":\n";
+  if (!Requirements.empty())
+    ExplanationLogger << Requirements.back().ToExecute->getName() << ":\n";
+  else
+    ExplanationLogger << "No requirements\n";
   prettyPrintStatus(Targets, ExplanationLogger, 2);
 
   if (Requirements.size() <= 1) {
@@ -74,7 +77,10 @@ static void explainPipeline(const ContainerToTargetsMap &Targets,
   ExplanationLogger << "DEDUCED steps content to be produced: \n";
 
   indent(ExplanationLogger, 1);
-  ExplanationLogger << Requirements.back().ToExecute->getName() << ":\n";
+  if (!Requirements.empty())
+    ExplanationLogger << Requirements.back().ToExecute->getName() << ":\n";
+  else
+    ExplanationLogger << "No requirements\n";
   prettyPrintStatus(Targets, ExplanationLogger, 2);
 
   for (size_t I = Requirements.size(); I != 0; I--) {
