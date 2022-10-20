@@ -1091,8 +1091,8 @@ Layout::Layout(const model::CABIFunctionType &Function) :
     auto RV = ConversionHelper<A>::distributeReturnValue(Function.ReturnType);
     if (RV.SizeOnStack == 0) {
       // Nothing on the stack, the return value fits into the registers.
-      Result.ReturnValue.Registers = std::move(RV.Registers);
-      Result.ReturnValue.Type = Function.ReturnType;
+      Result.ReturnValues.emplace_back().Registers = std::move(RV.Registers);
+      Result.ReturnValues.back().Type = Function.ReturnType;
     } else {
       revng_assert(RV.Registers.empty(),
                    "Register and stack return values should never be present "
@@ -1142,8 +1142,8 @@ Layout::Layout(const model::RawFunctionType &Function) {
 
   // Lay the return value out.
   for (const model::TypedRegister &Register : Function.ReturnValues) {
-    ReturnValue.Registers.emplace_back(Register.Location);
-    ReturnValue.Type = Register.Type;
+    ReturnValues.emplace_back().Registers = { Register.Location };
+    ReturnValues.back().Type = Register.Type;
   }
 
   // Lay stack arguments out.
@@ -1185,14 +1185,13 @@ bool Layout::verify() const {
 
   // Verify arguments
   LookupHelper.clear();
-  for (const Layout::Argument &Argument : Arguments)
-    for (model::Register::Values Register : Argument.Registers)
-      if (!VerificationHelper(Register))
-        return false;
+  for (model::Register::Values Register : argumentRegisters())
+    if (!VerificationHelper(Register))
+      return false;
 
   // Verify return values
   LookupHelper.clear();
-  for (model::Register::Values Register : ReturnValue.Registers)
+  for (model::Register::Values Register : returnValueRegisters())
     if (!VerificationHelper(Register))
       return false;
 
@@ -1202,21 +1201,26 @@ bool Layout::verify() const {
 size_t Layout::argumentRegisterCount() const {
   size_t Result = 0;
 
-  for (auto &Argument : Arguments)
+  for (const Argument &Argument : Arguments)
     Result += Argument.Registers.size();
 
   return Result;
 }
 
 size_t Layout::returnValueRegisterCount() const {
-  return ReturnValue.Registers.size();
+  size_t Result = 0;
+
+  for (const ReturnValue &ReturnValue : ReturnValues)
+    Result += ReturnValue.Registers.size();
+
+  return Result;
 }
 
 llvm::SmallVector<model::Register::Values, 8>
 Layout::argumentRegisters() const {
   llvm::SmallVector<model::Register::Values, 8> Result;
 
-  for (auto &Argument : Arguments)
+  for (const Argument &Argument : Arguments)
     Result.append(Argument.Registers.begin(), Argument.Registers.end());
 
   return Result;
@@ -1224,9 +1228,12 @@ Layout::argumentRegisters() const {
 
 llvm::SmallVector<model::Register::Values, 8>
 Layout::returnValueRegisters() const {
-  return llvm::SmallVector<model::Register::Values,
-                           8>(ReturnValue.Registers.begin(),
-                              ReturnValue.Registers.end());
+  llvm::SmallVector<model::Register::Values, 8> Result;
+
+  for (const ReturnValue &ReturnValue : ReturnValues)
+    Result.append(ReturnValue.Registers.begin(), ReturnValue.Registers.end());
+
+  return Result;
 }
 
 } // namespace abi::FunctionType
