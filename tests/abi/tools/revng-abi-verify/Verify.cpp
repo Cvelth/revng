@@ -83,7 +83,8 @@ llvm::Error VH::verify(const abi::FunctionType::Layout &FunctionLayout,
 
     // Sort the argument registers
     auto ARegisters = FunctionLayout.argumentRegisters();
-    auto OrderedRegisterList = abi::orderArguments(std::move(ARegisters), ABI);
+    auto OrderedRegisterList = abi::orderArguments(std::move(ARegisters),
+                                                   abi::predefined::get(ABI));
 
     // Compute the relevant stack slice.
     abi::FunctionType::Layout::Argument::StackSpan StackSpan{ 0, 0 };
@@ -168,7 +169,9 @@ llvm::Error VH::verify(const abi::FunctionType::Layout &FunctionLayout,
 
     // Check the return value.
     auto RVR = FunctionLayout.returnValueRegisters();
-    auto ReturnValueRegisterList = abi::orderReturnValues(std::move(RVR), ABI);
+    namespace predefined = abi::predefined;
+    auto ReturnValueRegisterList = abi::orderReturnValues(std::move(RVR),
+                                                          predefined::get(ABI));
     if (!Helper.Iteration.ReturnValue.Bytes.empty()) {
       if (ReturnValueRegisterList.size() == 0)
         return ERROR(ExitCode::FoundUnexpectedReturnValue,
