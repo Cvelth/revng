@@ -8,9 +8,7 @@
 #include <unordered_set>
 
 #include "revng/ABI/FunctionType.h"
-#include "revng/ABI/RegisterOrder.h"
-#include "revng/ABI/RegisterStateDeductions.h"
-#include "revng/ABI/Trait.h"
+#include "revng/ABI/Predefined.h"
 #include "revng/ADT/STLExtras.h"
 #include "revng/ADT/SmallMap.h"
 #include "revng/Model/Binary.h"
@@ -20,14 +18,11 @@
 
 namespace abi::FunctionType {
 
-template<size_t Size>
-using RegisterArray = std::array<model::Register::Values, Size>;
+using RegisterVector = std::vector<model::Register::Values>;
 
-template<model::Architecture::Values Architecture,
-         typename RegisterType,
-         size_t RegisterCount>
+template<model::Architecture::Values Architecture, typename RegisterType>
 bool verify(const SortedVector<RegisterType> &UsedRegisters,
-            const RegisterArray<RegisterCount> &AllowedRegisters) {
+            const RegisterVector &AllowedRegisters) {
   for (const model::Register::Values &Register : AllowedRegisters) {
     // Verify the architecture of allowed registers.
     if (model::Register::getArchitecture(Register) != Architecture)
@@ -121,7 +116,6 @@ namespace ModelArch = model::Architecture;
 
 template<model::ABI::Values ABI>
 class ConversionHelper {
-  using AT = abi::Trait<ABI>;
   static constexpr auto Architecture = model::ABI::getArchitecture(ABI);
   static constexpr auto RegisterSize = ModelArch::getPointerSize(Architecture);
 
@@ -139,20 +133,22 @@ public:
   static std::optional<model::TypePath>
   toCABI(const model::RawFunctionType &Function,
          TupleTree<model::Binary> &TheBinary) {
+    const abi::Definition &D = abi::predefined::get(ABI);
+
     static constexpr auto Arch = model::ABI::getArchitecture(ABI);
-    if (!verify<Arch>(Function.Arguments, AT::GeneralPurposeArgumentRegisters))
+    if (!verify<Arch>(Function.Arguments, D.GeneralPurposeArgumentRegisters))
       return std::nullopt;
     if (!verify<Arch>(Function.ReturnValues,
-                      AT::GeneralPurposeReturnValueRegisters))
+                      D.GeneralPurposeReturnValueRegisters))
       return std::nullopt;
 
     // Verify the architecture of return value location register if present.
-    constexpr model::Register::Values PTCRR = AT::ReturnValueLocationRegister;
+    const model::Register::Values PTCRR = D.ReturnValueLocationRegister;
     if (PTCRR != model::Register::Invalid)
       revng_assert(model::Register::getArchitecture(PTCRR) == Arch);
 
     // Verify the architecture of callee saved registers.
-    for (auto &SavedRegister : AT::CalleeSavedRegisters)
+    for (auto &SavedRegister : D.CalleeSavedRegisters)
       revng_assert(model::Register::getArchitecture(SavedRegister) == Arch);
 
     model::CABIFunctionType Result;
@@ -161,19 +157,18 @@ public:
     Result.ABI = ABI;
 
     if (!verifyArgumentsToBeConvertible(Function.Arguments,
-                                        AT::GeneralPurposeArgumentRegisters,
+                                        D.GeneralPurposeArgumentRegisters,
                                         *TheBinary))
       return std::nullopt;
 
-    using C = AT;
     if (!verifyReturnValueToBeConvertible(Function.ReturnValues,
-                                          C::GeneralPurposeReturnValueRegisters,
-                                          C::ReturnValueLocationRegister,
+                                          D.GeneralPurposeReturnValueRegisters,
+                                          D.ReturnValueLocationRegister,
                                           *TheBinary))
       return std::nullopt;
 
     auto ArgumentList = convertArguments(Function.Arguments,
-                                         AT::GeneralPurposeArgumentRegisters,
+                                         D.GeneralPurposeArgumentRegisters,
                                          *TheBinary);
     revng_assert(ArgumentList != std::nullopt);
     for (auto &Argument : *ArgumentList)
@@ -185,8 +180,8 @@ public:
       Result.Arguments.insert(Argument);
 
     auto ReturnValue = convertReturnValue(Function.ReturnValues,
-                                          C::GeneralPurposeReturnValueRegisters,
-                                          C::ReturnValueLocationRegister,
+                                          D.GeneralPurposeReturnValueRegisters,
+                                          D.ReturnValueLocationRegister,
                                           *TheBinary);
     revng_assert(ReturnValue != std::nullopt);
     Result.ReturnType = *ReturnValue;
@@ -267,6 +262,7 @@ public:
 
     Result.FinalStackOffset = finalStackOffset(Arguments);
 
+    const abi::Definition &D = abi::predefined::get(ABI);
     if (!Function.ReturnType.isVoid()) {
       auto ReturnValue = distributeReturnValue(Function.ReturnType);
       if (!ReturnValue.Registers.empty()) {
@@ -292,9 +288,9 @@ public:
             SmallMap<RegisterEnum, model::QualifiedType, 4> RecoveredTypes;
             size_t StructOffset = 0;
             for (size_t Index = 0; Index < Struct->Fields.size(); ++Index) {
-              if (Index >= AT::GeneralPurposeReturnValueRegisters.size())
+              if (Index >= D.GeneralPurposeReturnValueRegisters.size())
                 break;
-              auto Register = AT::GeneralPurposeReturnValueRegisters[Index];
+              auto Register = D.GeneralPurposeReturnValueRegisters[Index];
 
               auto TypedRegisterIterator = Result.ReturnValues.find(Register);
               if (TypedRegisterIterator == Result.ReturnValues.end())
@@ -325,8 +321,8 @@ public:
         }
       } else {
         // Handle a pointer-based return value.
-        revng_assert(!AT::GeneralPurposeReturnValueRegisters.empty());
-        auto Register = AT::GeneralPurposeReturnValueRegisters[0];
+        revng_assert(!D.GeneralPurposeReturnValueRegisters.empty());
+        auto Register = D.GeneralPurposeReturnValueRegisters[0];
         auto RegisterSize = model::Register::getSize(Register);
         auto PointerQualifier = model::Qualifier::createPointer(RegisterSize);
 
@@ -344,7 +340,7 @@ public:
     }
 
     // Populate the list of preserved registers
-    for (model::Register::Values Register : AT::CalleeSavedRegisters)
+    for (model::Register::Values Register : D.CalleeSavedRegisters)
       Result.PreservedRegisters.insert(Register);
 
     // Steal the ID
@@ -365,7 +361,8 @@ public:
     constexpr auto Architecture = model::ABI::getArchitecture(ABI);
     uint64_t Result = model::Architecture::getCallPushSize(Architecture);
 
-    if constexpr (AT::CalleeIsResponsibleForStackCleanup) {
+    const abi::Definition &D = abi::predefined::get(ABI);
+    if (D.CalleeIsResponsibleForStackCleanup) {
       for (auto &Argument : Arguments)
         Result += Argument.SizeOnStack;
 
@@ -373,9 +370,9 @@ public:
 
       // TODO: take shadow space into the account if relevant.
 
-      static_assert((AT::StackAlignment & (AT::StackAlignment - 1)) == 0);
-      Result += AT::StackAlignment - 1;
-      Result &= ~(AT::StackAlignment - 1);
+      revng_assert((D.StackAlignment & (D.StackAlignment - 1)) == 0);
+      Result += D.StackAlignment - 1;
+      Result &= ~(D.StackAlignment - 1);
     }
 
     return Result;
@@ -402,10 +399,10 @@ private:
     return RealSize;
   }
 
-  template<typename RegisterType, size_t RegisterCount, bool DryRun = false>
+  template<typename RegisterType, bool DryRun = false>
   static std::optional<llvm::SmallVector<model::Argument, 8>>
   convertArguments(const SortedVector<RegisterType> &UsedRegisters,
-                   const RegisterArray<RegisterCount> &AllowedRegisters,
+                   const RegisterVector &AllowedRegisters,
                    model::Binary &TheBinary) {
     llvm::SmallVector<model::Argument, 8> Result;
 
@@ -424,7 +421,8 @@ private:
         Temporary.CustomName = UsedRegisters.at(Register).CustomName;
         Result.emplace_back(Temporary);
       } else if (MustUseTheNextOne) {
-        if constexpr (!AT::OnlyStartDoubleArgumentsFromAnEvenRegister) {
+        const abi::Definition &D = abi::predefined::get(ABI);
+        if (!D.OnlyStartDoubleArgumentsFromAnEvenRegister) {
           return std::nullopt;
         } else if ((Index & 1) == 0) {
           return std::nullopt;
@@ -437,8 +435,8 @@ private:
             First.CustomName = Second.CustomName;
 
           if constexpr (!DryRun) {
-            auto NewType = buildDoubleType(AllowedRegisters.at(Index - 2),
-                                           AllowedRegisters.at(Index - 1),
+            auto NewType = buildDoubleType(AllowedRegisters[Index - 2],
+                                           AllowedRegisters[Index - 1],
                                            model::PrimitiveTypeKind::Generic,
                                            TheBinary);
             if (NewType == std::nullopt)
@@ -487,10 +485,10 @@ private:
     return Result;
   }
 
-  template<typename RegisterType, size_t RegisterCount, bool DryRun = false>
+  template<typename RegisterType, bool DryRun = false>
   static std::optional<model::QualifiedType>
   convertReturnValue(const SortedVector<RegisterType> &UsedRegisters,
-                     const RegisterArray<RegisterCount> &AllowedRegisters,
+                     const RegisterVector &AllowedRegisters,
                      const model::Register::Values PointerToCopyLocation,
                      model::Binary &TheBinary) {
     if (UsedRegisters.size() == 0) {
@@ -507,8 +505,9 @@ private:
                                   PointerToCopyLocation,
                                   TheBinary);
       } else {
-        if constexpr (RegisterCount == 0)
+        if (AllowedRegisters.empty())
           return std::nullopt;
+
         if (AllowedRegisters.front() == UsedRegisters.begin()->Location) {
           if constexpr (DryRun)
             return model::QualifiedType{};
@@ -543,7 +542,8 @@ private:
 
           ReturnStruct->Size += model::Register::getSize(Register);
         } else if (MustUseTheNextOne) {
-          if constexpr (!AT::OnlyStartDoubleArgumentsFromAnEvenRegister)
+          const abi::Definition &D = abi::predefined::get(ABI);
+          if (!D.OnlyStartDoubleArgumentsFromAnEvenRegister)
             return std::nullopt;
           else if ((Index & 1) == 0 || ReturnStruct->Fields.size() <= 1
                    || Index <= 1)
@@ -567,24 +567,25 @@ private:
     return std::nullopt;
   }
 
-  template<typename RType, size_t RCount>
+  template<typename RType>
   static bool verifyArgumentsToBeConvertible(const SortedVector<RType> &UR,
-                                             const RegisterArray<RCount> &AR,
+                                             const RegisterVector &AR,
                                              model::Binary &B) {
-    return convertArguments<RType, RCount, true>(UR, AR, B).has_value();
+    return convertArguments<RType, true>(UR, AR, B).has_value();
   }
 
-  template<typename RType, size_t RCount>
+  template<typename RType>
   static bool
   verifyReturnValueToBeConvertible(const SortedVector<RType> &UR,
-                                   const RegisterArray<RCount> &AR,
+                                   const RegisterVector &AR,
                                    const model::Register::Values PtC,
                                    model::Binary &B) {
-    return convertReturnValue<RType, RCount, true>(UR, AR, PtC, B).has_value();
+    return convertReturnValue<RType, true>(UR, AR, PtC, B).has_value();
   }
 
   static DistributedArguments
-  distributePositionBasedArguments(const ArgumentContainer &Arguments) {
+  distributePositionBasedArguments(const ArgumentContainer &Arguments,
+                                   const abi::Definition &D) {
     DistributedArguments Result;
 
     for (const model::Argument &Argument : Arguments) {
@@ -597,15 +598,15 @@ private:
       Distributed.Size = *MaybeSize;
 
       if (Argument.Type.isFloat()) {
-        if (Argument.Index < AT::VectorArgumentRegisters.size()) {
-          auto Register = AT::VectorArgumentRegisters[Argument.Index];
+        if (Argument.Index < D.VectorArgumentRegisters.size()) {
+          auto Register = D.VectorArgumentRegisters[Argument.Index];
           Distributed.Registers.emplace_back(Register);
         } else {
           Distributed.SizeOnStack = Distributed.Size;
         }
       } else {
-        if (Argument.Index < AT::GeneralPurposeArgumentRegisters.size()) {
-          auto Reg = AT::GeneralPurposeArgumentRegisters[Argument.Index];
+        if (Argument.Index < D.GeneralPurposeArgumentRegisters.size()) {
+          auto Reg = D.GeneralPurposeArgumentRegisters[Argument.Index];
           Distributed.Registers.emplace_back(Reg);
         } else {
           Distributed.SizeOnStack = Distributed.Size;
@@ -618,12 +619,11 @@ private:
 
   static constexpr auto UnlimitedRegisters = std::numeric_limits<size_t>::max();
 
-  template<size_t RegisterCount>
   static std::pair<DistributedArgument, size_t>
   considerRegisters(size_t Size,
                     size_t AllowedRegisterLimit,
                     size_t OccupiedRegisterCount,
-                    const RegisterArray<RegisterCount> &AllowedRegisters,
+                    const RegisterVector &AllowedRegisters,
                     bool AllowPuttingPartOfAnArgumentOnStack) {
     size_t RegisterLimit = OccupiedRegisterCount + AllowedRegisterLimit;
     size_t ConsideredRegisterCounter = OccupiedRegisterCount;
@@ -642,7 +642,8 @@ private:
     DistributedArgument DA;
     DA.Size = Size;
 
-    if constexpr (AT::OnlyStartDoubleArgumentsFromAnEvenRegister) {
+    const abi::Definition &D = abi::predefined::get(ABI);
+    if (D.OnlyStartDoubleArgumentsFromAnEvenRegister) {
       if (ConsideredRegisterCounter - OccupiedRegisterCount == 2) {
         if ((OccupiedRegisterCount & 1) != 0) {
           ++OccupiedRegisterCount;
@@ -671,7 +672,8 @@ private:
   }
 
   static DistributedArguments
-  distributeNonPositionBasedArguments(const ArgumentContainer &Arguments) {
+  distributeNonPositionBasedArguments(const ArgumentContainer &Arguments,
+                                      const abi::Definition &D) {
     DistributedArguments Result;
     size_t UsedGeneralPurposeRegisterCounter = 0;
     size_t UsedVectorRegisterCounter = 0;
@@ -680,9 +682,9 @@ private:
       auto MaybeSize = Argument.Type.size();
       revng_assert(MaybeSize.has_value());
 
-      constexpr bool CanSplit = AT::ArgumentsCanBeSplitBetweenRegistersAndStack;
+      const bool CanSplit = D.ArgumentsCanBeSplitBetweenRegistersAndStack;
       if (Argument.Type.isFloat()) {
-        static constexpr auto &Registers = AT::VectorArgumentRegisters;
+        const auto &Registers = D.VectorArgumentRegisters;
         size_t &Counter = UsedVectorRegisterCounter;
         const size_t Limit = 1;
 
@@ -696,10 +698,10 @@ private:
         Result[Argument.Index] = Distributed;
         Counter = NextIndex;
       } else {
-        static constexpr auto &Registers = AT::GeneralPurposeArgumentRegisters;
+        const auto &Registers = D.GeneralPurposeArgumentRegisters;
         size_t &Counter = UsedGeneralPurposeRegisterCounter;
         if (Argument.Type.isScalar()) {
-          const size_t Limit = AT::MaximumGPRsPerScalarArgument;
+          const size_t Limit = D.MaximumGPRsPerScalarArgument;
 
           auto [Distributed, NextIndex] = considerRegisters(*MaybeSize,
                                                             Limit,
@@ -711,7 +713,7 @@ private:
           Result[Argument.Index] = Distributed;
           Counter = NextIndex;
         } else {
-          const size_t Limit = AT::MaximumGPRsPerAggregateArgument;
+          const size_t Limit = D.MaximumGPRsPerAggregateArgument;
 
           auto [Distributed, NextIndex] = considerRegisters(*MaybeSize,
                                                             Limit,
@@ -732,10 +734,11 @@ private:
 public:
   static DistributedArguments
   distributeArguments(const ArgumentContainer &Arguments) {
-    if constexpr (AT::ArgumentsArePositionBased)
-      return distributePositionBasedArguments(Arguments);
+    const abi::Definition &D = abi::predefined::get(ABI);
+    if (D.ArgumentsArePositionBased)
+      return distributePositionBasedArguments(Arguments, D);
     else
-      return distributeNonPositionBasedArguments(Arguments);
+      return distributeNonPositionBasedArguments(Arguments, D);
   }
 
   static DistributedArgument
@@ -746,17 +749,18 @@ public:
     auto MaybeSize = ReturnValueType.size();
     revng_assert(MaybeSize.has_value());
 
+    const abi::Definition &D = abi::predefined::get(ABI);
     if (ReturnValueType.isFloat()) {
-      const auto &Registers = AT::VectorReturnValueRegisters;
+      const auto &Registers = D.VectorReturnValueRegisters;
       // TODO: replace `UnlimitedRegisters` with the actual value to be defined
       //       by the trait.
       const size_t L = UnlimitedRegisters;
       return considerRegisters(*MaybeSize, L, 0, Registers, false).first;
     } else {
       const size_t L = ReturnValueType.isScalar() ?
-                         AT::MaximumGPRsPerScalarReturnValue :
-                         AT::MaximumGPRsPerAggregateReturnValue;
-      constexpr auto &Registers = AT::GeneralPurposeReturnValueRegisters;
+                         D.MaximumGPRsPerScalarReturnValue :
+                         D.MaximumGPRsPerAggregateReturnValue;
+      const auto &Registers = D.GeneralPurposeReturnValueRegisters;
       return considerRegisters(*MaybeSize, L, 0, Registers, false).first;
     }
   }
@@ -833,9 +837,9 @@ Layout::Layout(const model::CABIFunctionType &Function) :
     Result.ReturnValue.Registers = std::move(RV.Registers);
     Result.ReturnValue.Type = Function.ReturnType;
 
-    using AT = abi::Trait<A>;
-    Result.CalleeSavedRegisters.resize(AT::CalleeSavedRegisters.size());
-    llvm::copy(AT::CalleeSavedRegisters, Result.CalleeSavedRegisters.begin());
+    const abi::Definition &D = abi::predefined::get(A);
+    Result.CalleeSavedRegisters.resize(D.CalleeSavedRegisters.size());
+    llvm::copy(D.CalleeSavedRegisters, Result.CalleeSavedRegisters.begin());
 
     Result.FinalStackOffset = ConversionHelper<A>::finalStackOffset(Args);
 
