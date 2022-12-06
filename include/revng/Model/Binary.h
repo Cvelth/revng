@@ -118,6 +118,16 @@ public:
 
   model::TypePath recordNewType(UpcastablePointer<Type> &&T);
 
+  /// \todo limit \tparam NewType using `SpecializationOf<model::Type>` concept
+  /// when it's available (after updating to clang-13+).
+  template<typename NewType>
+  std::pair<NewType &, model::TypePath> newType() {
+    model::UpcastableType Result = model::UpcastableType::make<NewType>();
+    NewType *Pointer = llvm::dyn_cast<NewType>(Result.get());
+    model::TypePath ResultPath = recordNewType(std::move(Result));
+    return { *Pointer, ResultPath };
+  }
+
   model::TypePath
   getPrimitiveType(PrimitiveTypeKind::Values V, uint8_t ByteSize);
 

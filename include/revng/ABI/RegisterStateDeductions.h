@@ -21,10 +21,10 @@ namespace abi {
 
 std::optional<abi::RegisterState::Map>
 tryApplyRegisterStateDeductions(const abi::RegisterState::Map &State,
-                                model::ABI::Values ABI);
+                                const abi::Definition &ABI);
 
 abi::RegisterState::Map
 enforceRegisterStateDeductions(const abi::RegisterState::Map &State,
-                               model::ABI::Values ABI);
+                               const abi::Definition &ABI);
 
 } // namespace abi

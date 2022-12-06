@@ -160,9 +160,8 @@ naturalAlignmentImpl(model::VerifyHelper &VH,
 RecursiveCoroutine<std::optional<uint64_t>>
 naturalAlignment(model::VerifyHelper &VH,
                  const model::QualifiedType &Type,
-                 model::ABI::Values ABI) {
-  const abi::Definition &Def = abi::predefined::get(ABI);
-  std::optional<uint64_t> Result = rc_recur naturalAlignmentImpl(VH, Type, Def);
+                 const abi::Definition &ABI) {
+  std::optional<uint64_t> Result = rc_recur naturalAlignmentImpl(VH, Type, ABI);
   revng_check(Result);
   if (*Result == 0)
     rc_return std::nullopt;

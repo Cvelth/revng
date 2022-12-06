@@ -33,6 +33,8 @@ TUPLE-TREE-YAML */
 class model::QualifiedType : public model::generated::QualifiedType {
 public:
   using generated::QualifiedType::QualifiedType;
+  QualifiedType(decltype(UnqualifiedType) Unqualified) :
+    model::generated::QualifiedType(std::move(Unqualified), {}) {}
 
 public:
   std::optional<uint64_t> size() const debug_function;

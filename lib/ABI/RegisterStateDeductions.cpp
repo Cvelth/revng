@@ -56,8 +56,8 @@ template<bool EnforceABIConformance>
 struct DeductionImpl {
   const abi::Definition &ABI;
   const std::string_view ABIName;
-  explicit DeductionImpl(model::ABI::Values ABI) :
-    ABI(abi::predefined::get(ABI)), ABIName(model::ABI::getName(ABI)) {}
+  explicit DeductionImpl(const abi::Definition &ABI) :
+    ABI(ABI), ABIName(model::ABI::getName(ABI.ABI)) {}
 
   std::optional<StateMap> run(const StateMap &InputState) {
     if (ABI.ArgumentsArePositionBased)
@@ -530,13 +530,13 @@ private:
 
 std::optional<abi::RegisterState::Map>
 abi::tryApplyRegisterStateDeductions(const abi::RegisterState::Map &State,
-                                     model::ABI::Values ABI) {
+                                     const abi::Definition &ABI) {
   return DeductionImpl<false>(ABI).run(State);
 }
 
 abi::RegisterState::Map
 abi::enforceRegisterStateDeductions(const abi::RegisterState::Map &State,
-                                    model::ABI::Values ABI) {
+                                    const abi::Definition &ABI) {
   auto Result = DeductionImpl<true>(ABI).run(State);
   revng_assert(Result != std::nullopt);
   return Result.value();
