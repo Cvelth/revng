@@ -24,7 +24,7 @@
 #include "revng/Pipes/TaggedFunctionKind.h"
 #include "revng/Support/FunctionTags.h"
 #include "revng/TupleTree/TupleTreeDiff.h"
-#include "revng/Yield/CrossRelations.h"
+#include "revng/Yield/CrossRelations/CrossRelations.h"
 
 using yield::CrossRelations;
 
@@ -35,10 +35,10 @@ inline void insertCallers(const TupleTree<CrossRelations> &CR,
                           MetaAddress Entry,
                           std::set<MetaAddress> &Result) {
   const auto Location = location(revng::ranks::Function, Entry);
-  const auto &Related = CR->Relations.at(Location.toString()).Related;
+  const auto &Related = CR->Relations().at(Location.toString()).Related();
   for (const yield::RelationTarget &RT : Related) {
-    if (RT.Kind == yield::RelationType::IsCalledFrom) {
-      auto Caller = genericLocationFromString<0>(RT.Location,
+    if (RT.Kind() == yield::RelationType::IsCalledFrom) {
+      auto Caller = genericLocationFromString<0>(RT.Location(),
                                                  revng::ranks::Function,
                                                  revng::ranks::BasicBlock,
                                                  revng::ranks::Instruction);
@@ -53,10 +53,10 @@ inline void insertCallers(const TupleTree<CrossRelations> &CR,
                           std::string Entry,
                           std::set<MetaAddress> &Result) {
   const auto Location = location(revng::ranks::DynamicFunction, Entry);
-  const auto &Related = CR->Relations.at(Location.toString()).Related;
+  const auto &Related = CR->Relations().at(Location.toString()).Related();
   for (const yield::RelationTarget &RT : Related) {
-    if (RT.Kind == yield::RelationType::IsDynamicallyCalledFrom) {
-      auto Caller = genericLocationFromString<0>(RT.Location,
+    if (RT.Kind() == yield::RelationType::IsDynamicallyCalledFrom) {
+      auto Caller = genericLocationFromString<0>(RT.Location(),
                                                  revng::ranks::Function,
                                                  revng::ranks::BasicBlock,
                                                  revng::ranks::Instruction);
@@ -70,8 +70,8 @@ inline void insertCallers(const TupleTree<CrossRelations> &CR,
 inline void
 invalidateAllTargetsPerFunctionRank(const TupleTree<model::Binary> &Model,
                                     std::set<MetaAddress> &Result) {
-  for (const model::Function &Function : Model->Functions)
-    Result.insert(Function.Entry);
+  for (const model::Function &Function : Model->Functions())
+    Result.insert(Function.Entry());
 }
 
 namespace detail {
@@ -107,8 +107,8 @@ insertCallersAndTransitiveClosureInternal(const TupleTree<CrossRelations> &CR,
                                                       ranks::Instruction);
 
       if (MaybeKey.has_value()) {
-        auto &Function = Model->Functions.at(std::get<MetaAddress>(*MaybeKey));
-        if (Function.Attributes.count(model::FunctionAttribute::Inline) == 0)
+        auto &Function = Model->Functions().at(std::get<MetaAddress>(*MaybeKey));
+        if (Function.Attributes().count(model::FunctionAttribute::Inline) == 0)
           NoInlineFunctions.insert(From);
       }
     }
