@@ -13,7 +13,7 @@
 #include "revng/Support/Assert.h"
 #include "revng/Support/MetaAddress.h"
 #include "revng/TupleTree/TupleTreeDiff.h"
-#include "revng/Yield/CrossRelations.h"
+#include "revng/Yield/CrossRelations/CrossRelations.h"
 #include "revng/Yield/Pipes/ProcessCallGraph.h"
 
 using namespace pipeline;
@@ -72,7 +72,7 @@ void IsolatedFK::getInvalidations(const Context &Ctx,
   auto DynFuncAttrMatcher = PM::create<Binary>("/ImportedDynamicFunctions/*/"
                                                "Attributes")
                               .value();
-  const auto &IDF = Model->ImportedDynamicFunctions;
+  const auto &IDF = Model->ImportedDynamicFunctions();
 
   for (const Change<Binary> &Change : ModelDiff->Changes) {
     revng_assert(not Change.Path.empty());
@@ -85,7 +85,7 @@ void IsolatedFK::getInvalidations(const Context &Ctx,
       } else if (Change.Old) {
         // Invalidate function's callers
         auto Function = std::get<model::Function>(*Change.Old);
-        insertCallers(CrossRelations, Function.Entry, Targets);
+        insertCallers(CrossRelations, Function.Entry(), Targets);
       } else {
         revng_abort();
       }
@@ -99,7 +99,7 @@ void IsolatedFK::getInvalidations(const Context &Ctx,
       } else if (Change.Old) {
         // Invalidate model::DynamicFunction's callers
         auto DynamicFunction = std::get<model::DynamicFunction>(*Change.Old);
-        insertCallers(CrossRelations, DynamicFunction.OriginalName, Targets);
+        insertCallers(CrossRelations, DynamicFunction.OriginalName(), Targets);
       } else {
         revng_abort();
       }
@@ -112,13 +112,12 @@ void IsolatedFK::getInvalidations(const Context &Ctx,
     // the diff for checking the change related to FSO. Instead, we move to
     // `Layout` by employing the old model, and the new one (the one with the
     // change).
-    for (const model::Function &Function : Model->Functions) {
-      MetaAddress Entry = Function.Entry;
-      if (OldModel->Functions.find(Entry) != OldModel->Functions.end())
-        if (haveFSOAndPreservedRegsChanged(OldModel->Functions.at(Entry)
-                                             .Prototype,
-                                           Function.Prototype)) {
-          Targets.insert(Function.Entry);
+    for (const model::Function &Function : Model->Functions()) {
+      MetaAddress Entry = Function.Entry();
+      if (OldModel->Functions().find(Entry) != OldModel->Functions().end())
+        if (haveFSOAndPreservedRegsChanged(OldModel->Functions().at(Entry).Prototype(),
+                                           Function.Prototype())) {
+          Targets.insert(Function.Entry());
           insertCallersAndTransitiveClosureIfInline(CrossRelations,
                                                     Model,
                                                     Entry,
@@ -129,8 +128,8 @@ void IsolatedFK::getInvalidations(const Context &Ctx,
     // Did FinalStackOffset or PreservedRegisters for a `model::DynamicFunction`
     // have changed?
     for (const model::DynamicFunction &Function : IDF) {
-      std::string Name = Function.OriginalName;
-      const auto &OldIDF = OldModel->ImportedDynamicFunctions;
+      std::string Name = Function.OriginalName();
+      const auto &OldIDF = OldModel->ImportedDynamicFunctions();
       if (OldIDF.find(Name) != OldIDF.end()) {
         if (haveFSOAndPreservedRegsChanged(getPrototype(*OldModel,
                                                         OldIDF.at(Name)),
