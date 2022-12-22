@@ -19,7 +19,6 @@
 using namespace pipeline;
 using namespace ::revng::kinds;
 using namespace llvm;
-using yield::CrossRelations;
 
 static bool
 haveFSOAndPreservedRegsChanged(const model::TypePath &OldPrototype,
@@ -63,7 +62,8 @@ void IsolatedFK::getInvalidations(const Context &Ctx,
     return;
   }
 
-  const TupleTree<CrossRelations> &CrossRelations = Container.get();
+  using CrossRelationTree = TupleTree<yield::crossrelations::CrossRelations>;
+  const CrossRelationTree &CrossRelations = Container.get();
   const TupleTreeDiff<Binary> *ModelDiff = Diff.getAs<Binary>();
   if (not ModelDiff)
     return;
