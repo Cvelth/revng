@@ -626,10 +626,12 @@ bool PathMatcher::visitTupleTreeNode(llvm::StringRef String,
       using Kind = typename Value::element_type::KindType;
 
       // Extract Kind from "Kind-*" and deserialize it
-      auto MatcherKind = getValueFromYAMLScalar<Kind>(PreDash);
+      Kind MatcherKind = getValueFromYAMLScalar<Kind>(PreDash);
+      static_assert(std::is_enum_v<std::decay_t<Kind>>);
 
       // Push in Path a Key initializing only the first field (the kind)
       Key Component;
+      static_assert(std::is_enum_v<std::decay_t<decltype(std::get<0>(Component))>>);
       std::get<0>(Component) = MatcherKind;
       Result.Path.emplace_back<Key, true>(Component);
     } else {
