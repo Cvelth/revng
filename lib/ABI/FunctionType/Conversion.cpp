@@ -5,6 +5,8 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include "llvm/ADT/SmallSet.h"
+
 #include "revng/ABI/Definition.h"
 #include "revng/ABI/FunctionType/Conversion.h"
 #include "revng/ABI/FunctionType/Support.h"
@@ -14,32 +16,6 @@
 
 namespace abi::FunctionType {
 
-static std::optional<model::QualifiedType>
-buildDoubleType(model::Register::Values UpperRegister,
-                model::Register::Values LowerRegister,
-                model::PrimitiveTypeKind::Values CustomKind,
-                model::Binary &Binary) {
-  model::PrimitiveTypeKind::Values UpperKind = selectTypeKind(UpperRegister);
-  model::PrimitiveTypeKind::Values LowerKind = selectTypeKind(LowerRegister);
-  if (UpperKind != LowerKind)
-    return std::nullopt;
-
-  size_t UpperSize = model::Register::getSize(UpperRegister);
-  size_t LowerSize = model::Register::getSize(LowerRegister);
-  return model::QualifiedType(Binary.getPrimitiveType(CustomKind,
-                                                      UpperSize + LowerSize),
-                              {});
-}
-
-static model::QualifiedType getTypeOrDefault(const model::QualifiedType &Type,
-                                             model::Register::Values Register,
-                                             model::Binary &Binary) {
-  if (Type.UnqualifiedType().get() != nullptr)
-    return Type;
-  else
-    return buildType(Register, Binary);
-}
-
 class ToCABIConverter {
 private:
   using ArgumentRegisters = SortedVector<model::NamedTypedRegister>;
@@ -47,12 +23,16 @@ private:
 
 private:
   const abi::Definition &ABI;
-  model::Binary &Binary;
   TypeBucket Bucket;
+  const bool UseSoftRegisterStateDeductions;
 
 public:
-  ToCABIConverter(const abi::Definition &ABI, model::Binary &Binary) :
-    ABI(ABI), Binary(Binary), Bucket(Binary) {}
+  ToCABIConverter(const abi::Definition &ABI,
+                  model::Binary &Binary,
+                  bool UseSoftRegisterStateDeductions) :
+    ABI(ABI),
+    Bucket(Binary),
+    UseSoftRegisterStateDeductions(UseSoftRegisterStateDeductions) {}
 
   void commit() { Bucket.commit(); }
   void drop() { Bucket.drop(); }
@@ -98,7 +78,8 @@ public:
 std::optional<model::TypePath>
 tryConvertToCABI(const model::RawFunctionType &FunctionType,
                  TupleTree<model::Binary> &Binary,
-                 std::optional<model::ABI::Values> MaybeABI) {
+                 std::optional<model::ABI::Values> MaybeABI,
+                 bool UseSoftRegisterStateDeductions) {
   if (!MaybeABI.has_value())
     MaybeABI = Binary->DefaultABI();
 
@@ -106,7 +87,7 @@ tryConvertToCABI(const model::RawFunctionType &FunctionType,
   if (ABI.isIncompatibleWith(FunctionType))
     return std::nullopt;
 
-  ToCABIConverter C(ABI, *Binary);
+  ToCABIConverter C(ABI, *Binary, UseSoftRegisterStateDeductions);
 
   // Explicitly empty the bucket `C` holds in case of early termination.
   auto Guard = revng::guard([&C] { C.drop(); });
@@ -156,59 +137,64 @@ tryConvertToCABI(const model::RawFunctionType &FunctionType,
 using TCC = ToCABIConverter;
 std::optional<llvm::SmallVector<model::Argument, 8>>
 TCC::tryConvertingRegisterArguments(const ArgumentRegisters &Registers) {
-  constexpr bool DryRun = false;
-  llvm::SmallVector<model::Argument, 8> Result;
-
-  const auto &AllowedRegisters = ABI.GeneralPurposeArgumentRegisters();
-
-  bool MustUseTheNextOne = false;
-  auto AllowedRange = llvm::enumerate(llvm::reverse(AllowedRegisters));
-  for (auto Pair : AllowedRange) {
-    size_t Index = AllowedRegisters.size() - Pair.index() - 1;
-    model::Register::Values Register = Pair.value();
-    bool IsUsed = Registers.find(Register) != Registers.end();
-    if (IsUsed) {
-      model::Argument Temporary;
-      if constexpr (!DryRun)
-        Temporary.Type() = getTypeOrDefault(Registers.at(Register).Type(),
-                                            Register,
-                                            Binary);
-      Temporary.CustomName() = Registers.at(Register).CustomName();
-      Result.emplace_back(Temporary);
-    } else if (MustUseTheNextOne) {
-      if (!ABI.OnlyStartDoubleArgumentsFromAnEvenRegister()) {
-        return std::nullopt;
-      } else if ((Index & 1) == 0) {
-        return std::nullopt;
-      } else if (Result.size() > 1 && Index > 1) {
-        auto &First = Result[Result.size() - 1];
-        auto &Second = Result[Result.size() - 2];
-
-        // TODO: see what can be done to preserve names better
-        if (First.CustomName().empty() && !Second.CustomName().empty())
-          First.CustomName() = Second.CustomName();
-
-        if constexpr (!DryRun) {
-          auto NewType = buildDoubleType(AllowedRegisters.at(Index - 2),
-                                         AllowedRegisters.at(Index - 1),
-                                         model::PrimitiveTypeKind::Generic,
-                                         Binary);
-          if (NewType == std::nullopt)
-            return std::nullopt;
-
-          First.Type() = *NewType;
-        }
-
-        Result.pop_back();
-      } else {
-        return std::nullopt;
-      }
+  // Rely onto the register state deduction to make sure no "holes" are
+  // present in-between the argument registers.
+  abi::RegisterState::Map Map(model::ABI::getArchitecture(ABI.ABI()));
+  for (const model::NamedTypedRegister &Reg : Registers)
+    Map[Reg.Location()].IsUsedForPassingArguments = abi::RegisterState::Yes;
+  abi::RegisterState::Map DeductionResults = Map;
+  if (UseSoftRegisterStateDeductions) {
+    std::optional MaybeDeductionResults = ABI.tryDeducingRegisterState(Map);
+    if (MaybeDeductionResults.has_value()) {
+      DeductionResults = std::move(MaybeDeductionResults.value());
+    } else {
+      revng_log(Log,
+                "Register state deductions failed for the arguments of the "
+                "function. The ABI is probably miss-detected.");
+      return std::nullopt;
     }
-
-    MustUseTheNextOne = MustUseTheNextOne || IsUsed;
+  } else {
+    DeductionResults = ABI.enforceRegisterState(Map);
   }
 
-  for (auto Pair : llvm::enumerate(llvm::reverse(Result)))
+  llvm::SmallVector<model::Register::Values, 8> ArgumentRegisters;
+  for (auto [Register, Pair] : DeductionResults)
+    if (abi::RegisterState::shouldEmit(Pair.IsUsedForPassingArguments))
+      ArgumentRegisters.emplace_back(Register);
+
+  // But just knowing which registers we need is not sufficient, we also have to
+  // order them properly.
+  auto Ordered = ABI.sortArguments(ArgumentRegisters);
+
+  llvm::SmallVector<model::Argument, 8> Result;
+  for (model::Register::Values Register : Ordered) {
+    auto CurrentRegisterIterator = Registers.find(Register);
+    if (CurrentRegisterIterator != Registers.end()) {
+      // If the current register is confirmed to be in use, convert it into
+      // an argument while preserving its type and metadata.
+      auto &Current = Result.emplace_back();
+      Current.CustomName() = CurrentRegisterIterator->CustomName();
+
+      if (CurrentRegisterIterator->Type().UnqualifiedType().get() != nullptr)
+        Current.Type() = CurrentRegisterIterator->Type();
+      else
+        Current.Type() = { Bucket.defaultRegisterType(Register), {} };
+    } else {
+      // This register is unused but we still have to create an argument
+      // for it. Otherwise the resulting function will be semantically different
+      // from the input one.
+      //
+      // Also, if the indicator for this "hole" is not preserved, there will be
+      // no way to recreate it at any point in the future, when it's being
+      // converted back to the representation similar to original (e.g. when
+      // producing the `Layout` for this function).
+      Result.emplace_back().Type() = { Bucket.genericRegisterType(Register),
+                                       {} };
+    }
+  }
+
+  // Rewrite all the indices to make sure they are consistent.
+  for (auto Pair : llvm::enumerate(Result))
     Pair.value().Index() = Pair.index();
 
   return Result;
@@ -241,82 +227,90 @@ TCC::tryConvertingStackArguments(model::QualifiedType StackArgumentTypes,
 
 std::optional<model::QualifiedType>
 TCC::tryConvertingReturnValue(const ReturnValueRegisters &Registers) {
-  constexpr bool DryRun = false;
-  const auto &AllowedRegisters = ABI.GeneralPurposeReturnValueRegisters();
-  const auto &ReturnValueLocationRegister = ABI.ReturnValueLocationRegister();
-
   if (Registers.size() == 0) {
-    auto Void = Binary.getPrimitiveType(model::PrimitiveTypeKind::Void, 0);
-    return model::QualifiedType{ Void, {} };
+    // The function doesn't return anything.
+    return model::QualifiedType{
+      Bucket.getPrimitiveType(model::PrimitiveTypeKind::Void, 0), {}
+    };
   }
 
-  if (Registers.size() == 1) {
-    if (Registers.begin()->Location() == ReturnValueLocationRegister) {
-      if constexpr (DryRun)
-        return model::QualifiedType{};
-      else
-        return getTypeOrDefault(Registers.begin()->Type(),
-                                ReturnValueLocationRegister,
-                                Binary);
+  // We only convert register-based return values: those that are returned using
+  // a pointer to memory readied by the callee are technically fine without any
+  // intervention (they are just `void` functions that modify some object passed
+  // into them with a pointer.
+  //
+  // We might want to handle this in a different way under some architectures
+  // (i.e. ARM64 because it uses a separate `PointerToCopyLocation` register),
+  // but for now the dumb approach should suffice.
+
+  abi::RegisterState::Map Map(model::ABI::getArchitecture(ABI.ABI()));
+  for (const model::TypedRegister &Register : Registers)
+    Map[Register.Location()].IsUsedForReturningValues = abi::RegisterState::Yes;
+  abi::RegisterState::Map DeductionResults = Map;
+  if (UseSoftRegisterStateDeductions) {
+    std::optional MaybeDeductionResults = ABI.tryDeducingRegisterState(Map);
+    if (MaybeDeductionResults.has_value()) {
+      DeductionResults = std::move(MaybeDeductionResults.value());
     } else {
-      if (AllowedRegisters.size() == 0)
-        return std::nullopt;
-      if (AllowedRegisters.front() == Registers.begin()->Location()) {
-        if constexpr (DryRun)
-          return model::QualifiedType{};
-        else
-          return getTypeOrDefault(Registers.begin()->Type(),
-                                  Registers.begin()->Location(),
-                                  Binary);
-      } else {
-        return std::nullopt;
-      }
+      revng_log(Log,
+                "Register state deductions failed for the return value of the "
+                "function. The ABI is probably miss-detected.");
+      return std::nullopt;
     }
   } else {
-    model::UpcastableType Result = model::makeType<model::StructType>();
-    auto ReturnStruct = llvm::dyn_cast<model::StructType>(Result.get());
-
-    bool MustUseTheNextOne = false;
-    auto AllowedRange = llvm::enumerate(llvm::reverse(AllowedRegisters));
-    for (auto Pair : AllowedRange) {
-      size_t Index = AllowedRegisters.size() - Pair.index() - 1;
-      model::Register::Values Register = Pair.value();
-      auto UsedIterator = Registers.find(Register);
-
-      bool IsCurrentRegisterUsed = UsedIterator != Registers.end();
-      if (IsCurrentRegisterUsed) {
-        model::StructField CurrentField;
-        CurrentField.Offset() = ReturnStruct->Size();
-        if constexpr (!DryRun)
-          CurrentField.Type() = getTypeOrDefault(UsedIterator->Type(),
-                                                 UsedIterator->Location(),
-                                                 Binary);
-        ReturnStruct->Fields().insert(std::move(CurrentField));
-
-        ReturnStruct->Size() += model::Register::getSize(Register);
-      } else if (MustUseTheNextOne) {
-        if (!ABI.OnlyStartDoubleArgumentsFromAnEvenRegister())
-          return std::nullopt;
-        else if ((Index & 1) == 0 || ReturnStruct->Fields().size() <= 1
-                 || Index <= 1)
-          return std::nullopt;
-      }
-
-      MustUseTheNextOne = MustUseTheNextOne || IsCurrentRegisterUsed;
-    }
-
-    revng_assert(ReturnStruct->Size() != 0 && !ReturnStruct->Fields().empty());
-
-    if constexpr (!DryRun) {
-      auto ReturnStructTypePath = Binary.recordNewType(std::move(Result));
-      revng_assert(ReturnStructTypePath.isValid());
-      return model::QualifiedType{ ReturnStructTypePath, {} };
-    } else {
-      return model::QualifiedType{};
-    }
+    DeductionResults = ABI.enforceRegisterState(Map);
   }
 
-  return std::nullopt;
+  llvm::SmallSet<model::Register::Values, 8> ReturnValueRegisters;
+  for (auto [Register, Pair] : DeductionResults)
+    if (abi::RegisterState::shouldEmit(Pair.IsUsedForReturningValues))
+      ReturnValueRegisters.insert(Register);
+  auto Ordered = ABI.sortReturnValues(ReturnValueRegisters);
+
+  if (Ordered.size() == 1) {
+    if (auto Iter = Registers.find(*Ordered.begin()); Iter != Registers.end()) {
+      // Only one register is used, just return its type.
+      return Iter->Type();
+    } else {
+      // One register is used but its type cannot be obtained.
+      // Create a register sized return type instead.
+      return model::QualifiedType(Bucket.defaultRegisterType(*Ordered.begin()),
+                                  {});
+    }
+  } else {
+    // Multiple registers mean that it should probably be a struct.
+    //
+    // \note: it's also possible that it's just a big primitive,
+    // \todo: look into supporting those.
+    auto [ReturnType, ReturnTypePath] = Bucket.makeType<model::StructType>();
+    for (auto Register : Ordered) {
+      // Make a separate field for each register.
+      model::StructField Field;
+      Field.Offset() = ReturnType.Size();
+      if (auto Iter = Registers.find(*Ordered.begin()); Iter != Registers.end())
+        Field.Type() = Iter->Type();
+      else
+        Field.Type() = { Bucket.genericRegisterType(*Ordered.begin()), {} };
+
+      auto FieldSize = Field.Type().size();
+      revng_assert(FieldSize.has_value() && FieldSize.value() != 0);
+
+      // Round the next offset based on the natural alignment.
+      auto Alignment = ABI.alignment(Field.Type());
+      revng_assert(Alignment.has_value() && Alignment.value() != 0);
+      ReturnType.Size() += (*Alignment - ReturnType.Size() % *Alignment);
+
+      // Insert the field
+      ReturnType.Fields().insert(std::move(Field));
+
+      // Update the total struct size: insert some padding if necessary.
+      auto RegisterSize = model::ABI::getPointerSize(ABI.ABI());
+      ReturnType.Size() += paddedSizeOnStack(FieldSize.value(), RegisterSize);
+    }
+
+    revng_assert(ReturnType.Size() != 0 && !ReturnType.Fields().empty());
+    return model::QualifiedType(ReturnTypePath, {});
+  }
 }
 
 } // namespace abi::FunctionType
