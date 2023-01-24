@@ -13,6 +13,7 @@
 #include "revng/ABI/FunctionType/TypeBucket.h"
 #include "revng/Model/Binary.h"
 #include "revng/Model/Helpers.h"
+#include "revng/Support/OverflowSafeInt.h"
 
 namespace abi::FunctionType {
 
@@ -203,24 +204,77 @@ TCC::tryConvertingRegisterArguments(const ArgumentRegisters &Registers) {
 std::optional<llvm::SmallVector<model::Argument, 8>>
 TCC::tryConvertingStackArguments(model::QualifiedType StackArgumentTypes,
                                  size_t IndexOffset) {
+  if (!StackArgumentTypes.UnqualifiedType().isValid()) {
+    // If there is no type, it means that the importer responsible for this
+    // function didn't detect any stack arguments and avoided creating
+    // a new empty type.
+    return llvm::SmallVector<model::Argument, 8>{};
+  }
+
+  // Qualifiers here are not allowed since this must point to a simple struct.
   revng_assert(StackArgumentTypes.Qualifiers().empty());
   auto *Unqualified = StackArgumentTypes.UnqualifiedType().get();
-  if (not Unqualified)
-    return {};
 
-  auto *Pointer = llvm::dyn_cast<model::StructType>(Unqualified);
-  revng_assert(Pointer != nullptr,
-               "`RawFunctionType::StackArgumentsType` must be a struct");
-  const model::StructType &Types = *Pointer;
-
-  llvm::SmallVector<model::Argument, 8> Result;
-  for (const model::StructField &Field : Types.Fields()) {
-    model::Argument &New = Result.emplace_back();
-    New.Index() = IndexOffset++;
-    New.Type() = Field.Type();
-    New.CustomName() = Field.CustomName();
-    New.OriginalName() = Field.OriginalName();
+  // If the struct is empty, it indicates that there are no stack arguments.
+  const model::StructType &Types = *llvm::cast<model::StructType>(Unqualified);
+  if (Types.Fields().empty()) {
+    revng_assert(Types.size() == 0);
+    return llvm::SmallVector<model::Argument, 8>{};
   }
+
+  // Compute the alignment of the first argument.
+  auto CurrentAlignment = *ABI.alignment(Types.Fields().begin()->Type());
+  if (!llvm::isPowerOf2_64(CurrentAlignment))
+    return std::nullopt;
+
+  // Process each of the fields (except for the very last one),
+  // converting them into arguments separately.
+  llvm::SmallVector<model::Argument, 8> Result;
+  for (auto Iterator = Types.Fields().begin();
+       Iterator != std::prev(Types.Fields().end());
+       ++Iterator) {
+    const auto &CurrentArgument = *Iterator;
+    auto MaybeSize = CurrentArgument.Type().size();
+    revng_assert(MaybeSize.has_value() && MaybeSize.value() != 0);
+
+    const auto RegisterSize = model::ABI::getPointerSize(ABI.ABI());
+    uint64_t CurrentSize = paddedSizeOnStack(MaybeSize.value(), RegisterSize);
+
+    const auto &NextArgument = *std::next(Iterator);
+    auto NextAlignment = *ABI.alignment(NextArgument.Type());
+    if (!llvm::isPowerOf2_64(NextAlignment))
+      return std::nullopt;
+
+    OverflowSafeInt Offset = CurrentArgument.Offset();
+    Offset += CurrentSize;
+    if (!Offset) {
+      // Abandon if offset overflows.
+      return std::nullopt;
+    }
+
+    if (*Offset != NextArgument.Offset() || *Offset % NextAlignment != 0)
+      return std::nullopt;
+
+    // Create the argument from this field.
+    model::Argument &New = Result.emplace_back();
+    model::copyMetadata(New, CurrentArgument);
+    New.Index() = IndexOffset++;
+    New.Type() = CurrentArgument.Type();
+
+    CurrentAlignment = NextAlignment;
+  }
+
+  // And don't forget the very last field.
+  const model::StructField &LastArgument = *std::prev(Types.Fields().end());
+  model::Argument &New = Result.emplace_back();
+  model::copyMetadata(New, LastArgument);
+  New.Index() = IndexOffset++;
+  New.Type() = LastArgument.Type();
+
+  // Make sure the size does not contradict the final alignment.
+  auto FullAlignment = *ABI.alignment(StackArgumentTypes);
+  if (!llvm::isPowerOf2_64(FullAlignment))
+    return std::nullopt;
 
   return Result;
 }
