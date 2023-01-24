@@ -8,7 +8,9 @@
 #include "revng/ABI/Definition.h"
 #include "revng/ABI/FunctionType/Conversion.h"
 #include "revng/ABI/FunctionType/Support.h"
+#include "revng/ABI/FunctionType/TypeBucket.h"
 #include "revng/Model/Binary.h"
+#include "revng/Model/Helpers.h"
 
 namespace abi::FunctionType {
 
@@ -45,79 +47,101 @@ private:
 
 private:
   const abi::Definition &ABI;
+  model::Binary &Binary;
+  TypeBucket Bucket;
 
 public:
-  explicit ToCABIConverter(const abi::Definition &ABI) : ABI(ABI) {
-    ABI.verify();
-  }
+  ToCABIConverter(const abi::Definition &ABI, model::Binary &Binary) :
+    ABI(ABI), Binary(Binary), Bucket(Binary) {}
 
-public:
-  /// Entry point for the `toCABI` conversion.
-  std::optional<model::TypePath>
-  tryConvert(const model::RawFunctionType &Function,
-             TupleTree<model::Binary> &Binary) const;
+  void commit() { Bucket.commit(); }
+  void drop() { Bucket.drop(); }
 
-private:
-  template<bool DryRun = false>
+  /// Helper used for converting register arguments to the c-style
+  /// representation
+  ///
+  /// \param Registers a set of registers confirmed to be in use by
+  ///        the function in question.
+  ///
+  /// \return a list of arguments if the conversion was successful,
+  ///         `std::nullopt` otherwise.
   std::optional<llvm::SmallVector<model::Argument, 8>>
-  convertRegisterArguments(const ArgumentRegisters &Registers,
-                           model::Binary &Binary) const;
+  tryConvertingRegisterArguments(const ArgumentRegisters &Registers);
 
-  llvm::SmallVector<model::Argument, 8>
-  convertStackArguments(model::QualifiedType StackArgumentTypes,
-                        size_t IndexOffset) const;
+  /// Helper used for converting stack argument struct into
+  /// the c-style representation
+  ///
+  /// \param StackArgumentTypes The qualified type of the relevant part of
+  ///        the stack.
+  /// \param IndexOffset The index of the first argument (should be set to
+  ///        the number of register arguments).
+  ///
+  /// \return An ordered list of arguments.
+  std::optional<llvm::SmallVector<model::Argument, 8>>
+  tryConvertingStackArguments(model::QualifiedType StackArgumentTypes,
+                              size_t IndexOffset);
 
-  template<bool DryRun = false>
+  /// Helper used for converting return values to the c-style representation
+  ///
+  /// \param Registers a set of registers confirmed to be in use by
+  ///        the function in question.
+  /// \param ReturnValueLocation an optional register used for pointing to
+  ///        return values in memory on some architectures. It is set to
+  ///        `nullptr` if it's not applicable.
+  ///
+  /// \return a qualified type if conversion is possible, `std::nullopt`
+  ///         otherwise.
   std::optional<model::QualifiedType>
-  convertReturnValue(const ReturnValueRegisters &Registers,
-                     model::Binary &Binary) const;
-
-  bool verifyArgumentsToBeConvertible(const ArgumentRegisters &Registers,
-                                      model::Binary &Binary) const {
-    return convertRegisterArguments<true>(Registers, Binary).has_value();
-  }
-
-  bool verifyReturnValueToBeConvertible(const ReturnValueRegisters &Registers,
-                                        model::Binary &Binary) const {
-    return convertReturnValue<true>(Registers, Binary).has_value();
-  }
+  tryConvertingReturnValue(const ReturnValueRegisters &Registers);
 };
 
 std::optional<model::TypePath>
-ToCABIConverter::tryConvert(const model::RawFunctionType &Function,
-                            TupleTree<model::Binary> &Binary) const {
-  model::CABIFunctionType Result;
-  Result.CustomName() = Function.CustomName();
-  Result.OriginalName() = Function.OriginalName();
-  Result.ABI() = ABI.ABI();
+tryConvertToCABI(const model::RawFunctionType &Function,
+                 TupleTree<model::Binary> &Binary,
+                 std::optional<model::ABI::Values> MaybeABI) {
+  if (!MaybeABI.has_value())
+    MaybeABI = Binary->DefaultABI();
 
-  if (!verifyArgumentsToBeConvertible(Function.Arguments(), *Binary))
+  const abi::Definition &ABI = abi::Definition::get(*MaybeABI);
+  if (ABI.isIncompatibleWith(Function))
     return std::nullopt;
 
-  if (!verifyReturnValueToBeConvertible(Function.ReturnValues(), *Binary))
+  ToCABIConverter C(ABI, *Binary);
+
+  // Explicitly empty the bucket `C` holds in case of early termination.
+  auto Guard = revng::guard([&C] { C.drop(); });
+
+  // Convert register arguments first.
+  auto Arguments = C.tryConvertingRegisterArguments(Function.Arguments());
+  if (!Arguments.has_value())
     return std::nullopt;
 
-  auto ArgumentList = convertRegisterArguments(Function.Arguments(), *Binary);
-  revng_assert(ArgumentList != std::nullopt);
-  for (auto &Argument : *ArgumentList)
-    Result.Arguments().insert(Argument);
+  // Then stack arguments.
+  auto Stack = C.tryConvertingStackArguments(Function.StackArgumentsType(),
+                                             Arguments->size());
+  if (!Stack.has_value())
+    return std::nullopt;
 
-  auto StackArgumentList = convertStackArguments(Function.StackArgumentsType(),
-                                                 Result.Arguments().size());
-  for (auto &Argument : StackArgumentList)
-    Result.Arguments().insert(Argument);
+  // And the return type.
+  auto ReturnType = C.tryConvertingReturnValue(Function.ReturnValues());
+  if (!ReturnType.has_value())
+    return std::nullopt;
 
-  auto ReturnValue = convertReturnValue(Function.ReturnValues(), *Binary);
-  revng_assert(ReturnValue != std::nullopt);
-  Result.ReturnType() = *ReturnValue;
+  // If all the partial conversions passed, the conversion is guaranteed to be
+  // successful. All the type dependencies can now be recorded into the model.
+  C.commit();
 
-  // Steal the ID
-  Result.ID() = Function.ID();
+  // With all the dependencies out of the way, new `CABIFunctionType` can now
+  // be created,
+  auto [NewType, NewTypePath] = Binary->makeType<model::CABIFunctionType>();
+  model::copyMetadata(NewType, Function);
+  NewType.ABI() = ABI.ABI();
 
-  // Add converted type to the model.
-  using UT = model::UpcastableType;
-  auto Ptr = UT::make<model::CABIFunctionType>(std::move(Result));
-  auto NewTypePath = Binary->recordNewType(std::move(Ptr));
+  // And filled in with the argument information.
+  using model::Argument;
+  for (auto &Argument : llvm::concat<Argument>(*Arguments, *Stack))
+    NewType.Arguments().insert(std::move(Argument));
+  NewType.ReturnType() = *ReturnType;
 
   // To finish up the conversion, remove all the references to the old type by
   // carefully replacing them with references to the new one.
@@ -129,10 +153,10 @@ ToCABIConverter::tryConvert(const model::RawFunctionType &Function,
   return NewTypePath;
 }
 
-template<bool DryRun>
+using TCC = ToCABIConverter;
 std::optional<llvm::SmallVector<model::Argument, 8>>
-ToCABIConverter::convertRegisterArguments(const ArgumentRegisters &Registers,
-                                          model::Binary &Binary) const {
+TCC::tryConvertingRegisterArguments(const ArgumentRegisters &Registers) {
+  constexpr bool DryRun = false;
   llvm::SmallVector<model::Argument, 8> Result;
 
   const auto &AllowedRegisters = ABI.GeneralPurposeArgumentRegisters();
@@ -190,9 +214,9 @@ ToCABIConverter::convertRegisterArguments(const ArgumentRegisters &Registers,
   return Result;
 }
 
-llvm::SmallVector<model::Argument, 8>
-ToCABIConverter::convertStackArguments(model::QualifiedType StackArgumentTypes,
-                                       size_t IndexOffset) const {
+std::optional<llvm::SmallVector<model::Argument, 8>>
+TCC::tryConvertingStackArguments(model::QualifiedType StackArgumentTypes,
+                                 size_t IndexOffset) {
   revng_assert(StackArgumentTypes.Qualifiers().empty());
   auto *Unqualified = StackArgumentTypes.UnqualifiedType().get();
   if (not Unqualified)
@@ -215,10 +239,9 @@ ToCABIConverter::convertStackArguments(model::QualifiedType StackArgumentTypes,
   return Result;
 }
 
-template<bool DryRun>
 std::optional<model::QualifiedType>
-ToCABIConverter::convertReturnValue(const ReturnValueRegisters &Registers,
-                                    model::Binary &Binary) const {
+TCC::tryConvertingReturnValue(const ReturnValueRegisters &Registers) {
+  constexpr bool DryRun = false;
   const auto &AllowedRegisters = ABI.GeneralPurposeReturnValueRegisters();
   const auto &ReturnValueLocationRegister = ABI.ReturnValueLocationRegister();
 
@@ -294,17 +317,6 @@ ToCABIConverter::convertReturnValue(const ReturnValueRegisters &Registers,
   }
 
   return std::nullopt;
-}
-
-std::optional<model::TypePath>
-tryConvertToCABI(const model::RawFunctionType &Function,
-                 TupleTree<model::Binary> &Binary,
-                 std::optional<model::ABI::Values> MaybeABI) {
-  if (!MaybeABI.has_value())
-    MaybeABI = Binary->DefaultABI();
-
-  ToCABIConverter ToCABI(abi::Definition::get(*MaybeABI));
-  return ToCABI.tryConvert(Function, Binary);
 }
 
 } // namespace abi::FunctionType
