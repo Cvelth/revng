@@ -15,6 +15,9 @@
 #include "revng/ADT/SmallMap.h"
 #include "revng/Model/Binary.h"
 #include "revng/Model/Helpers.h"
+#include "revng/Support/Debug.h"
+
+static Logger Log("function-type-conversion-to-raw");
 
 namespace abi::FunctionType {
 
@@ -124,6 +127,9 @@ ToRawConverter::chooseType(const model::QualifiedType &ArgumentType,
 model::TypePath
 ToRawConverter::convert(const model::CABIFunctionType &Function,
                         TupleTree<model::Binary> &Binary) const {
+  revng_log(Log, "Converting a `CABIFunctionType` to `RawFunctionType`.");
+  revng_log(Log, "Function:\n" << serializeToString(Function));
+  LoggerIndent Indentation(Log);
   auto PointerQualifier = model::Qualifier::createPointer(ABI.getPointerSize());
 
   // Since this conversion cannot fail, nothing prevents us from creating
@@ -159,17 +165,34 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
       revng_assert(Type != nullptr);
       const auto *Struct = llvm::dyn_cast<model::StructType>(Type);
       if (Struct && Struct->Fields().size() == NewType.ReturnValues().size()) {
+        revng_log(Log,
+                  "Return value is a struct, making an attempt to preserve "
+                  "field types.");
+        LoggerIndent Indentation(Log);
+
         using ModelRegister = model::Register::Values;
         SmallMap<ModelRegister, model::QualifiedType, 4> RecoveredTypes;
         size_t StructOffset = 0;
         for (size_t Index = 0; Index < Struct->Fields().size(); ++Index) {
-          if (Index >= ABI.GeneralPurposeReturnValueRegisters().size())
+          if (Index >= ABI.GeneralPurposeReturnValueRegisters().size()) {
+            revng_log(Log,
+                      "There are more fields ("
+                        << Struct->Fields().size() << ") than registers ("
+                        << ABI.GeneralPurposeReturnValueRegisters().size()
+                        << "): aborting the preservation attempt.");
             break;
+          }
 
           auto Register = ABI.GeneralPurposeReturnValueRegisters()[Index];
           auto TypedRegisterIterator = NewType.ReturnValues().find(Register);
-          if (TypedRegisterIterator == NewType.ReturnValues().end())
+          if (TypedRegisterIterator == NewType.ReturnValues().end()) {
+            revng_log(Log,
+                      "An expected register ("
+                        << model::Register::getName(Register)
+                        << ") is not used: discarding its type:\n"
+                        << serializeToString(Struct->Fields().at(Index)));
             continue;
+          }
 
           const model::StructField &Field = Struct->Fields().at(StructOffset);
 
@@ -192,9 +215,14 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
         // Only preserve types if there's one for each of the registers.
         // The worst thing we could do is to inject incompatible information
         // in.
-        if (RecoveredTypes.size() == NewType.ReturnValues().size())
+        if (RecoveredTypes.size() == NewType.ReturnValues().size()) {
           for (auto [Register, Type] : RecoveredTypes)
             NewType.ReturnValues().at(Register).Type() = Type;
+
+          revng_log(Log, "The preservation attempt was successful.");
+        } else {
+          revng_log(Log, "The preservation attempt was not successful.");
+        }
       }
     }
   } else if (ReturnValue.Size != 0) {
@@ -238,6 +266,9 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
           //       if this argument is a struct, we can try to use field
           //       types instead of just overriding everything with `Generic`.
           Argument.Type() = { M.genericRegisterType(Register), {} };
+          revng_log(Log,
+                    "Working on a multi-register return type: "
+                      << serializeToString(Function.ReturnType()) << ".");
         } else {
           Argument.Type() = chooseType(Function.ReturnType(), Register, M);
         }
@@ -293,6 +324,8 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
   for (auto Inserter = NewType.PreservedRegisters().batch_insert();
        model::Register::Values Register : ABI.CalleeSavedRegisters())
     Inserter.insert(Register);
+
+  revng_log(Log, "Conversion successful:\n" << serializeToString(NewType));
 
   // To finish up the conversion, remove all the references to the old type by
   // carefully replacing them with references to the new one.
