@@ -409,38 +409,64 @@ TCC::tryConvertingReturnValue(const ReturnValueRegisters &Registers) {
                                   {});
     }
   } else {
-    // Multiple registers mean that it should probably be a struct.
-    //
-    // \note: it's also possible that it's just a big primitive,
-    // \todo: look into supporting those.
-    auto [ReturnType, ReturnTypePath] = Bucket.makeType<model::StructType>();
-    for (auto Register : Ordered) {
-      // Make a separate field for each register.
-      model::StructField Field;
-      Field.Offset() = ReturnType.Size();
-      if (auto Iter = Registers.find(*Ordered.begin()); Iter != Registers.end())
-        Field.Type() = Iter->Type();
-      else
-        Field.Type() = { Bucket.genericRegisterType(*Ordered.begin()), {} };
+    // Multiple registers, it's either a struct or a big scalar.
 
-      auto FieldSize = Field.Type().size();
-      revng_assert(FieldSize.has_value() && FieldSize.value() != 0);
+    // First, check if it can possibly be a struct.
+    if (ABI.MaximumGPRsPerAggregateReturnValue() < Ordered.size()) {
+      // It cannot be a struct, it's bigger than allowed.
+      if (ABI.MaximumGPRsPerScalarReturnValue() < Ordered.size()) {
+        // It cannot be a scalar either.
+        revng_log(Log,
+                  "No known return value type supports that many registers ("
+                    << Ordered.size() << ") under "
+                    << model::ABI::getName(ABI.ABI()) << ":\n");
+        return std::nullopt;
+      }
 
-      // Round the next offset based on the natural alignment.
-      auto Alignment = ABI.alignment(Field.Type());
-      revng_assert(Alignment.has_value() && Alignment.value() != 0);
-      ReturnType.Size() += (*Alignment - ReturnType.Size() % *Alignment);
+      // It's probably a scalar, replace its type with a fake one making sure
+      // at least the size adds up.
+      //
+      // TODO: sadly this discards type information from the registers, look
+      //       into preserving it at least partially.
+      std::size_t PointerSize = model::ABI::getPointerSize(ABI.ABI());
+      return model::QualifiedType{
+        Bucket.getPrimitiveType(model::PrimitiveTypeKind::Values::Generic,
+                                PointerSize * Ordered.size()),
+        {}
+      };
+    } else {
+      // It could be either a struct or a scalar, go the concervative route
+      // and make a struct for it.
+      auto [ReturnType, ReturnTypePath] = Bucket.makeType<model::StructType>();
+      for (auto Register : Ordered) {
+        // Make a separate field for each register.
+        model::StructField Field;
+        Field.Offset() = ReturnType.Size();
+        if (auto It = Registers.find(*Ordered.begin()); It != Registers.end())
+          Field.Type() = It->Type();
+        else
+          Field.Type() = { Bucket.genericRegisterType(*Ordered.begin()), {} };
 
-      // Insert the field
-      ReturnType.Fields().insert(std::move(Field));
+        auto FieldSize = Field.Type().size();
+        revng_assert(FieldSize.has_value() && FieldSize.value() != 0);
 
-      // Update the total struct size: insert some padding if necessary.
-      auto RegisterSize = model::ABI::getPointerSize(ABI.ABI());
-      ReturnType.Size() += paddedSizeOnStack(FieldSize.value(), RegisterSize);
+        // Round the next offset based on the natural alignment.
+        auto Alignment = ABI.alignment(Field.Type());
+        revng_assert(Alignment.has_value() && Alignment.value() != 0);
+        if (ReturnType.Size() % *Alignment != 0)
+          ReturnType.Size() += (*Alignment - ReturnType.Size() % *Alignment);
+
+        // Insert the field
+        ReturnType.Fields().insert(std::move(Field));
+
+        // Update the total struct size: insert some padding if necessary.
+        auto RegisterSize = model::ABI::getPointerSize(ABI.ABI());
+        ReturnType.Size() += paddedSizeOnStack(FieldSize.value(), RegisterSize);
+      }
+
+      revng_assert(ReturnType.Size() != 0 && !ReturnType.Fields().empty());
+      return model::QualifiedType(ReturnTypePath, {});
     }
-
-    revng_assert(ReturnType.Size() != 0 && !ReturnType.Fields().empty());
-    return model::QualifiedType(ReturnTypePath, {});
   }
 }
 
