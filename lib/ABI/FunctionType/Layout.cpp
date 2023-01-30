@@ -117,8 +117,8 @@ ToRawConverter::chooseType(const model::QualifiedType &ArgumentType,
     return ArgumentType.getPointerTo(Architecture);
   } else if (!ArgumentType.isScalar()) {
     // TODO: this can be considerably improved, we can preserve more
-    //       information here over just labeling it as `Generic`.
-    return model::QualifiedType(Bucket.genericRegisterType(Register), {});
+    //       information here over just returning the default type.
+    return model::QualifiedType(Bucket.defaultRegisterType(Register), {});
   }
 
   return ArgumentType;
@@ -249,10 +249,9 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
                                        ReturnValue.SizeOnStack != 0);
 
   model::StructType StackArguments;
-  uint64_t CombinedStackArgumentSize = 0;
+  uint64_t CurrentStackOffset = 0;
   for (size_t ArgIndex = 0; ArgIndex < Arguments.size(); ++ArgIndex) {
     auto &ArgumentStorage = Arguments[ArgIndex];
-    const auto &ArgumentType = Function.Arguments().at(ArgIndex).Type();
 
     // Transfer the register arguments first.
     if (!ArgumentStorage.Registers.empty()) {
@@ -270,14 +269,16 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
                     "Working on a multi-register return type: "
                       << serializeToString(Function.ReturnType()) << ".");
         } else {
-          Argument.Type() = chooseType(Function.ReturnType(), Register, M);
+          const auto &ArgumentType = Function.Arguments().at(ArgIndex).Type();
+          revng_assert(*ArgumentType.size() <= ABI.getPointerSize());
+          Argument.Type() = chooseType(ArgumentType, Register, M);
         }
 
         // TODO: see what can be done to preserve names better
         if (llvm::StringRef{ ArgumentName.str() }.take_front(8) != "unnamed_")
           Argument.CustomName() = ArgumentName;
 
-        NewType.Arguments().insert(Argument);
+        NewType.Arguments().insert(std::move(Argument));
       }
     }
 
@@ -289,13 +290,13 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
 
       // Round the next offset based on the natural alignment.
       uint64_t Alignment = *ABI.alignment(Argument.Type());
-      CombinedStackArgumentSize += (Alignment
-                                    - CombinedStackArgumentSize % Alignment);
+      if (CurrentStackOffset % Alignment != 0)
+        CurrentStackOffset += (Alignment - CurrentStackOffset % Alignment);
 
       // Each argument gets converted into a struct field.
       model::StructField Field;
       model::copyMetadata(Field, Argument);
-      Field.Offset() = CombinedStackArgumentSize;
+      Field.Offset() = CurrentStackOffset;
       Field.Type() = Argument.Type();
       StackArguments.Fields().insert(std::move(Field));
 
@@ -303,13 +304,13 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
       // so that the next argument is not placed into this occupied space.
       auto MaybeSize = Argument.Type().size();
       revng_assert(MaybeSize.has_value() && MaybeSize.value() != 0);
-      CombinedStackArgumentSize += ABI.paddedSizeOnStack(MaybeSize.value());
+      CurrentStackOffset += ABI.paddedSizeOnStack(MaybeSize.value());
     }
   }
 
   // If the stack argument struct is not empty, record it into the model.
-  if (CombinedStackArgumentSize != 0) {
-    StackArguments.Size() = CombinedStackArgumentSize;
+  if (CurrentStackOffset != 0) {
+    StackArguments.Size() = CurrentStackOffset;
 
     using namespace model;
     auto Type = UpcastableType::make<StructType>(std::move(StackArguments));
@@ -641,11 +642,21 @@ Layout::Layout(const model::CABIFunctionType &Function) {
 
     Current.Registers = std::move(Args[Index].Registers);
     if (Args[Index].SizeOnStack != 0) {
-      // TODO: further alignment considerations are needed here.
-      Current.Stack = typename Layout::Argument::StackSpan{
-        CurrentStackOffset, Args[Index].SizeOnStack
-      };
-      CurrentStackOffset += Args[Index].SizeOnStack;
+      // The argument has a part (or is placed entirely) on the stack.
+      Current.Stack = typename Layout::Argument::StackSpan{};
+
+      // Round the offset based on the natural alignment.
+      uint64_t Alignment = *ABI.alignment(ArgumentType);
+      if (CurrentStackOffset % Alignment != 0)
+        CurrentStackOffset += (Alignment - CurrentStackOffset % Alignment);
+      Current.Stack->Offset = CurrentStackOffset;
+
+      // Compute the full size of the argument (including padding if needed),
+      // so that the next argument is not placed into this occupied space.
+      auto MaybeSize = ArgumentType.size();
+      revng_assert(MaybeSize.has_value() && MaybeSize.value() != 0);
+      Current.Stack->Size = ABI.paddedSizeOnStack(MaybeSize.value());
+      CurrentStackOffset += Current.Stack->Size;
     }
   }
 
