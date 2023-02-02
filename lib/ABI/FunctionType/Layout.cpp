@@ -130,6 +130,8 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
                         TupleTree<model::Binary> &Binary) const {
   revng_log(Log, "Converting a `CABIFunctionType` to `RawFunctionType`.");
   revng_log(Log, "Function:\n" << serializeToString(Function));
+  if (ABI.ABI() != Function.ABI())
+    revng_log(Log, "  with ABI: " << model::ABI::getName(ABI.ABI()).str());
   LoggerIndent Indentation(Log);
   auto PointerQualifier = model::Qualifier::createPointer(ABI.getPointerSize());
 
@@ -693,8 +695,12 @@ ToRawConverter::distributeReturnValue(const QualifiedType &ReturnValue) const {
 }
 
 model::TypePath convertToRaw(const model::CABIFunctionType &Function,
-                             TupleTree<model::Binary> &Binary) {
-  ToRawConverter ToRaw(abi::Definition::get(Function.ABI()));
+                             TupleTree<model::Binary> &Binary,
+                             std::optional<model::ABI::Values> OverrideABI) {
+  if (!OverrideABI.has_value() || *OverrideABI == model::ABI::Invalid)
+    OverrideABI = Function.ABI();
+
+  ToRawConverter ToRaw(abi::Definition::get(OverrideABI.value()));
   return ToRaw.convert(Function, Binary);
 }
 

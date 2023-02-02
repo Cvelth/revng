@@ -18,18 +18,26 @@
 class ConvertToRawFunctionType {
 public:
   static constexpr auto Name = "ConvertToRawFunctionType";
-
+  inline static const std::tuple Options = { pipeline::Option("abi",
+                                                              "Invalid"s) };
   std::vector<std::vector<pipeline::Kind *>> AcceptedKinds = {};
 
-  void run(pipeline::Context &Context) {
+  void run(pipeline::Context &Context, std::string OverrideABI) {
     auto &Model = revng::getWritableModelFromContext(Context);
+    revng_assert(!OverrideABI.empty());
+
+    // Note, if `OverrideABI` was explicitly set,
+    // override the one from the function with it.
+    std::optional<model::ABI::Values> ABI = model::ABI::fromName(OverrideABI);
+    if (ABI.value() == model::ABI::Invalid)
+      ABI = std::nullopt;
 
     model::VerifyHelper VH;
 
     using abi::FunctionType::filterTypes;
     auto ToConvert = filterTypes<model::CABIFunctionType>(Model->Types());
     for (model::CABIFunctionType *Old : ToConvert) {
-      auto New = abi::FunctionType::convertToRaw(*Old, Model);
+      auto New = abi::FunctionType::convertToRaw(*Old, Model, ABI);
 
       // Make sure the returned type is valid,
       revng_assert(New.isValid());

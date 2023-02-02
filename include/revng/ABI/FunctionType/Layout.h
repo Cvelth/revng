@@ -8,12 +8,17 @@
 
 namespace abi::FunctionType {
 
+namespace detail {
+using MaybeABI = std::optional<model::ABI::Values>;
+}
+
 /// Best effort `CABIFunctionType` to `RawFunctionType` conversion.
 ///
 /// \note: this conversion is lossy since there's no way to represent some types
 ///        in `RawFunctionType` in a reversible manner.
 model::TypePath convertToRaw(const model::CABIFunctionType &Function,
-                             TupleTree<model::Binary> &TheBinary);
+                             TupleTree<model::Binary> &TheBinary,
+                             detail::MaybeABI OverrideABI = std::nullopt);
 
 namespace ArgumentKind {
 
