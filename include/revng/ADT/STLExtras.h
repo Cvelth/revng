@@ -527,3 +527,32 @@ auto as_rvalue(RangeType &&Range) {
 }
 
 } // namespace ranges::views
+
+//
+// A universal guard helper
+//
+
+namespace revng {
+
+namespace detail {
+
+template<invocable Invocable>
+class UniversalGuard {
+private:
+  Invocable &&Object;
+
+public:
+  UniversalGuard(Invocable &&I) : Object(std::forward<Invocable>(I)) {}
+  ~UniversalGuard() { std::invoke(std::forward<Invocable>(Object)); }
+};
+
+} // namespace detail
+
+/// Return a small wrapper holding an object that is going to get invoked
+/// when the wrapper is being destroyed.
+template<invocable Invocable>
+detail::UniversalGuard<Invocable> guard(Invocable &&I) {
+  return detail::UniversalGuard<Invocable>(std::forward<Invocable>(I));
+}
+
+} // namespace revng
