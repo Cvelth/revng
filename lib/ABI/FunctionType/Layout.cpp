@@ -40,9 +40,7 @@ public:
   explicit ToRawConverter(const abi::Definition &ABI) : ABI(ABI) {
     revng_assert(ABI.verify());
   }
-  TypeBucket addNewTypes(model::Binary &Binary) const {
-    return TypeBucket(Binary);
-  }
+  auto addNewTypes(model::Binary &Binary) const { return TypeBucket(Binary); }
 
 public:
   /// Entry point for the `toRaw` conversion.
@@ -149,7 +147,8 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
       model::TypedRegister Converted;
       Converted.Location() = Register;
 
-      if (auto M = addNewTypes(*Binary); ReturnValue.Registers.size() > 1) {
+      auto M = addNewTypes(*Binary);
+      if (ReturnValue.Registers.size() > 1) {
         // TODO: We can do a better job of preserving types here, for example,
         //       if `Function.ReturnType` is a struct, we can try to use field
         //       types instead of just overriding everything with `Generic`.
@@ -157,6 +156,7 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
       } else {
         Converted.Type() = chooseType(Function.ReturnType(), Register, M);
       }
+      M.commit();
 
       NewType.ReturnValues().insert(Converted);
     }
@@ -260,9 +260,10 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
       for (model::Register::Values Register : Distributed.Registers) {
         model::NamedTypedRegister Argument(Register);
 
+        auto M = addNewTypes(*Binary);
         bool SimpleArgument = Distributed.Registers.size() == 1
                               && Distributed.SizeOnStack == 0;
-        if (auto M = addNewTypes(*Binary); SimpleArgument) {
+        if (SimpleArgument) {
           const auto &ArgumentType = Function.Arguments().at(Index).Type();
           Argument.Type() = chooseType(ArgumentType, Register, M);
 
@@ -276,6 +277,7 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
           //       types instead of just overriding everything with `Generic`.
           Argument.Type() = { M.genericRegisterType(Register), {} };
         }
+        M.commit();
 
         NewType.Arguments().insert(std::move(Argument));
       }
@@ -341,6 +343,7 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
         Argument.Type() = { M.genericRegisterType(Register), {} };
         NewType.Arguments().insert(std::move(Argument));
       }
+      M.commit();
     }
   }
 
