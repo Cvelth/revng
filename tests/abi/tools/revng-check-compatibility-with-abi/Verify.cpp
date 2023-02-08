@@ -134,7 +134,8 @@ void VH::verify(const abi::FunctionType::Layout &FunctionLayout,
     }
 
     // Check the arguments.
-    for (const auto &Argument : Helper.Iteration.Arguments) {
+    std::uint64_t ArgumentIndex = 0;
+    for (const abi::artifact::Argument &Argument : Helper.Iteration.Arguments) {
       llvm::ArrayRef<std::byte> ArgumentBytes = Argument.Bytes;
       if (ArgumentBytes.empty()) {
         std::string Error = "The `Bytes` field of the artifact is empty for "
@@ -172,15 +173,43 @@ void VH::verify(const abi::FunctionType::Layout &FunctionLayout,
           }
         }
 
-        if (!StackBytes.take_front(ArgumentBytes.size()).equals(ArgumentBytes))
-          revng_abort("An argument cannot be found, it uses neither the "
-                      "expected stack part nor the expected registers.");
+        if (StackBytes.take_front(ArgumentBytes.size()).equals(ArgumentBytes)) {
+          std::size_t BytesToDrop = ABI.paddedSizeOnStack(ArgumentBytes.size());
+          if (StackBytes.size() < BytesToDrop)
+            StackBytes = {};
+          else
+            StackBytes = StackBytes.drop_front(BytesToDrop);
+          break; // Stack checks out, go to the next argument.
+        }
 
-        // Stack matches.
-        auto Min = model::Architecture::getPointerSize(Architecture);
-        StackBytes = StackBytes.drop_front(std::max(ArgumentBytes.size(), Min));
-        ArgumentBytes = {};
+        revng_assert(!ABI.Types().empty());
+        auto &BiggestType = *std::prev(ABI.Types().end());
+        if (BiggestType.AlignAt() != ABI.getPointerSize()) {
+          // If the ABI supports unusual alignment, try to account for it,
+          // by dropping an conflicting part of the stack data.
+          if (StackBytes.size() < ABI.getPointerSize())
+            StackBytes = {};
+          else
+            StackBytes = StackBytes.drop_front(ABI.getPointerSize());
+        }
+
+        if (StackBytes.take_front(ArgumentBytes.size()).equals(ArgumentBytes)) {
+          std::size_t BytesToDrop = ABI.paddedSizeOnStack(ArgumentBytes.size());
+          if (StackBytes.size() < BytesToDrop)
+            StackBytes = {};
+          else
+            StackBytes = StackBytes.drop_front(BytesToDrop);
+          break; // Stack matches after accounting for alignment.
+        }
+
+        std::string Error = "The argument #" + std::to_string(ArgumentIndex)
+                            + " of '" + FunctionName.str()
+                            + "' cannot be found: it uses neither the expected "
+                              "stack part nor the expected registers.";
+        revng_abort(Error.c_str());
       } while (!ArgumentBytes.empty());
+
+      ++ArgumentIndex;
     }
 
     if (CurrentRegisterIndex != OrderedRegisterList.size()) {
