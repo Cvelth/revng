@@ -248,15 +248,16 @@ ToRawConverter::convert(const model::CABIFunctionType &FunctionType,
       for (model::Register::Values Register : Distributed.Registers) {
         model::NamedTypedRegister Argument(Register);
 
-        if (ArgumentStorage.Registers.size() > 1) {
-          Argument.Type() = genericRegisterType(Register, *Binary);
-          revng_log(Log,
-                    "Adding a register as a part of a bigger argument:\n"
-                      << serializeToString(Register));
-        } else {
+        if (Distributed.Registers.size() == 1 && Distributed.SizeOnStack == 0) {
+          const auto &ArgumentType = FunctionType.Arguments().at(Index).Type();
           Argument.Type() = chooseType(ArgumentType, Register, *Binary);
           revng_log(Log,
                     "Adding a register argument:\n"
+                      << serializeToString(Register));
+        } else {
+          Argument.Type() = genericRegisterType(Register, *Binary);
+          revng_log(Log,
+                    "Adding a register as a part of a bigger argument:\n"
                       << serializeToString(Register));
         }
 
@@ -322,15 +323,14 @@ ToRawConverter::convert(const model::CABIFunctionType &FunctionType,
       ++Index;
     } else {
       // This is just a padding argument.
-      auto M = addNewTypes(*Binary);
       for (model::Register::Values Register : Distributed.Registers) {
         model::NamedTypedRegister Argument(Register);
-        Argument.Type() = { M.genericRegisterType(Register), {} };
+        Argument.Type() = genericRegisterType(Register, *Binary);
         
         revng_log(Log,
                   "Adding a padding argument:\n"
                     << serializeToString(Argument));
-        NewType.Arguments().insert(std::move(Argument));
+        NewType.Arguments().emplace(std::move(Argument));
       }
     }
   }
