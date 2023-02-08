@@ -72,10 +72,9 @@ public:
     return FunctionCache.find(BB)->second;
   }
 
-  /// \brief Given a Call instruction and the model type of its parent function,
-  ///        return the edge on the model that represents that call
-  ///        (std::nullopt if this doesn't exist) and the MetaAddress associated
-  ///        to the call-site.
+  /// Given a Call instruction and the model type of its parent function, return
+  /// the edge on the model that represents that call (std::nullopt if this
+  /// doesn't exist) and the MetaAddress associated to the call-site.
   inline std::pair<std::optional<efa::CallEdge>, MetaAddress>
   getCallEdge(const model::Binary &Binary, const llvm::CallInst *Call) {
     using namespace llvm;
