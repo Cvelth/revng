@@ -28,8 +28,8 @@ struct ABIVerificationToolErrorCategory : public std::error_category {
     return default_error_condition(Code) == Condition;
   }
 
-  virtual bool
-  equivalent(const std::error_code &Code, int Condition) const noexcept {
+  virtual bool equivalent(const std::error_code &Code,
+                          int Condition) const noexcept {
     return *this == Code.category() && Code.value() == Condition;
   }
   virtual std::string message(int) const { return ""; }

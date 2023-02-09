@@ -92,8 +92,8 @@ private:
   void pinExitTB(llvm::CallInst *ExitTBCall,
                  ProgramCounterHandler::DispatcherTargets &Destinations);
 
-  void
-  pinConstantStoreInternal(MetaAddress Address, llvm::CallInst *ExitTBCall);
+  void pinConstantStoreInternal(MetaAddress Address,
+                                llvm::CallInst *ExitTBCall);
 
 public:
   static char ID;
@@ -393,8 +393,8 @@ public:
     return Pair.first + Pair.second;
   }
 
-  MaterializedValue
-  readFromPointer(llvm::Constant *Pointer, bool IsLittleEndian);
+  MaterializedValue readFromPointer(llvm::Constant *Pointer,
+                                    bool IsLittleEndian);
 
   /// \brief Increment the counter of emitted branches since the last reset
   void recordNewBranches(llvm::BasicBlock *Source, size_t Count) {

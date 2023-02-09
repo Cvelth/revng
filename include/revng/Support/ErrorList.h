@@ -111,8 +111,8 @@ public:
     return Error;
   }
 
-  friend llvm::raw_ostream &
-  operator<<(llvm::raw_ostream &OS, const ErrorList &EL) {
+  friend llvm::raw_ostream &operator<<(llvm::raw_ostream &OS,
+                                       const ErrorList &EL) {
     EL.dump(OS);
     return OS;
   }

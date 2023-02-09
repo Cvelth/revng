@@ -239,8 +239,8 @@ rp_manager_get_global_name(rp_manager *manager, int index);
  * \return the kind with the provided name, NULL if no kind had the provided
  *         name.
  */
-rp_kind *
-rp_manager_get_kind_from_name(rp_manager *manager, const char *kind_name);
+rp_kind *rp_manager_get_kind_from_name(rp_manager *manager,
+                                       const char *kind_name);
 
 /**
  * \return the number of kinds present in the manager.
@@ -336,8 +336,8 @@ uint64_t rp_targets_list_targets_count(rp_targets_list *targets_list);
  * \return the n-th target inside the provided \p targets_list or NULL if it's
  *         out of bounds.
  */
-rp_target *
-rp_targets_list_get_target(rp_targets_list *targets_list, uint64_t index);
+rp_target *rp_targets_list_get_target(rp_targets_list *targets_list,
+                                      uint64_t index);
 
 /** \} */
 
@@ -370,8 +370,8 @@ const char *rp_step_get_name(rp_step *step);
  * \return the container associated to the provided \p identifier at the given
  *         \p step or nullptr if not present.
  */
-rp_container *
-rp_step_get_container(rp_step *step, rp_container_identifier *identifier);
+rp_container *rp_step_get_container(rp_step *step,
+                                    rp_container_identifier *identifier);
 
 /**
  * \return a \p step 's parent, if present

@@ -49,8 +49,8 @@ private:
 public:
   AdvancedValueInfoPass(JumpTargetManager *JTM) : JTM(JTM) {}
 
-  llvm::PreservedAnalyses
-  run(llvm::Function &F, llvm::FunctionAnalysisManager &);
+  llvm::PreservedAnalyses run(llvm::Function &F,
+                              llvm::FunctionAnalysisManager &);
 
   static llvm::Function *createMarker(llvm::Module *M) {
     using namespace llvm;

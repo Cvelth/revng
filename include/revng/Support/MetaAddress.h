@@ -516,8 +516,8 @@ public:
   /// @{
 
   /// Create a global variable with MetaAddress type
-  static llvm::GlobalVariable *
-  createStructVariable(llvm::Module *M, llvm::StringRef Name) {
+  static llvm::GlobalVariable *createStructVariable(llvm::Module *M,
+                                                    llvm::StringRef Name) {
     return createStructVariableInternal(M, Name, getStruct(M));
   }
 

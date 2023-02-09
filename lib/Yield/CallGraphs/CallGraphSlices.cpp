@@ -14,8 +14,8 @@
 
 using NodeView = const yield::Graph::Node *;
 
-static yield::Graph::Node *
-copyNode(yield::Graph &Graph, const yield::Graph::Node *Source) {
+static yield::Graph::Node *copyNode(yield::Graph &Graph,
+                                    const yield::Graph::Node *Source) {
   auto New = std::make_unique<yield::Graph::Node>(Source->data());
   return Graph.addNode(std::move(New));
 }

@@ -140,16 +140,16 @@ private:
   /// \param LSDAAddress the address of the target LSDA
   void parseLSDA(MetaAddress FDEStart, MetaAddress LSDAAddress);
 
-  void
-  parseSymbols(llvm::object::ELFFile<T> &TheELF, ConstElf_Shdr *SectionHeader);
+  void parseSymbols(llvm::object::ELFFile<T> &TheELF,
+                    ConstElf_Shdr *SectionHeader);
 
   void parseProgramHeaders(llvm::object::ELFFile<T> &TheELF);
 
   void parseDynamicSymbol(llvm::object::Elf_Sym_Impl<T> &Symbol,
                           llvm::StringRef Dynstr);
 
-  void
-  findMissingTypes(llvm::object::ELFFile<T> &TheELF, unsigned DebugInfoLevel);
+  void findMissingTypes(llvm::object::ELFFile<T> &TheELF,
+                        unsigned DebugInfoLevel);
 
 protected:
   template<typename Q>

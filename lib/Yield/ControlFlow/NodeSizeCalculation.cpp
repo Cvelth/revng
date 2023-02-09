@@ -13,8 +13,8 @@
 #include "revng/Yield/Function.h"
 #include "revng/Yield/Graph.h"
 
-static yield::Graph::Size
-operator+(const yield::Graph::Size &LHS, const yield::Graph::Size &RHS) {
+static yield::Graph::Size operator+(const yield::Graph::Size &LHS,
+                                    const yield::Graph::Size &RHS) {
   return yield::Graph::Size(LHS.W + RHS.W, LHS.H + RHS.H);
 }
 
@@ -106,8 +106,8 @@ linkSize(const MetaAddress &Address,
   }
 }
 
-static yield::Graph::Size &
-appendSize(yield::Graph::Size &Original, const yield::Graph::Size &AddOn) {
+static yield::Graph::Size &appendSize(yield::Graph::Size &Original,
+                                      const yield::Graph::Size &AddOn) {
   if (AddOn.W > Original.W)
     Original.W = AddOn.W;
   Original.H += AddOn.H;

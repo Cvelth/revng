@@ -290,8 +290,8 @@ rp_analysis *rp_step_get_analysis(rp_step *step, int index) {
   return &*(std::next(step->analysesBegin(), index));
 }
 
-rp_container *
-rp_step_get_container(rp_step *step, rp_container_identifier *container) {
+rp_container *rp_step_get_container(rp_step *step,
+                                    rp_container_identifier *container) {
   revng_check(step != nullptr);
   revng_check(container != nullptr);
   if (step->containers().isContainerRegistered(container->first())) {
@@ -322,8 +322,8 @@ uint64_t rp_targets_list_targets_count(rp_targets_list *targets_list) {
   return targets_list->size();
 }
 
-rp_kind *
-rp_manager_get_kind_from_name(rp_manager *manager, const char *kind_name) {
+rp_kind *rp_manager_get_kind_from_name(rp_manager *manager,
+                                       const char *kind_name) {
   revng_check(manager != nullptr);
   revng_check(kind_name != nullptr);
 
@@ -528,8 +528,8 @@ rp_manager_get_container_targets_list(rp_manager *manager,
   return manager->getTargetsAvailableFor(*container);
 }
 
-rp_target *
-rp_targets_list_get_target(rp_targets_list *targets_list, uint64_t index) {
+rp_target *rp_targets_list_get_target(rp_targets_list *targets_list,
+                                      uint64_t index) {
   revng_check(targets_list != nullptr);
   revng_check(index < targets_list->size());
   return &(*targets_list)[index];
@@ -569,8 +569,8 @@ char *rp_target_create_serialized_string(rp_target *target) {
   return copyString(target->serialize());
 }
 
-rp_target *
-rp_target_create_from_string(rp_manager *manager, const char *string) {
+rp_target *rp_target_create_from_string(rp_manager *manager,
+                                        const char *string) {
   revng_check(manager != nullptr);
   revng_check(string != nullptr);
   TargetsList Targets;
@@ -594,8 +594,8 @@ bool rp_target_is_ready(rp_target *target, rp_container *container) {
 
 /// TODO Remove the redundant copy by writing a custom string stream that writes
 /// direclty to a buffer to return.
-const char *
-rp_manager_create_global_copy(rp_manager *manager, const char *global_name) {
+const char *rp_manager_create_global_copy(rp_manager *manager,
+                                          const char *global_name) {
   std::string Out;
   llvm::raw_string_ostream Serialized(Out);
   auto &GlobalsMap = manager->context().getGlobals();
@@ -805,8 +805,8 @@ const char *rp_container_get_mime(rp_container *container) {
   return container->getValue()->mimeType().data();
 }
 
-const char *
-rp_container_extract_one(rp_container *container, rp_target *target) {
+const char *rp_container_extract_one(rp_container *container,
+                                     rp_target *target) {
   revng_check(container->second->enumerate().contains(*target));
 
   std::string Out;
@@ -886,8 +886,8 @@ uint64_t rp_error_list_size(rp_error_list *error_list) {
   return error_list->size();
 }
 
-const char *
-rp_error_list_get_error_message(rp_error_list *error_list, uint64_t index) {
+const char *rp_error_list_get_error_message(rp_error_list *error_list,
+                                            uint64_t index) {
   revng_check(error_list != nullptr);
   std::string Out;
   llvm::raw_string_ostream Serialized(Out);

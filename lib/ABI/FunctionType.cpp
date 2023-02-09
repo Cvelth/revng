@@ -61,15 +61,15 @@ selectTypeKind(model::Register::Values) {
   return model::PrimitiveTypeKind::PointerOrNumber;
 }
 
-static model::QualifiedType
-buildType(model::Register::Values Register, model::Binary &TheBinary) {
+static model::QualifiedType buildType(model::Register::Values Register,
+                                      model::Binary &TheBinary) {
   model::PrimitiveTypeKind::Values Kind = selectTypeKind(Register);
   size_t Size = model::Register::getSize(Register);
   return model::QualifiedType(TheBinary.getPrimitiveType(Kind, Size), {});
 }
 
-static model::QualifiedType
-buildGenericType(model::Register::Values Register, model::Binary &TheBinary) {
+static model::QualifiedType buildGenericType(model::Register::Values Register,
+                                             model::Binary &TheBinary) {
   constexpr auto Kind = model::PrimitiveTypeKind::Generic;
   size_t Size = model::Register::getSize(Register);
   return model::QualifiedType(TheBinary.getPrimitiveType(Kind, Size), {});

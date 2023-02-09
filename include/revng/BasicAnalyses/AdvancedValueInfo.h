@@ -47,8 +47,8 @@ inline unsigned getTypeSize(const llvm::DataLayout &DL, llvm::Type *T) {
 }
 
 /// Return the only Unknown value in the SCEV (if no AddRec/CouldNotCompute)
-inline llvm::Value *
-getUniqueUnknown(llvm::ScalarEvolution &SE, const llvm::SCEV *SC) {
+inline llvm::Value *getUniqueUnknown(llvm::ScalarEvolution &SE,
+                                     const llvm::SCEV *SC) {
   using namespace llvm;
 
   class FindSingleUnknown {
@@ -317,8 +317,8 @@ public:
     return llvm::make_range(Successors.begin(), Successors.end());
   }
 
-  size_t
-  successor_size(llvm::BasicBlock *L, DefaultInterrupt<Element> &I) const {
+  size_t successor_size(llvm::BasicBlock *L,
+                        DefaultInterrupt<Element> &I) const {
     return getSuccessors(L).size();
   }
 

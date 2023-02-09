@@ -176,8 +176,8 @@ static RankDelta delta(NodeView LHS, NodeView RHS, const RankContainer &Ranks) {
 }
 
 // Returns a list of edges that span accross more than a single layer.
-static std::vector<EdgeView>
-pickLongEdges(InternalGraph &Graph, const RankContainer &Ranks) {
+static std::vector<EdgeView> pickLongEdges(InternalGraph &Graph,
+                                           const RankContainer &Ranks) {
   std::vector<EdgeView> Result;
 
   for (auto *From : Graph.nodes())
@@ -222,8 +222,8 @@ void partition(const std::vector<EdgeType> &Edges,
 /// To simplify the ranking algorithms, if there's more than one entry point,
 /// an artifitial entry node is added. This new node has a single edge per
 /// real entry point.
-static void
-ensureSingleEntry(InternalGraph &Graph, RankContainer *MaybeRanks = nullptr) {
+static void ensureSingleEntry(InternalGraph &Graph,
+                              RankContainer *MaybeRanks = nullptr) {
   auto EntryNodes = entryPoints(&Graph);
   revng_assert(!EntryNodes.empty());
 

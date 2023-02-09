@@ -16,8 +16,8 @@
 
 namespace revng::pipes {
 
-ErrorList
-ApplyDiffAnalysis::run(pipeline::Context &Ctx, std::string DiffLocation) {
+ErrorList ApplyDiffAnalysis::run(pipeline::Context &Ctx,
+                                 std::string DiffLocation) {
   if (DiffLocation == "")
     return {};
 

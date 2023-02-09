@@ -9,6 +9,6 @@
 class CSVAliasAnalysisPass : public llvm::PassInfoMixin<CSVAliasAnalysisPass> {
 
 public:
-  llvm::PreservedAnalyses
-  run(llvm::Module &M, llvm::ModuleAnalysisManager &MAM);
+  llvm::PreservedAnalyses run(llvm::Module &M,
+                              llvm::ModuleAnalysisManager &MAM);
 };

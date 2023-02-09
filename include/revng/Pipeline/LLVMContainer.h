@@ -137,8 +137,8 @@ public:
                                       std::move(Cloned));
   }
 
-  llvm::Error
-  extractOne(llvm::raw_ostream &OS, const Target &Target) const override {
+  llvm::Error extractOne(llvm::raw_ostream &OS,
+                         const Target &Target) const override {
     TargetsList List({ Target });
     auto Module = cloneFiltered(List);
     return Module->serialize(OS);

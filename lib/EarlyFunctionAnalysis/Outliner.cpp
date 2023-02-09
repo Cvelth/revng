@@ -431,8 +431,8 @@ void Outliner::createAnyPCHooks(CallHandler *TheCallHandler,
   }
 }
 
-OutlinedFunction
-Outliner::outline(llvm::BasicBlock *Entry, CallHandler *Handler) {
+OutlinedFunction Outliner::outline(llvm::BasicBlock *Entry,
+                                   CallHandler *Handler) {
   using namespace llvm;
 
   OutlinedFunction Result;

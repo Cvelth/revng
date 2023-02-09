@@ -404,8 +404,8 @@ bool TDBP::runOnModule(Module &M) {
   return true;
 }
 
-MaterializedValue
-JumpTargetManager::readFromPointer(Constant *Pointer, bool IsLittleEndian) {
+MaterializedValue JumpTargetManager::readFromPointer(Constant *Pointer,
+                                                     bool IsLittleEndian) {
   Type *LoadedType = Pointer->getType()->getPointerElementType();
   const DataLayout &DL = TheModule.getDataLayout();
   unsigned LoadSize = DL.getTypeSizeInBits(LoadedType) / 8;
@@ -938,8 +938,8 @@ void JumpTargetManager::purgeTranslation(BasicBlock *Start) {
 }
 
 // TODO: register Reason
-BasicBlock *
-JumpTargetManager::registerJT(MetaAddress PC, JTReason::Values Reason) {
+BasicBlock *JumpTargetManager::registerJT(MetaAddress PC,
+                                          JTReason::Values Reason) {
   revng_check(PC.isValid());
 
   if (not isPC(PC))

@@ -58,8 +58,8 @@ private:
   void findMissingTypes(unsigned FetchDebugInfoWithLevel);
 
   using DelayDirectoryRef = const DelayImportDirectoryEntryRef;
-  void
-  recordDelayImportedFunctions(DelayDirectoryRef &I, ImportedSymbolRange Range);
+  void recordDelayImportedFunctions(DelayDirectoryRef &I,
+                                    ImportedSymbolRange Range);
 };
 
 Error PECOFFImporter::parseSectionsHeaders() {

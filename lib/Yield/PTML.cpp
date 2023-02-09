@@ -180,8 +180,8 @@ static std::string tagTypeAsString(const yield::TagType::Values &Type) {
   }
 }
 
-static std::string
-tokenTag(llvm::StringRef Buffer, const yield::TagType::Values &Tag) {
+static std::string tokenTag(llvm::StringRef Buffer,
+                            const yield::TagType::Values &Tag) {
   std::string TagStr = tagTypeAsString(Tag);
   if (!TagStr.empty()) {
     return ::Tag(tags::Span, Buffer)

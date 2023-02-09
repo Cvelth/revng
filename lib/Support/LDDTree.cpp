@@ -26,8 +26,8 @@ Logger<> Log("lddtree");
 
 using namespace llvm;
 
-static llvm::Expected<std::string>
-findInDir(llvm::StringRef Lib, llvm::StringRef WhereToLook) {
+static llvm::Expected<std::string> findInDir(llvm::StringRef Lib,
+                                             llvm::StringRef WhereToLook) {
   llvm::SmallString<128> ResultPath;
   llvm::sys::path::append(ResultPath, WhereToLook, Lib);
 

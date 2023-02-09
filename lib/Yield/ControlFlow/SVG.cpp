@@ -416,8 +416,8 @@ std::string yield::svg::callGraph(const CrossRelations &Relations,
 static auto flipPoint(yield::Graph::Point const &Point) {
   return yield::Graph::Point{ -Point.X, -Point.Y };
 };
-static auto
-calculateDelta(yield::Graph::Point const &LHS, yield::Graph::Point const &RHS) {
+static auto calculateDelta(yield::Graph::Point const &LHS,
+                           yield::Graph::Point const &RHS) {
   return yield::Graph::Point{ RHS.X - LHS.X, RHS.Y - LHS.Y };
 }
 static auto translatePoint(yield::Graph::Point const &Point,
