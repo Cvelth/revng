@@ -10,14 +10,7 @@
 
 #include "revng/Support/CommandLine.h"
 
-namespace cl = llvm::cl;
-
-cl::OptionCategory MainCategory("Options", "");
-
-cl::opt<bool> IgnoreDebugSymbols("ignore-debug-symbols",
-                                 cl::desc("ignore section and symbol function "
-                                          "informations"),
-                                 cl::cat(MainCategory));
+llvm::cl::OptionCategory MainCategory("Options", "");
 
 std::ostream &pathToStream(const std::string &Path, std::ofstream &File) {
   if (Path[0] == '-' && Path[1] == '\0') {

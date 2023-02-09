@@ -18,8 +18,10 @@ class ObjectFile;
 llvm::Error importBinary(TupleTree<model::Binary> &Model,
                          llvm::object::ObjectFile &BinaryHandle,
                          uint64_t PreferredBaseAddress,
-                         unsigned FetchDebugInfoWithLevel);
+                         unsigned FetchDebugInfoWithLevel,
+                         bool IgnoreDebugSymbols);
 llvm::Error importBinary(TupleTree<model::Binary> &Model,
                          llvm::StringRef Path,
                          uint64_t PreferredBaseAddress,
-                         unsigned FetchDebugInfoWithLevel);
+                         unsigned FetchDebugInfoWithLevel,
+                         bool IgnoreDebugSymbols);

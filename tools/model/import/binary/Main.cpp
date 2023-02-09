@@ -52,9 +52,10 @@ int main(int Argc, char *Argv[]) {
 
   // TODO: Remove this when we remove `Parenthesis at the end of line:` from
   // `check-convention`.
-  unsigned DebugInfoLevel = FetchDebugInfoWithLevel;
+  unsigned FDIWL = FetchDebugInfoWithLevel;
+  bool IDS = IgnoreDebugSymbols;
 
-  ExitOnError(importBinary(Model, InputFilename, BaseAddress, DebugInfoLevel));
+  ExitOnError(importBinary(Model, InputFilename, BaseAddress, FDIWL, IDS));
 
   if (ImportDebugInfo.size() > 0) {
     DwarfImporter Importer(Model, BaseAddress);

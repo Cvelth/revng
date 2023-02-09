@@ -21,11 +21,13 @@ class MachOObjectFile;
 llvm::Error importELF(TupleTree<model::Binary> &Model,
                       const llvm::object::ELFObjectFileBase &TheBinary,
                       uint64_t PreferredBaseAddress,
-                      unsigned FetchDebugInfoWithLevel);
+                      unsigned FetchDebugInfoWithLevel,
+                      bool IgnoreDebugSymbols);
 llvm::Error importPECOFF(TupleTree<model::Binary> &Model,
                          const llvm::object::COFFObjectFile &TheBinary,
                          uint64_t PreferredBaseAddress,
-                         unsigned FetchDebugInfoWithLevel);
+                         unsigned FetchDebugInfoWithLevel,
+                         bool IgnoreDebugSymbols);
 llvm::Error importMachO(TupleTree<model::Binary> &Model,
                         llvm::object::MachOObjectFile &TheBinary,
                         uint64_t PreferredBaseAddress);

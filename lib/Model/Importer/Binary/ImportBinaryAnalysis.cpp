@@ -27,7 +27,8 @@ llvm::Error ImportBinaryAnalysis::run(pipeline::Context &Context,
   if (auto Error = importBinary(Model,
                                 *SourceBinary.path(),
                                 BaseAddress,
-                                FetchDebugInfoWithLevel);
+                                FetchDebugInfoWithLevel,
+                                IgnoreDebugSymbols);
       Error)
     return Error;
 

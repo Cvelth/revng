@@ -19,7 +19,8 @@ using namespace llvm;
 Error importBinary(TupleTree<model::Binary> &Model,
                    llvm::object::ObjectFile &ObjectFile,
                    uint64_t PreferredBaseAddress,
-                   unsigned FetchDebugInfoWithLevel) {
+                   unsigned FetchDebugInfoWithLevel,
+                   bool IgnoreDebugSymbols) {
   using namespace llvm::object;
   using namespace model::Architecture;
   Model->Architecture() = fromLLVMArchitecture(ObjectFile.getArch());
@@ -31,13 +32,17 @@ Error importBinary(TupleTree<model::Binary> &Model,
     return importELF(Model,
                      *TheBinary,
                      PreferredBaseAddress,
-                     FetchDebugInfoWithLevel);
+                     FetchDebugInfoWithLevel,
+                     IgnoreDebugSymbols);
   } else if (auto *TheBinary = dyn_cast<COFFObjectFile>(&ObjectFile)) {
     return importPECOFF(Model,
                         *TheBinary,
                         PreferredBaseAddress,
-                        FetchDebugInfoWithLevel);
+                        FetchDebugInfoWithLevel,
+                        IgnoreDebugSymbols);
   } else if (auto *TheBinary = dyn_cast<MachOObjectFile>(&ObjectFile)) {
+    // TODO: pass `IgnoreDebugSymbols` in when the importer starts supporting
+    //       debug information.
     return importMachO(Model, *TheBinary, PreferredBaseAddress);
   } else {
     return createError("Unsupported binary format");
@@ -47,7 +52,8 @@ Error importBinary(TupleTree<model::Binary> &Model,
 Error importBinary(TupleTree<model::Binary> &Model,
                    llvm::StringRef Path,
                    uint64_t PreferredBaseAddress,
-                   unsigned FetchDebugInfoWithLevel) {
+                   unsigned FetchDebugInfoWithLevel,
+                   bool IgnoreDebugSymbols) {
   auto BinaryOrErr = object::createBinary(Path);
   if (not BinaryOrErr)
     return BinaryOrErr.takeError();
@@ -55,5 +61,6 @@ Error importBinary(TupleTree<model::Binary> &Model,
   return importBinary(Model,
                       *cast<object::ObjectFile>(BinaryOrErr->getBinary()),
                       PreferredBaseAddress,
-                      FetchDebugInfoWithLevel);
+                      FetchDebugInfoWithLevel,
+                      IgnoreDebugSymbols);
 }

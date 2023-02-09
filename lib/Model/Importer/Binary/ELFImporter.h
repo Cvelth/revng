@@ -54,7 +54,8 @@ public:
 class ELFImporterBase {
 public:
   virtual ~ELFImporterBase() = default;
-  virtual llvm::Error import(unsigned FetchDebugInfoWithLevel) = 0;
+  virtual llvm::Error
+  import(unsigned FetchDebugInfoWithLevel, bool IgnoreDebugSymbols) = 0;
 };
 
 template<typename T, bool HasAddend>
@@ -94,7 +95,8 @@ private:
   using ConstElf_Shdr = const typename llvm::object::ELFFile<T>::Elf_Shdr;
 
 public:
-  llvm::Error import(unsigned FetchDebugInfoWithLevel) override;
+  llvm::Error
+  import(unsigned FetchDebugInfoWithLevel, bool IgnoreDebugSymbols) override;
 
 private:
   MetaAddress getGenericPointer(Pointer Ptr) const {
@@ -148,8 +150,9 @@ private:
   void parseDynamicSymbol(llvm::object::Elf_Sym_Impl<T> &Symbol,
                           llvm::StringRef Dynstr);
 
-  void
-  findMissingTypes(llvm::object::ELFFile<T> &TheELF, unsigned DebugInfoLevel);
+  void findMissingTypes(llvm::object::ELFFile<T> &TheELF,
+                        unsigned DebugInfoLevel,
+                        bool IgnoreDebugSymbols);
 
 protected:
   template<typename Q>

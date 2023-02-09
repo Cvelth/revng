@@ -157,7 +157,8 @@ uint64_t symbolsCount(const FilePortion &Relocations) {
 }
 
 template<typename T, bool HasAddend>
-Error ELFImporter<T, HasAddend>::import(unsigned FetchDebugInfoWithLevel) {
+Error ELFImporter<T, HasAddend>::import(unsigned FetchDebugInfoWithLevel,
+                                        bool IgnoreDebugSymbols) {
   // Parse the ELF file
   auto TheELFOrErr = object::ELFFile<T>::create(TheBinary.getData());
   if (not TheELFOrErr)
@@ -337,19 +338,24 @@ Error ELFImporter<T, HasAddend>::import(unsigned FetchDebugInfoWithLevel) {
   Model->DefaultPrototype() = abi::registerDefaultFunctionPrototype(Ptr);
 
   // Import Dwarf
-  DwarfImporter Importer(Model, PreferredBaseAddress);
-  Importer.import(TheBinary.getFileName(), FetchDebugInfoWithLevel);
+  if (!IgnoreDebugSymbols) {
+    DwarfImporter Importer(Model, PreferredBaseAddress);
+    Importer.import(TheBinary.getFileName(), FetchDebugInfoWithLevel);
 
-  // Now we try to find missing types in the dependencies.
-  if (FetchDebugInfoWithLevel > 1)
-    findMissingTypes(TheELF, FetchDebugInfoWithLevel);
+    // Now we try to find missing types in the dependencies.
+    if (FetchDebugInfoWithLevel > 1)
+      findMissingTypes(TheELF, FetchDebugInfoWithLevel, IgnoreDebugSymbols);
+  } else {
+    model::promoteOriginalName(Model);
+  }
 
   return Error::success();
 }
 
 template<typename T, bool HasAddend>
 void ELFImporter<T, HasAddend>::findMissingTypes(object::ELFFile<T> &TheELF,
-                                                 unsigned DebugInfoLevel) {
+                                                 unsigned DebugInfoLevel,
+                                                 bool IgnoreDebugSymbols) {
   ModelMap ModelsOfLibraries;
   TypeCopierMap TypeCopiers;
 
@@ -385,7 +391,8 @@ void ELFImporter<T, HasAddend>::findMissingTypes(object::ELFFile<T> &TheELF,
       if (auto E = importELF(DepModel,
                              *TheBinary,
                              BaseAddress,
-                             1 /*FetchDebugInfoWithLevel*/)) {
+                             /*FetchDebugInfoWithLevel=*/1,
+                             IgnoreDebugSymbols)) {
         revng_log(ELFImporterLog,
                   "Can't import model for " << DependencyLibrary << " due to "
                                             << E);
@@ -1257,13 +1264,8 @@ createELFImporter(TupleTree<model::Binary> &M,
 Error importELF(TupleTree<model::Binary> &Model,
                 const object::ELFObjectFileBase &TheBinary,
                 uint64_t PreferredBaseAddress,
-                unsigned FetchDebugInfoWithLevel) {
-  // In the case of MIPS architecture, we handle some specific import
-  // as a part of a separate derived (from ELFImporter) class.
-  // TODO: Investigate other architectures as well.
-  bool IsMIPS = (Model->Architecture() == model::Architecture::mips
-                 or Model->Architecture() == model::Architecture::mipsel);
-
+                unsigned FetchDebugInfoWithLevel,
+                bool IgnoreDebugSymbols) {
   using namespace model::Architecture;
   bool IsLittleEndian = isLittleEndian(Model->Architecture());
   size_t PointerSize = getPointerSize(Model->Architecture());
@@ -1275,5 +1277,5 @@ Error importELF(TupleTree<model::Binary> &Model,
                                     IsLittleEndian,
                                     PointerSize,
                                     HasRelocationAddend);
-  return Importer->import(FetchDebugInfoWithLevel);
+  return Importer->import(FetchDebugInfoWithLevel, IgnoreDebugSymbols);
 }

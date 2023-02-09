@@ -32,3 +32,10 @@ inline llvm::cl::opt<uint64_t> BaseAddress("base",
                                            llvm::cl::cat(MainCategory),
                                            llvm::cl::init(0x400000));
 #undef DESCRIPTION
+
+#define DESCRIPTION "ignore all the debug information within the binary."
+inline llvm::cl::opt<bool> IgnoreDebugSymbols("ignore-debug-symbols",
+                                              llvm::cl::desc(DESCRIPTION),
+                                              llvm::cl::cat(MainCategory),
+                                              llvm::cl::init(false));
+#undef DESCRIPTION
