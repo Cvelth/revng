@@ -22,6 +22,19 @@ struct DataSymbol {
 
 using DataSymbolVecTy = llvm::SmallVectorImpl<DataSymbol>;
 
+inline bool checkForOverlap(const model::StructType &Struct,
+                            const model::StructField &Field) {
+  uint64_t Size = *Field.Type().size();
+  for (auto &Current : Struct.Fields()) {
+    uint64_t CurrentSize = *Current.Type().size();
+    if ((Current.Offset() < Field.Offset() + Size))
+      if (Current.Offset() + CurrentSize > Field.Offset())
+        return true;
+  }
+
+  return false;
+}
+
 inline model::QualifiedType
 populateSegmentTypeStruct(model::Binary &Binary,
                           model::Segment &Segment,
@@ -49,11 +62,14 @@ populateSegmentTypeStruct(model::Binary &Binary,
       }
 
       model::StructField Field{ *Offset, {}, Name.str(), FieldType };
-      const auto &[_, Success] = Struct->Fields().insert(Field);
-      revng_assert(Success);
+      if (!checkForOverlap(*Struct, Field)) {
+        // Discard any symbols that would overlap an already existing one.
+        const auto &[_, Success] = Struct->Fields().insert(Field);
+        revng_assert(Success);
+      }
     }
   }
 
-  revng_assert(Struct->verify());
+  revng_assert(Struct->verify(true));
   return model::QualifiedType(std::move(StructPath), {});
 }
