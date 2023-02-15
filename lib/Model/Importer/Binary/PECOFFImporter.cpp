@@ -12,6 +12,7 @@
 #include "revng/Model/Binary.h"
 #include "revng/Model/IRHelpers.h"
 #include "revng/Model/Importer/Binary/BinaryImporterHelper.h"
+#include "revng/Model/Importer/Binary/BinaryImporterOptions.h"
 #include "revng/Model/Importer/DebugInfo/PDBImporter.h"
 #include "revng/Model/Pass/AllPasses.h"
 #include "revng/Support/Debug.h"
@@ -37,7 +38,7 @@ public:
                  const object::COFFObjectFile &TheBinary) :
     Model(Model), TheBinary(TheBinary) {}
 
-  Error import(unsigned FetchDebugInfoWithLevel);
+  Error import(DebugInfoOptions &TheDebugInfoOption);
 
 private:
   Error parseSectionsHeaders();
@@ -55,7 +56,7 @@ private:
   /// Resolve dependent DLLs.
   void getDependencies(PELDDTree Dependencies, unsigned Level);
   /// Try to find prototypes in the Models of dynamic libraries.
-  void findMissingTypes(unsigned FetchDebugInfoWithLevel);
+  void findMissingTypes(DebugInfoOptions &TheDebugInfoOption);
 
   using DelayDirectoryRef = const DelayImportDirectoryEntryRef;
   void
@@ -391,11 +392,11 @@ void PECOFFImporter::getDependencies(PELDDTree Dependencies, unsigned Level) {
     getDependenciesHelper(TheBinary.getFileName(), Dependencies, 1, Level);
 }
 
-void PECOFFImporter::findMissingTypes(unsigned FetchDebugInfoWithLevel) {
+void PECOFFImporter::findMissingTypes(DebugInfoOptions &TheDebugInfoOption) {
   using namespace std;
 
   PELDDTree Dependencies;
-  getDependencies(Dependencies, FetchDebugInfoWithLevel - 1);
+  getDependencies(Dependencies, TheDebugInfoOption.FetchDebugInfoWithLevel - 1);
 
   ModelMap ModelsOfLibraries;
   TypeCopierMap TypeCopiers;
@@ -427,10 +428,12 @@ void PECOFFImporter::findMissingTypes(unsigned FetchDebugInfoWithLevel) {
       auto &DepModel = ModelsOfLibraries[DependencyLibrary];
       DepModel->Architecture() = Model->Architecture();
 
+      DebugInfoOptions NewDebugInfoOption = TheDebugInfoOption;
+      NewDebugInfoOption.FetchDebugInfoWithLevel = 1;
       if (auto E = importPECOFF(DepModel,
                                 *TheBinary,
                                 BaseAddress,
-                                1 /*FetchDebugInfoWithLevel*/)) {
+                                NewDebugInfoOption)) {
         revng_log(Log,
                   "Can't import model for " << DependencyLibrary << " due to "
                                             << E);
@@ -481,7 +484,7 @@ void PECOFFImporter::findMissingTypes(unsigned FetchDebugInfoWithLevel) {
   promoteOriginalName(Model);
 }
 
-Error PECOFFImporter::import(unsigned FetchDebugInfoWithLevel) {
+Error PECOFFImporter::import(DebugInfoOptions &TheDebugInfoOption) {
   if (Error E = parseSectionsHeaders())
     return E;
 
@@ -504,11 +507,11 @@ Error PECOFFImporter::import(unsigned FetchDebugInfoWithLevel) {
   Model->DefaultPrototype() = abi::registerDefaultFunctionPrototype(*Model);
 
   PDBImporter PDBI(Model, ImageBase);
-  PDBI.import(TheBinary, FetchDebugInfoWithLevel);
+  PDBI.import(TheBinary, TheDebugInfoOption);
 
   // Now we try to find missing types in the dependencies.
-  if (FetchDebugInfoWithLevel > 1)
-    findMissingTypes(FetchDebugInfoWithLevel);
+  if (TheDebugInfoOption.FetchDebugInfoWithLevel > 1)
+    findMissingTypes(TheDebugInfoOption);
 
   return Error::success();
 }
@@ -516,10 +519,10 @@ Error PECOFFImporter::import(unsigned FetchDebugInfoWithLevel) {
 Error importPECOFF(TupleTree<model::Binary> &Model,
                    const object::COFFObjectFile &TheBinary,
                    uint64_t PreferredBaseAddress,
-                   unsigned FetchDebugInfoWithLevel) {
+                   DebugInfoOptions TheDebugInfoOption) {
   // TODO: use PreferredBaseAddress if PIC
   (void) PreferredBaseAddress;
 
   PECOFFImporter Importer(Model, TheBinary);
-  return Importer.import(FetchDebugInfoWithLevel);
+  return Importer.import(TheDebugInfoOption);
 }

@@ -18,14 +18,15 @@ class MachOObjectFile;
 } // namespace object
 } // namespace llvm
 
+struct DebugInfoOptions;
 llvm::Error importELF(TupleTree<model::Binary> &Model,
                       const llvm::object::ELFObjectFileBase &TheBinary,
                       uint64_t PreferredBaseAddress,
-                      unsigned FetchDebugInfoWithLevel);
+                      DebugInfoOptions TheDebugInfoOption);
 llvm::Error importPECOFF(TupleTree<model::Binary> &Model,
                          const llvm::object::COFFObjectFile &TheBinary,
                          uint64_t PreferredBaseAddress,
-                         unsigned FetchDebugInfoWithLevel);
+                         DebugInfoOptions TheDebugInfoOption);
 llvm::Error importMachO(TupleTree<model::Binary> &Model,
                         llvm::object::MachOObjectFile &TheBinary,
                         uint64_t PreferredBaseAddress);

@@ -62,11 +62,14 @@ int main(int Argc, char *Argv[]) {
   }
   auto &ObjectFile = *cast<llvm::object::ObjectFile>(BinaryOrErr->getBinary());
 
+  DebugInfoOptions TheDebugInfoOptions;
+  parseDebugInfoOptions(TheDebugInfoOptions);
+
   // Import debug info from both PE and ELF.
   TupleTree<model::Binary> Model;
   if (isa<llvm::object::ELFObjectFileBase>(&ObjectFile)) {
     DwarfImporter Importer(Model, BaseAddress);
-    Importer.import(InputFilename, FetchDebugInfoWithLevel);
+    Importer.import(InputFilename, TheDebugInfoOptions);
   } else if (auto *TheBinary = dyn_cast<object::COFFObjectFile>(&ObjectFile)) {
     MetaAddress ImageBase = MetaAddress::invalid();
     auto LLVMArchitecture = ObjectFile.makeTriple().getArch();
@@ -93,7 +96,7 @@ int main(int Argc, char *Argv[]) {
                                       PE32PlusHeader->ImageBase);
     }
     PDBImporter Importer(Model, ImageBase);
-    Importer.import(*TheBinary, FetchDebugInfoWithLevel);
+    Importer.import(*TheBinary, TheDebugInfoOptions);
   }
 
   // Serialize the model.

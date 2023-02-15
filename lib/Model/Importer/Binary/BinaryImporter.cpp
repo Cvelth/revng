@@ -11,6 +11,7 @@
 #include "llvm/Object/ObjectFile.h"
 
 #include "revng/Model/Importer/Binary/BinaryImporter.h"
+#include "revng/Model/Importer/Binary/BinaryImporterOptions.h"
 
 #include "Importers.h"
 
@@ -19,7 +20,7 @@ using namespace llvm;
 Error importBinary(TupleTree<model::Binary> &Model,
                    llvm::object::ObjectFile &ObjectFile,
                    uint64_t PreferredBaseAddress,
-                   unsigned FetchDebugInfoWithLevel) {
+                   DebugInfoOptions &TheDebugInfoOption) {
   using namespace llvm::object;
   using namespace model::Architecture;
   Model->Architecture() = fromLLVMArchitecture(ObjectFile.getArch());
@@ -31,12 +32,12 @@ Error importBinary(TupleTree<model::Binary> &Model,
     return importELF(Model,
                      *TheBinary,
                      PreferredBaseAddress,
-                     FetchDebugInfoWithLevel);
+                     TheDebugInfoOption);
   } else if (auto *TheBinary = dyn_cast<COFFObjectFile>(&ObjectFile)) {
     return importPECOFF(Model,
                         *TheBinary,
                         PreferredBaseAddress,
-                        FetchDebugInfoWithLevel);
+                        TheDebugInfoOption);
   } else if (auto *TheBinary = dyn_cast<MachOObjectFile>(&ObjectFile)) {
     return importMachO(Model, *TheBinary, PreferredBaseAddress);
   } else {
@@ -47,7 +48,7 @@ Error importBinary(TupleTree<model::Binary> &Model,
 Error importBinary(TupleTree<model::Binary> &Model,
                    llvm::StringRef Path,
                    uint64_t PreferredBaseAddress,
-                   unsigned FetchDebugInfoWithLevel) {
+                   DebugInfoOptions &TheDebugInfoOption) {
   auto BinaryOrErr = object::createBinary(Path);
   if (not BinaryOrErr)
     return BinaryOrErr.takeError();
@@ -55,5 +56,5 @@ Error importBinary(TupleTree<model::Binary> &Model,
   return importBinary(Model,
                       *cast<object::ObjectFile>(BinaryOrErr->getBinary()),
                       PreferredBaseAddress,
-                      FetchDebugInfoWithLevel);
+                      TheDebugInfoOption);
 }

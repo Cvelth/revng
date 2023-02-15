@@ -24,17 +24,20 @@ llvm::Error ImportBinaryAnalysis::run(pipeline::Context &Context,
 
   TupleTree<model::Binary> &Model = getWritableModelFromContext(Context);
 
+  DebugInfoOptions TheDebugInfoOptions;
+  parseDebugInfoOptions(TheDebugInfoOptions);
+
   if (auto Error = importBinary(Model,
                                 *SourceBinary.path(),
                                 BaseAddress,
-                                FetchDebugInfoWithLevel);
+                                TheDebugInfoOptions);
       Error)
     return Error;
 
   if (ImportDebugInfo.size() > 0) {
     DwarfImporter Importer(Model, BaseAddress);
     for (const std::string &Path : ImportDebugInfo)
-      Importer.import(Path, FetchDebugInfoWithLevel);
+      Importer.import(Path, TheDebugInfoOptions);
   }
 
   return llvm::Error::success();
