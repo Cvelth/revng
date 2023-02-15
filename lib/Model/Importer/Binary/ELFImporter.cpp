@@ -17,6 +17,7 @@
 #include "revng/Model/Binary.h"
 #include "revng/Model/IRHelpers.h"
 #include "revng/Model/Importer/Binary/BinaryImporterHelper.h"
+#include "revng/Model/Importer/Binary/BinaryImporterOptions.h"
 #include "revng/Model/Importer/DebugInfo/DwarfImporter.h"
 #include "revng/Model/Pass/AllPasses.h"
 #include "revng/Model/RawBinaryView.h"
@@ -157,7 +158,7 @@ uint64_t symbolsCount(const FilePortion &Relocations) {
 }
 
 template<typename T, bool HasAddend>
-Error ELFImporter<T, HasAddend>::import(unsigned FetchDebugInfoWithLevel) {
+Error ELFImporter<T, HasAddend>::import(DebugInfoOptions &TheDebugInfoOption) {
   // Parse the ELF file
   auto TheELFOrErr = object::ELFFile<T>::create(TheBinary.getData());
   if (not TheELFOrErr)
@@ -336,25 +337,30 @@ Error ELFImporter<T, HasAddend>::import(unsigned FetchDebugInfoWithLevel) {
   auto &Ptr = *Model.get();
   Model->DefaultPrototype() = abi::registerDefaultFunctionPrototype(Ptr);
 
-  // Import Dwarf
-  DwarfImporter Importer(Model, PreferredBaseAddress);
-  Importer.import(TheBinary.getFileName(), FetchDebugInfoWithLevel);
+  if (!TheDebugInfoOption.IgnoreDebugInfo) {
+    // Import Dwarf
+    DwarfImporter Importer(Model, PreferredBaseAddress);
+    Importer.import(TheBinary.getFileName(), TheDebugInfoOption);
 
-  // Now we try to find missing types in the dependencies.
-  if (FetchDebugInfoWithLevel > 1)
-    findMissingTypes(TheELF, FetchDebugInfoWithLevel);
+    // Now we try to find missing types in the dependencies.
+    if (TheDebugInfoOption.FetchDebugInfoWithLevel > 1)
+      findMissingTypes(TheELF, TheDebugInfoOption);
+  }
 
   return Error::success();
 }
 
+using DIO = DebugInfoOptions;
 template<typename T, bool HasAddend>
 void ELFImporter<T, HasAddend>::findMissingTypes(object::ELFFile<T> &TheELF,
-                                                 unsigned DebugInfoLevel) {
+                                                 DIO &TheDebugInfoOption) {
   ModelMap ModelsOfLibraries;
   TypeCopierMap TypeCopiers;
 
   LDDTree Dependencies;
-  lddtree(Dependencies, TheBinary.getFileName().str(), DebugInfoLevel - 1);
+  lddtree(Dependencies,
+          TheBinary.getFileName().str(),
+          TheDebugInfoOption.FetchDebugInfoWithLevel - 1);
   for (auto &Library : Dependencies) {
     revng_log(ELFImporterLog,
               "Importing Models for dependencies of " << Library.first << ":");
@@ -382,10 +388,12 @@ void ELFImporter<T, HasAddend>::findMissingTypes(object::ELFFile<T> &TheELF,
       ModelsOfLibraries[DependencyLibrary] = TupleTree<Binary>();
       TupleTree<model::Binary> &DepModel = ModelsOfLibraries[DependencyLibrary];
       DepModel->Architecture() = Model->Architecture();
+      DebugInfoOptions NewDebugInfoOption = TheDebugInfoOption;
+      NewDebugInfoOption.FetchDebugInfoWithLevel = 1;
       if (auto E = importELF(DepModel,
                              *TheBinary,
                              BaseAddress,
-                             1 /*FetchDebugInfoWithLevel*/)) {
+                             NewDebugInfoOption)) {
         revng_log(ELFImporterLog,
                   "Can't import model for " << DependencyLibrary << " due to "
                                             << E);
@@ -1263,7 +1271,7 @@ createELFImporter(TupleTree<model::Binary> &M,
 Error importELF(TupleTree<model::Binary> &Model,
                 const object::ELFObjectFileBase &TheBinary,
                 uint64_t PreferredBaseAddress,
-                unsigned FetchDebugInfoWithLevel) {
+                DebugInfoOptions TheDebugInfoOption) {
   // In the case of MIPS architecture, we handle some specific import
   // as a part of a separate derived (from ELFImporter) class.
   // TODO: Investigate other architectures as well.
@@ -1281,5 +1289,5 @@ Error importELF(TupleTree<model::Binary> &Model,
                                     IsLittleEndian,
                                     PointerSize,
                                     HasRelocationAddend);
-  return Importer->import(FetchDebugInfoWithLevel);
+  return Importer->import(TheDebugInfoOption);
 }
