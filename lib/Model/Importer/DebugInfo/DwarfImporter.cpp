@@ -24,6 +24,7 @@
 
 #include "revng/ADT/STLExtras.h"
 #include "revng/Model/Importer/Binary/BinaryImporterHelper.h"
+#include "revng/Model/Importer/Binary/BinaryImporterOptions.h"
 #include "revng/Model/Importer/DebugInfo/DwarfImporter.h"
 #include "revng/Model/Pass/AllPasses.h"
 #include "revng/Model/Processing.h"
@@ -1192,7 +1193,7 @@ findDebugInfoFileByName(StringRef FileName,
 }
 
 void DwarfImporter::import(StringRef FileName,
-                           unsigned FetchDebugInfoWithLevel) {
+                           DebugInfoOptions &TheDebugInfoOption) {
   using namespace llvm::object;
   ErrorOr<std::unique_ptr<MemoryBuffer>>
     BuffOrErr = MemoryBuffer::getFileOrSTDIN(FileName);
@@ -1235,7 +1236,7 @@ void DwarfImporter::import(StringRef FileName,
   };
 
   if (auto *ELF = dyn_cast<ObjectFile>(BinOrErr->get())) {
-    if (FetchDebugInfoWithLevel && !HasDebugInfo(ELF)) {
+    if (TheDebugInfoOption.FetchDebugInfoWithLevel && !HasDebugInfo(ELF)) {
       // There are no .debug_* sections in the file itself, let's try to find it
       // on the device, otherwise find it on web by using the `fetch-debuginfo`
       // tool.

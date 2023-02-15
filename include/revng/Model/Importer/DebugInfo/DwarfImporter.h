@@ -8,6 +8,8 @@
 
 #include "revng/Model/Binary.h"
 
+struct DebugInfoOptions;
+
 class DwarfImporter {
 private:
   TupleTree<model::Binary> &Model;
@@ -36,7 +38,7 @@ public:
   TupleTree<model::Binary> &getModel() { return Model; }
 
 public:
-  void import(llvm::StringRef FileName, unsigned FetchDebugInfoWithLevel);
+  void import(llvm::StringRef FileName, DebugInfoOptions &TheDebugInfoOption);
 
 private:
   void import(const llvm::object::Binary &TheBinary, llvm::StringRef FileName);
