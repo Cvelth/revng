@@ -506,13 +506,16 @@ Error PECOFFImporter::import(DebugInfoOptions &TheDebugInfoOption) {
   // Create a default prototype.
   Model->DefaultPrototype() = abi::registerDefaultFunctionPrototype(*Model);
 
-  PDBImporter PDBI(Model, ImageBase);
-  PDBI.import(TheBinary, TheDebugInfoOption);
+  if (!TheDebugInfoOption.IgnoreDebugInfo) {
+    PDBImporter PDBI(Model, ImageBase);
+    PDBI.import(TheBinary, TheDebugInfoOption);
 
-  // Now we try to find missing types in the dependencies.
-  if (TheDebugInfoOption.FetchDebugInfoWithLevel > 1)
-    findMissingTypes(TheDebugInfoOption);
+    // Now we try to find missing types in the dependencies.
+    if (TheDebugInfoOption.FetchDebugInfoWithLevel > 1)
+      findMissingTypes(TheDebugInfoOption);
+  }
 
+  model::promoteOriginalName(Model);
   return Error::success();
 }
 
