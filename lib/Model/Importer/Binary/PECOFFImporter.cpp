@@ -13,6 +13,7 @@
 #include "revng/Model/IRHelpers.h"
 #include "revng/Model/Importer/Binary/BinaryImporterHelper.h"
 #include "revng/Model/Importer/Binary/BinaryImporterOptions.h"
+#include "revng/Model/Importer/Binary/SupportedABIs.h"
 #include "revng/Model/Importer/DebugInfo/PDBImporter.h"
 #include "revng/Model/Pass/AllPasses.h"
 #include "revng/Support/Debug.h"
@@ -500,7 +501,7 @@ Error PECOFFImporter::import(DebugInfoOptions &TheDebugInfoOption) {
 
   if (Model->DefaultABI() == model::ABI::Invalid) {
     auto &Architecture = Model->Architecture();
-    Model->DefaultABI() = model::ABI::getDefaultMicrosoftABI(Architecture);
+    Model->DefaultABI() = supportedABIListForPECOFF(Architecture)[0];
   }
 
   // Create a default prototype.

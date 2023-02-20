@@ -18,6 +18,7 @@
 #include "revng/Model/IRHelpers.h"
 #include "revng/Model/Importer/Binary/BinaryImporterHelper.h"
 #include "revng/Model/Importer/Binary/BinaryImporterOptions.h"
+#include "revng/Model/Importer/Binary/SupportedABIs.h"
 #include "revng/Model/Importer/DebugInfo/DwarfImporter.h"
 #include "revng/Model/Pass/AllPasses.h"
 #include "revng/Model/RawBinaryView.h"
@@ -169,7 +170,7 @@ Error ELFImporter<T, HasAddend>::import(DebugInfoOptions &TheDebugInfoOption) {
   Architecture = Model->Architecture();
 
   // Set default ABI
-  Model->DefaultABI() = model::ABI::getDefault(Model->Architecture());
+  Model->DefaultABI() = supportedABIListForELF(Architecture)[0];
 
   // BaseAddress makes sense only for shared (relocatable, PIC) objects
   auto Type = TheELF.getHeader().e_type;

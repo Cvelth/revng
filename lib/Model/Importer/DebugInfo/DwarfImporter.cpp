@@ -25,6 +25,7 @@
 #include "revng/ADT/STLExtras.h"
 #include "revng/Model/Importer/Binary/BinaryImporterHelper.h"
 #include "revng/Model/Importer/Binary/BinaryImporterOptions.h"
+#include "revng/Model/Importer/Binary/SupportedABIs.h"
 #include "revng/Model/Importer/DebugInfo/DwarfImporter.h"
 #include "revng/Model/Pass/AllPasses.h"
 #include "revng/Model/Processing.h"
@@ -193,7 +194,7 @@ public:
 
     // Detect default ABI from the architecture.
     if (Model->DefaultABI() == model::ABI::Invalid)
-      Model->DefaultABI() = model::ABI::getDefault(Model->Architecture());
+      Model->DefaultABI() = supportedABIListForELF(Arch)[0];
   }
 
 private:
