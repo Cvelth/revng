@@ -936,6 +936,14 @@ constexpr inline model::PrimitiveTypeKind::Values primitiveKind(Values V) {
   }
 }
 
+constexpr inline bool isGeneralPurpose(Values V) {
+  return primitiveKind(V) == model::PrimitiveTypeKind::PointerOrNumber;
+}
+
+constexpr inline bool isVector(Values V) {
+  return primitiveKind(V) == model::PrimitiveTypeKind::Float;
+}
+
 } // namespace model::Register
 
 template<>
