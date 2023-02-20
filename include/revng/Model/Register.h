@@ -590,6 +590,94 @@ inline Values fromRegisterName(llvm::StringRef Name,
   return fromName(FullName);
 }
 
+inline Values
+fromLLVMName(llvm::StringRef Name, model::Architecture::Values Architecture) {
+  revng_assert(!Name.empty());
+
+  std::string Lowercase = Name.lower();
+  Values Result = fromRegisterName(Lowercase, Architecture);
+  if (Result != Invalid)
+    return Result;
+
+  //
+  // Exceptions: real registers we have no way to represent.
+  //
+
+  if (Architecture == model::Architecture::x86_64
+      || Architecture == model::Architecture::x86) {
+    // mmX registers
+    if (Lowercase.size() == 3 && Lowercase.substr(0, 2) == "mm")
+      if (Lowercase[2] >= '0' && Lowercase[2] <= '7')
+        return Invalid;
+
+    // stX registers
+    if (Lowercase.size() == 3 && Lowercase.substr(0, 2) == "st")
+      if (Lowercase[2] >= '0' && Lowercase[2] <= '7')
+        return Invalid;
+  } else if (Architecture == model::Architecture::aarch64) {
+    if (Lowercase == "w29" || Lowercase == "fp")
+      return model::Register::x29_aarch64;
+    else if (Lowercase == "w30" || Lowercase == "lr")
+      return model::Register::lr_aarch64;
+    else if (Lowercase == "wsp" || Lowercase == "sp")
+      return model::Register::sp_aarch64;
+    else if (Lowercase == "wzr" || Lowercase == "xzr")
+      return model::Register::sp_aarch64;
+
+    auto First = llvm::StringRef(Lowercase).substr(0, 1);
+    if (First == "w")
+      return fromLLVMName("x" + Lowercase.substr(1), Architecture);
+    else if (First == "b" || First == "h" || First == "s" || First == "d"
+             || First == "q")
+      return fromLLVMName("v" + Lowercase.substr(1), Architecture);
+  } else if (Architecture == model::Architecture::arm) {
+    if (Lowercase == "sp")
+      return model::Register::r13_arm;
+    else if (Lowercase == "lr")
+      return model::Register::r14_arm;
+    else if (Lowercase == "pr")
+      return model::Register::r15_arm;
+
+    auto First = llvm::StringRef(Lowercase).substr(0, 1);
+    auto Remaining = llvm::StringRef(Lowercase).substr(1);
+    std::uint64_t Index = std::numeric_limits<std::uint64_t>::max();
+    if (!Remaining.getAsInteger(10, Index)) {
+      if (First == "d" && Index < 16)
+        return fromLLVMName("q" + std::to_string(Index % 2), Architecture);
+      else if (First == "s" && Index < 32)
+        return fromLLVMName("q" + std::to_string(Index % 4), Architecture);
+    }
+  } else if (Architecture == model::Architecture::mips
+             || Architecture == model::Architecture::mipsel) {
+    auto First = llvm::StringRef(Lowercase).substr(0, 1);
+    if (llvm::StringRef(Lowercase).substr(Lowercase.size() - 3) == "_64") {
+      if (First == "d") {
+        return fromLLVMName("f" + Lowercase.substr(1, Lowercase.size() - 4),
+                            model::Architecture::mips);
+      } else {
+        return fromLLVMName(Lowercase.substr(0, Lowercase.size() - 3),
+                            model::Architecture::mips);
+      }
+    }
+
+    auto Remaining = llvm::StringRef(Lowercase).substr(1);
+    std::uint64_t Index = std::numeric_limits<std::uint64_t>::max();
+    if (!Remaining.getAsInteger(10, Index)) {
+      if (First == "d" && Index < 16) {
+        return fromLLVMName("f" + std::to_string(Index * 2),
+                            model::Architecture::mips);
+      }
+    }
+  } else if (Architecture == model::Architecture::systemz) {
+    auto Last = llvm::StringRef(Lowercase).substr(Lowercase.size() - 1);
+    if (Last == "d" || Last == "h" || Last == "l" || Last == "q")
+      return fromLLVMName(Lowercase.substr(0, Lowercase.size() - 1),
+                          Architecture);
+  }
+
+  revng_abort(("Unknown register: '" + Lowercase + "'").c_str());
+}
+
 inline std::optional<unsigned> getMContextIndex(Values V) {
   switch (V) {
   case rax_x86_64:
