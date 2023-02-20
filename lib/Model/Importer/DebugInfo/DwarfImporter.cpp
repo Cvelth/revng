@@ -17,11 +17,15 @@
 #include "llvm/DebugInfo/DWARF/DWARFDie.h"
 #include "llvm/DebugInfo/DWARF/DWARFFormValue.h"
 #include "llvm/IR/DebugInfoMetadata.h"
+#include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/Process.h"
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "revng/ABI/Definition.h"
 #include "revng/ADT/STLExtras.h"
 #include "revng/Model/Importer/Binary/BinaryImporterHelper.h"
 #include "revng/Model/Importer/Binary/BinaryImporterOptions.h"
@@ -198,11 +202,168 @@ public:
   }
 
 private:
-  model::ABI::Values getABI(CallingConvention CC = DW_CC_normal) const {
+  static std::vector<std::uint64_t> gatherRegisters(DataExtractor Extractor,
+                                                    std::uint8_t AddressSize,
+                                                    DWARFUnit *Unit) {
+    std::vector<std::uint64_t> Result;
+
+    DWARFExpression Expression(Extractor,
+                               AddressSize,
+                               Unit->getFormParams().Format);
+    for (DWARFExpression::Operation &Operation : Expression) {
+      if (Operation.getCode() == DW_OP_bregx
+          || Operation.getCode() == DW_OP_regx
+          || Operation.getCode() == DW_OP_regval_type) {
+        Result.emplace_back(Operation.getRawOperand(0));
+      } else if (Operation.getCode() >= DW_OP_breg0
+                 && Operation.getCode() <= DW_OP_breg31) {
+        Result.emplace_back(Operation.getCode() - DW_OP_breg0);
+      } else if (Operation.getCode() >= DW_OP_reg0
+                 && Operation.getCode() <= DW_OP_reg31) {
+        Result.emplace_back(Operation.getCode() - DW_OP_reg0);
+      } else {
+        // We don't really care about anything but registers, so if the current
+        // operation is not a register, just skip it.
+      }
+    }
+
+    return Result;
+  }
+
+  model::Register::Values decodeDwarfRegister(std::uint64_t Code) const {
+    const MCRegisterInfo *RegisterInformation = DICtx.getRegisterInfo();
+    auto LLVMRegister = RegisterInformation->getLLVMRegNum(Code, false);
+    if (!LLVMRegister) {
+      std::string Error = "Unsupported dwarf register code: "
+                          + std::to_string(Code);
+      revng_abort(Error.c_str());
+    }
+
+    const char *RegisterName = RegisterInformation->getName(*LLVMRegister);
+    revng_assert(RegisterName != nullptr);
+
+    return model::Register::fromLLVMName(RegisterName, Architecture);
+  }
+
+  using RegisterSet = std::set<model::Register::Values>;
+  RegisterSet gatherRegisters(const DWARFDie &Die) const {
+    RegisterSet Result;
+    auto AddRegister = [this, &Result](std::uint64_t RegisterCode) {
+      model::Register::Values Register = decodeDwarfRegister(RegisterCode);
+      if (Register != model::Register::Invalid)
+        Result.emplace(Register);
+    };
+
+    DWARFUnit *Unit = Die.getDwarfUnit();
+    for (const DWARFDie &ChildDie : Die.children()) {
+      if (ChildDie.getTag() == DW_TAG_formal_parameter) {
+        Optional<DWARFFormValue> Form = ChildDie.find(DW_AT_location);
+        if (!Form) {
+          // The argument has no location. It must have been optimized out.
+          return {};
+        }
+
+        auto Locations = cantFail(ChildDie.getLocations(DW_AT_location));
+        for (const DWARFLocationExpression &Location : Locations) {
+          if (Form->isFormClass(DWARFFormValue::FC_Block)
+              || Form->isFormClass(DWARFFormValue::FC_Exprloc)) {
+            ArrayRef<std::uint8_t> Data = *Form->getAsBlock();
+            DataExtractor Extractor(StringRef((const char *) Data.data(),
+                                              Data.size()),
+                                    Unit->getContext().isLittleEndian(),
+                                    0);
+            std::uint8_t Size = Unit->getAddressByteSize();
+            for (auto RegisterCode : gatherRegisters(Extractor, Size, Unit))
+              AddRegister(RegisterCode);
+          } else if (Form->isFormClass(DWARFFormValue::FC_SectionOffset)) {
+            std::uint64_t Offset = *Form->getAsSectionOffset();
+            if (Form->getForm() == DW_FORM_loclistx) {
+              if (auto LoclistOffset = Unit->getLoclistOffset(Offset))
+                Offset = *LoclistOffset;
+              else
+                continue;
+            }
+
+            // This type of location represents a list of places where
+            // the variable in question is going to be moved through. But since
+            // we are only interested in where it was passed as an argument,
+            // we only look at the very first location it's indicated in.
+            //
+            // TODO: investigate if there are ever cases where we are interested
+            //       in any of the other places it is placed at.
+            bool HasSeenAtLeastOneLocation = false;
+
+            const DWARFLocationTable &Table = Unit->getLocationTable();
+            auto Visitor = [&](const DWARFLocationEntry &E) {
+              if (HasSeenAtLeastOneLocation)
+                return true;
+              HasSeenAtLeastOneLocation = true;
+
+              if (E.Kind != DW_LLE_base_address
+                  && E.Kind != DW_LLE_base_addressx
+                  && E.Kind != DW_LLE_end_of_list) {
+                auto &TableTrick = const_cast<DWARFLocationTable &>(Table);
+                std::uint8_t Size = TableTrick.getData().getAddressSize();
+                DataExtractor Extractor(StringRef((const char *) E.Loc.data(),
+                                                  E.Loc.size()),
+                                        Unit->getContext().isLittleEndian(),
+                                        Size);
+                for (auto Register : gatherRegisters(Extractor, Size, Unit))
+                  AddRegister(Register);
+              }
+
+              return true;
+            };
+            Error LLVMError = Table.visitLocationList(&Offset, Visitor);
+            if (LLVMError) {
+              std::string Error;
+              handleAllErrors(std::move(LLVMError),
+                              [&Error](const ErrorInfoBase &Info) {
+                                Error += Info.message() + '\n';
+                              });
+              revng_abort(Error.c_str());
+            }
+          }
+        }
+      }
+    }
+
+    return Result;
+  }
+
+  static bool isABICompatible(const RegisterSet &ArgumentRegisters,
+                              const abi::Definition &ABI) {
+    for (model::Register::Values R : ArgumentRegisters) {
+      if (model::Register::isGeneralPurpose(R)) {
+        if (!revng::is_contained(ABI.GeneralPurposeArgumentRegisters(), R))
+          return false;
+      } else if (model::Register::isVector(R)) {
+        if (!revng::is_contained(ABI.VectorArgumentRegisters(), R))
+          return false;
+      } else {
+        std::string Error = "The type of register '"
+                            + model::Register::getName(R).str()
+                            + "' is not known. Unable to verify ABI "
+                              "compatibility.";
+        revng_abort(Error.c_str());
+      }
+    }
+
+    return true;
+  }
+
+  model::ABI::Values
+  getABI(const DWARFDie &Die, CallingConvention CC = DW_CC_normal) const {
     if (CC != DW_CC_normal)
       return model::ABI::Invalid;
 
-    return Model->DefaultABI();
+    std::set<model::Register::Values> ArgumentRegisters = gatherRegisters(Die);
+    for (auto Option : supportedABIListForELF(Model->Architecture()))
+      if (isABICompatible(ArgumentRegisters, abi::Definition::get(Option)))
+        return Option;
+
+    // No known ABI is compatible.
+    return model::ABI::Invalid;
   }
 
   const model::QualifiedType &record(const DWARFDie &Die,
@@ -473,9 +634,10 @@ private:
     case llvm::dwarf::DW_TAG_subroutine_type: {
       auto *FunctionType = cast<model::CABIFunctionType>(T);
       FunctionType->OriginalName() = Name;
-      FunctionType->ABI() = getABI();
+      FunctionType->ABI() = getABI(Die);
 
       if (FunctionType->ABI() == model::ABI::Invalid) {
+        // TODO: we probably want to add a `RawFunctionType` for this function.
         reportIgnoredDie(Die, "Unknown calling convention");
         rc_return nullptr;
       }
@@ -812,9 +974,10 @@ private:
     auto MaybeCC = getUnsignedOrSigned(Die, DW_AT_calling_convention);
     if (MaybeCC)
       CC = static_cast<CallingConvention>(*MaybeCC);
-    FunctionType->ABI() = getABI(CC);
+    FunctionType->ABI() = getABI(Die, CC);
 
     if (FunctionType->ABI() == model::ABI::Invalid) {
+      // TODO: we probably want to add a `RawFunctionType` for this function.
       reportIgnoredDie(Die, "Unknown calling convention");
       return std::nullopt;
     }
@@ -1430,6 +1593,17 @@ inline void detectAliases(const llvm::object::ObjectFile &ELF,
   }
 }
 
+/// \note: this might cause multithreading problems.
+static void ensureTargetMCsWereInitializedOnce() {
+  static bool WereTheyInitialized = false;
+  if (!WereTheyInitialized) {
+    llvm::InitializeAllTargetInfos();
+    llvm::InitializeAllTargetMCs();
+
+    WereTheyInitialized = true;
+  }
+}
+
 void DwarfImporter::import(const llvm::object::Binary &TheBinary,
                            StringRef FileName) {
   using namespace llvm::object;
@@ -1454,6 +1628,18 @@ void DwarfImporter::import(const llvm::object::Binary &TheBinary,
         AltIndex = It - Begin;
     }
     auto TheDWARFContext = DWARFContext::create(*ELF);
+
+    ensureTargetMCsWereInitializedOnce();
+    Error LLVMError = TheDWARFContext->loadRegisterInfo(*ELF);
+    if (LLVMError) {
+      std::string Error;
+      handleAllErrors(std::move(LLVMError),
+                      [&Error](const ErrorInfoBase &Info) {
+                        Error += Info.message() + '\n';
+                      });
+      revng_abort(Error.c_str());
+    }
+
     DwarfToModelConverter Converter(*this,
                                     *TheDWARFContext,
                                     LoadedFiles.size(),
