@@ -347,6 +347,7 @@ Error ELFImporter<T, HasAddend>::import(DebugInfoOptions &TheDebugInfoOption) {
       findMissingTypes(TheELF, TheDebugInfoOption);
   }
 
+  model::promoteOriginalName(Model);
   return Error::success();
 }
 
