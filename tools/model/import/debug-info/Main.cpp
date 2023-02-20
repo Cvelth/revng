@@ -14,6 +14,7 @@
 
 #include "revng/ABI/DefaultFunctionPrototype.h"
 #include "revng/Model/Importer/Binary/BinaryImporterOptions.h"
+#include "revng/Model/Importer/Binary/SupportedABIs.h"
 #include "revng/Model/Importer/DebugInfo/DwarfImporter.h"
 #include "revng/Model/Importer/DebugInfo/PDBImporter.h"
 #include "revng/Model/ToolHelpers.h"
@@ -74,7 +75,7 @@ int main(int Argc, char *Argv[]) {
     using namespace model::ABI;
     Model->Architecture() = fromLLVMArchitecture(LLVMArchitecture);
     if (Model->DefaultABI() == model::ABI::Invalid)
-      Model->DefaultABI() = getDefaultMicrosoftABI(Model->Architecture());
+      Model->DefaultABI() = supportedABIListForPECOFF(Model->Architecture())[0];
 
     // Create a default prototype.
     Model->DefaultPrototype() = abi::registerDefaultFunctionPrototype(*Model);
