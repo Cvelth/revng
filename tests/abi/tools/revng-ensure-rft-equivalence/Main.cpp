@@ -88,13 +88,15 @@ int main(int Argc, char *Argv[]) {
 
   ExitOnError ExitOnError;
 
-  auto LeftModel = ModelInModule::load(LeftModelPath);
-  if (not LeftModel)
-    ExitOnError(LeftModel.takeError());
+  auto LeftModule = ModelInModule::load(LeftModelPath);
+  if (not LeftModule)
+    ExitOnError(LeftModule.takeError());
+  TupleTree<model::Binary> &LeftModel = LeftModule->Model;
 
-  auto RightModel = ModelInModule::load(RightModelPath);
-  if (not RightModel)
-    ExitOnError(RightModel.takeError());
+  auto RightModule = ModelInModule::load(RightModelPath);
+  if (not RightModule)
+    ExitOnError(RightModule.takeError());
+  TupleTree<model::Binary> &RightModel = RightModule->Model;
 
   std::error_code EC;
   llvm::ToolOutputFile OutputFile(OutputFilename,
@@ -120,11 +122,11 @@ int main(int Argc, char *Argv[]) {
   std::unordered_set<std::size_t> FunctionIDLookup;
 
   // Make sure the default prototype is valid.
-  revng_assert(LeftModel->Model->DefaultPrototype().isValid());
-  const auto &DefaultPrototype = *LeftModel->Model->DefaultPrototype().get();
+  revng_assert(LeftModel->DefaultPrototype().isValid());
+  const auto &DefaultPrototype = *LeftModel->DefaultPrototype().get();
 
   // Gather all the `RawFunctionType`s prototypes present in the first model.
-  for (model::Function &LF : LeftModel->Model->Functions()) {
+  for (model::Function &LF : LeftModel->Functions()) {
     if (LF.Prototype().get() == nullptr)
       continue; // Skip functions without prototypes.
 
@@ -150,7 +152,7 @@ int main(int Argc, char *Argv[]) {
   }
 
   // Gather all the `RawFunctionType`s prototypes present in the second model.
-  for (model::Function &RF : RightModel->Model->Functions()) {
+  for (model::Function &RF : RightModel->Functions()) {
     if (RF.Prototype().get() == nullptr)
       continue; // Skip functions without prototypes.
 
@@ -195,8 +197,7 @@ int main(int Argc, char *Argv[]) {
       revng_abort(Error.c_str());
     }
 
-    model::Binary &Binary = *RightModel->Model;
-    if (auto R = ensureMatchingIDs(Left->key(), Right->key(), Binary))
+    if (auto R = ensureMatchingIDs(Left->key(), Right->key(), *RightModel))
       RightReplacements.emplace(std::move(R.value()));
 
     // Try and access the argument struct.
@@ -213,54 +214,29 @@ int main(int Argc, char *Argv[]) {
     if (LeftStack == nullptr)
       continue;
 
-    if (auto R = ensureMatchingIDs(LeftStack->key(), RightStack->key(), Binary))
+    model::Binary &RModel = *RightModel;
+    if (auto R = ensureMatchingIDs(LeftStack->key(), RightStack->key(), RModel))
       RightReplacements.emplace(std::move(R.value()));
   }
 
-  // Gather all the pure function pointers, as in the types without
-  // a `model::Function` using them.
-  std::vector<const model::RawFunctionType *> LeftFunctionPointerTypes;
-  for (const auto &Left : LeftModel->Model->Types())
-    if (auto *Raw = llvm::dyn_cast<model::RawFunctionType>(Left.get()))
-      if (!FunctionIDLookup.contains(Raw->ID()))
-        LeftFunctionPointerTypes.emplace_back(Raw);
-  std::vector<const model::RawFunctionType *> RightFunctionPointerTypes;
-  for (const auto &Right : RightModel->Model->Types())
-    if (auto *Raw = llvm::dyn_cast<model::RawFunctionType>(Right.get()))
-      if (!FunctionIDLookup.contains(Raw->ID()))
-        RightFunctionPointerTypes.emplace_back(Raw);
-
-  // Remove these function pointers (and replace them with `void *`s) to avoid
-  // them cluttering the diff result, since we can only reliably test real
-  // functions (only ones with ABIArtifact available at that).
-  model::TypePath Void;
-  Void = LeftModel->Model->getPrimitiveType(model::PrimitiveTypeKind::Void, 0);
-  for (const model::RawFunctionType *Type : LeftFunctionPointerTypes) {
-    model::TypePath Reference = LeftModel->Model->getTypePath(Type->key());
-    LeftReplacements.emplace(Reference, Void);
-    LeftModel->Model->Types().erase(Type->key());
-  }
-  Void = RightModel->Model->getPrimitiveType(model::PrimitiveTypeKind::Void, 0);
-  for (const model::RawFunctionType *Type : RightFunctionPointerTypes) {
-    model::TypePath Reference = RightModel->Model->getTypePath(Type->key());
-    RightReplacements.emplace(Reference, Void);
-    RightModel->Model->Types().erase(Type->key());
-  }
-
   // Replace references to modified types.
-  LeftModel->Model.replaceReferences(LeftReplacements);
-  RightModel->Model.replaceReferences(RightReplacements);
+  LeftModel.replaceReferences(LeftReplacements);
+  RightModel.replaceReferences(RightReplacements);
+
+  // Remove all the dynamic functions so that they don't interfere
+  LeftModel->ImportedDynamicFunctions().clear();
+  RightModel->ImportedDynamicFunctions().clear();
 
   // Erase the default prototypes because they interfere with the test.
-  // NOTE: the types themselves should have already been replaced as they
-  // qualify as function pointers (function types not used by any function).
-  LeftModel->Model->DefaultPrototype() = model::TypePath{};
-  RightModel->Model->DefaultPrototype() = model::TypePath{};
+  LeftModel->Types().erase(LeftModel->DefaultPrototype().get()->key());
+  RightModel->Types().erase(RightModel->DefaultPrototype().get()->key());
+  LeftModel->DefaultPrototype() = model::TypePath{};
+  RightModel->DefaultPrototype() = model::TypePath{};
 
   // Streamline both models and diff them
-  model::purgeUnnamedAndUnreachableTypes(LeftModel->Model);
-  model::purgeUnnamedAndUnreachableTypes(RightModel->Model);
-  auto Diff = diff(*LeftModel->Model, *RightModel->Model);
+  model::pruneUnusedTypes(LeftModel);
+  model::pruneUnusedTypes(RightModel);
+  auto Diff = diff(*LeftModel, *RightModel);
 
   if (Diff.Changes.empty()) {
     return EXIT_SUCCESS;
