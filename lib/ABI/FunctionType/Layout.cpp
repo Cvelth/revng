@@ -24,7 +24,8 @@ namespace abi::FunctionType {
 using RegisterVector = llvm::SmallVector<model::Register::Values, 2>;
 struct DistributedArgument {
   RegisterVector Registers = {};
-  size_t Size = 0, SizeOnStack = 0;
+  std::uint64_t Size = 0;
+  std::uint64_t SizeOnStack = 0;
   bool RepresentsPadding = false;
 };
 using DistributedArguments = llvm::SmallVector<DistributedArgument, 8>;
@@ -97,7 +98,7 @@ private:
                 bool AllowPuttingPartOfAnArgumentOnStack) const;
 
 public:
-  uint64_t finalStackOffset(const DistributedArguments &Arguments) const;
+  std::uint64_t finalStackOffset(const DistributedArguments &Arguments) const;
 };
 
 model::QualifiedType
@@ -175,8 +176,8 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
 
         using ModelRegister = model::Register::Values;
         SmallMap<ModelRegister, model::QualifiedType, 4> RecoveredTypes;
-        size_t StructOffset = 0;
-        for (size_t Index = 0; Index < Struct->Fields().size(); ++Index) {
+        std::uint64_t StructOffset = 0;
+        for (std::size_t Index = 0; Index < Struct->Fields().size(); ++Index) {
           if (Index >= ABI.GeneralPurposeReturnValueRegisters().size()) {
             revng_log(Log,
                       "There are more fields ("
@@ -248,7 +249,7 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
   }
 
   model::StructType StackArguments;
-  uint64_t CurrentStackOffset = 0;
+  std::uint64_t CurrentStackOffset = 0;
 
   // Now that return value is figured out, the arguments are next.
   auto Arguments = distributeArguments(Function.Arguments(),
@@ -289,12 +290,12 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
         const model::Argument &Argument = *ArgumentIterator;
 
         // Round the next offset based on the natural alignment.
-        uint64_t Alignment = *ABI.alignment(Argument.Type());
+        std::uint64_t Alignment = *ABI.alignment(Argument.Type());
         if (CurrentStackOffset % Alignment != 0)
           CurrentStackOffset += (Alignment - CurrentStackOffset % Alignment);
-        std::size_t InternalStackOffset = CurrentStackOffset;
+        std::uint64_t InternalStackOffset = CurrentStackOffset;
 
-        std::size_t OccupiedSpace = *Argument.Type().size();
+        std::uint64_t OccupiedSpace = *Argument.Type().size();
         if (Distributed.Registers.empty()) {
           // A stack-only argument: convert it into a struct field.
           model::StructField Field;
@@ -380,10 +381,10 @@ ToRawConverter::convert(const model::CABIFunctionType &Function,
   return NewTypePath;
 }
 
-uint64_t
+std::uint64_t
 ToRawConverter::finalStackOffset(const DistributedArguments &Arguments) const {
   const auto Architecture = model::ABI::getArchitecture(ABI.ABI());
-  uint64_t Result = model::Architecture::getCallPushSize(Architecture);
+  std::uint64_t Result = model::Architecture::getCallPushSize(Architecture);
 
   if (ABI.CalleeIsResponsibleForStackCleanup()) {
     for (auto &Argument : Arguments)
@@ -453,8 +454,8 @@ ToRawConverter::distributeOne(model::QualifiedType Type,
                                   << " registers are available to be used.");
   revng_log(Log, "The total number of registers is " << Registers.size());
 
-  std::size_t Size = *Type.size();
-  std::size_t Alignment = *ABI.alignment(Type);
+  std::uint64_t Size = *Type.size();
+  std::uint64_t Alignment = *ABI.alignment(Type);
   revng_log(Log, "The type:\n" << serializeToString(Type));
   revng_log(Log,
             "It's size is " << Size << " and it's alignment is " << Alignment
@@ -663,8 +664,6 @@ ToRawConverter::distributeArguments(const ArgumentSet &Arguments,
     return distributeNonPositionBasedArguments(Arguments, SkippedRegisterCount);
 }
 
-static constexpr auto UnlimitedRegisters = std::numeric_limits<size_t>::max();
-
 using model::QualifiedType;
 DistributedArgument
 ToRawConverter::distributeReturnValue(const QualifiedType &ReturnValue) const {
@@ -716,7 +715,7 @@ Layout::Layout(const model::CABIFunctionType &Function) {
   //
 
   bool HasShadowPointerToAggregateReturnValue = false;
-  std::size_t CurrentStackOffset = 0;
+  std::uint64_t CurrentStackOffset = 0;
   const auto Architecture = model::ABI::getArchitecture(Function.ABI());
   auto RV = Converter.distributeReturnValue(Function.ReturnType());
   if (RV.SizeOnStack == 0) {
@@ -792,7 +791,7 @@ Layout::Layout(const model::CABIFunctionType &Function) {
         Current.Stack = Layout::Argument::StackSpan{};
 
         // Round the offset based on the natural alignment,
-        uint64_t Alignment = *ABI.alignment(ArgumentType);
+        std::uint64_t Alignment = *ABI.alignment(ArgumentType);
         if (CurrentStackOffset % Alignment != 0)
           CurrentStackOffset += (Alignment - CurrentStackOffset % Alignment);
         Current.Stack->Offset = CurrentStackOffset;
@@ -938,8 +937,8 @@ bool Layout::verify() const {
   return true;
 }
 
-size_t Layout::argumentRegisterCount() const {
-  size_t Result = 0;
+std::size_t Layout::argumentRegisterCount() const {
+  std::size_t Result = 0;
 
   for (const auto &Argument : Arguments)
     Result += Argument.Registers.size();
@@ -947,8 +946,8 @@ size_t Layout::argumentRegisterCount() const {
   return Result;
 }
 
-size_t Layout::returnValueRegisterCount() const {
-  size_t Result = 0;
+std::size_t Layout::returnValueRegisterCount() const {
+  std::size_t Result = 0;
 
   for (const ReturnValue &ReturnValue : ReturnValues)
     Result += ReturnValue.Registers.size();
