@@ -24,6 +24,8 @@ class Type;
 class VerifyHelper {
 private:
   std::set<const model::Type *> VerifiedCache;
+  std::set<const model::Type *> VectorRegisterAdjacentCache;
+  std::set<const model::Type *> NonNaturallyAlignedCache;
   std::map<const model::Type *, uint64_t> SizeCache;
   std::map<const model::Type *, uint64_t> AlignmentCache;
   std::set<const model::Type *> InProgress;
@@ -42,7 +44,17 @@ public:
   }
 
   bool isVerified(const model::Type *T) const {
-    return VerifiedCache.count(T) != 0;
+    return VerifiedCache.contains(T);
+  }
+  
+public:
+  void markVectorRegisterAdjacent(const model::Type *T) {
+    revng_assert(not isVectorRegisterAdjacent(T));
+    VectorRegisterAdjacentCache.insert(T);
+  }
+
+  bool isVectorRegisterAdjacent(const model::Type *T) const {
+    return VectorRegisterAdjacentCache.contains(T);
   }
 
 public:
@@ -87,6 +99,16 @@ public:
       return It->second;
     else
       return std::nullopt;
+  }
+  
+public:
+  void markNonNaturallyAligned(const model::Type *T) {
+    revng_assert(not isNonNaturallyAligned(T));
+    NonNaturallyAlignedCache.insert(T);
+  }
+
+  bool isNonNaturallyAligned(const model::Type *T) const {
+    return NonNaturallyAlignedCache.contains(T);
   }
 
 public:

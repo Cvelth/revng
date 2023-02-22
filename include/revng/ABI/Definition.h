@@ -325,6 +325,21 @@ public:
   ///         `true` if it might be compatible.
   bool isIncompatibleWith(const model::RawFunctionType &Function) const;
 
+  /// Check whether a type is naturally aligned or not, a typical example of
+  /// a non-naturally aligned type is a packed struct.
+  ///
+  /// @param Type The type to check the alignment of.
+  ///
+  /// @return `true` if the type is naturally aligned, `false` otherwise.
+  bool isNaturallyAligned(const model::QualifiedType &Type) const {
+    model::VerifyHelper VH;
+    return isNaturallyAligned(VH, Type);
+  }
+
+  std::optional<bool>
+  isNaturallyAligned(model::VerifyHelper &VH,
+                     const model::QualifiedType &Type) const;
+
   /// Compute the natural alignment of the type in accordance with
   /// the current ABI
   ///

@@ -199,17 +199,22 @@ const Definition &Definition::get(model::ABI::Values ABI) {
   return It->second;
 }
 
-static RecursiveCoroutine<std::optional<uint64_t>>
+struct InternalAlignment {
+  std::uint64_t Size;
+  bool IsNonNatural;
+}
+
+static RecursiveCoroutine<std::optional<InternalAlignment>>
 naturalAlignment(const abi::Definition &ABI,
                  model::VerifyHelper &VH,
                  const model::Type &Type);
-static RecursiveCoroutine<std::optional<uint64_t>>
+static RecursiveCoroutine<std::optional<InternalAlignment>>
 naturalAlignment(const abi::Definition &ABI,
                  model::VerifyHelper &VH,
                  const model::QualifiedType &Type);
 
 template<typename RealType>
-RecursiveCoroutine<std::optional<uint64_t>>
+RecursiveCoroutine<std::optional<InternalAlignment>>
 underlyingAlignment(const abi::Definition &ABI,
                     model::VerifyHelper &VH,
                     const model::Type &Type) {
@@ -244,13 +249,15 @@ naturalAlignment(const abi::Definition &ABI,
     rc_return MaybeAlignment;
 
   uint64_t Alignment = 0;
+  bool IsNonNaturallyAligned = false;
 
   // This code assumes that the type `Type` is well formed.
   switch (Type.Kind()) {
   case model::TypeKind::RawFunctionType:
   case model::TypeKind::CABIFunctionType:
     // Function prototypes have no size - hence no alignment.
-    rc_return std::nullopt;
+    Alignment = 0;
+    IsNonNaturallyAligned = 0;
 
   case model::TypeKind::PrimitiveType: {
     // The alignment of primitives is simple to figure out based on the abi
@@ -258,24 +265,24 @@ naturalAlignment(const abi::Definition &ABI,
     if (P->PrimitiveKind() == model::PrimitiveTypeKind::Void) {
       // `void` has no size either - hence no alignment.
       revng_assert(P->Size() == 0);
-
       Alignment = 0;
     } else if (auto Iterator = ABI.Types().find(P->Size());
                Iterator != ABI.Types().end()) {
       Alignment = Iterator->AlignAt();
     } else {
-      // We might want to be stricter in cases where we run into a primitive
-      // existence of which is not defined by the ABI. But for now, just report
-      // the register-sized alignment.
-      Alignment = model::ABI::getPointerSize(ABI.ABI());
+      // Current primitive is not defined by the ABI, abort the computation.
+      Alignment = 0;
     }
+
+    // Primitives are always naturally aligned.
+    IsNonNaturallyAligned = false;
   } break;
 
   case model::TypeKind::EnumType:
     // The alignment of an enum is the same as the alignment of its underlying
     // type
     if (auto A = rc_recur underlyingAlignment<model::EnumType>(ABI, VH, Type))
-      Alignment = *A;
+      std::tie(Alignment, IsNonNaturallyAligned) = *A;
     else
       rc_return std::nullopt;
     break;
@@ -285,7 +292,7 @@ naturalAlignment(const abi::Definition &ABI,
     // type
     using model::TypedefType;
     if (auto A = rc_recur underlyingAlignment<TypedefType>(ABI, VH, Type))
-      Alignment = *A;
+      std::tie(Alignment, IsNonNaturallyAligned) = *A;
     else
       rc_return std::nullopt;
     break;
@@ -294,7 +301,7 @@ naturalAlignment(const abi::Definition &ABI,
     // The alignment of a struct is the same as the alignment of its most
     // strictly aligned member.
     if (auto A = rc_recur fieldAlignment<model::StructType>(ABI, VH, Type))
-      Alignment = *A;
+      std::tie(Alignment, IsNonNaturallyAligned) = *A;
     else
       rc_return std::nullopt;
     break;
@@ -303,7 +310,7 @@ naturalAlignment(const abi::Definition &ABI,
     // The alignment of a union is the same as the alignment of its most
     // strictly aligned member.
     if (auto A = rc_recur fieldAlignment<model::UnionType>(ABI, VH, Type))
-      Alignment = *A;
+      std::tie(Alignment, IsNonNaturallyAligned) = *A;
     else
       rc_return std::nullopt;
     break;
@@ -315,6 +322,8 @@ naturalAlignment(const abi::Definition &ABI,
   }
 
   VH.setAlignment(&Type, Alignment);
+  if (IsNonNaturallyAligned)
+    VH.markNonNaturallyAligned(&Type);
 
   rc_return Alignment;
 }
@@ -323,36 +332,32 @@ static RecursiveCoroutine<std::optional<uint64_t>>
 naturalAlignment(const abi::Definition &ABI,
                  model::VerifyHelper &VH,
                  const model::QualifiedType &QT) {
-  // This code assumes that the QualifiedType is well formed.
-  for (auto It = QT.Qualifiers().begin(); It != QT.Qualifiers().end(); ++It) {
-    switch (It->Kind()) {
-    case model::QualifierKind::Pointer:
-      // Doesn't matter what the type is, use alignment of the pointer.
-      rc_return ABI.Types().at(It->Size()).AlignAt();
-
-    case model::QualifierKind::Array: {
-      // The alignment of an array is the same as the alignment of its element.
-      const model::QualifiedType Element{
-        QT.UnqualifiedType(), { std::next(It), QT.Qualifiers().end() }
-      };
-      if (auto MaybeAlignment = rc_recur naturalAlignment(ABI, VH, Element))
-        rc_return *MaybeAlignment;
-      else
-        rc_return std::nullopt;
-    }
-
-    case model::QualifierKind::Const:
-      // Const has no impact on alignment, look at the next qualifier.
-      break;
-
-    case model::QualifierKind::Invalid:
-    case model::QualifierKind::Count:
-    default:
-      rc_return std::nullopt;
-    }
+  if (revng::is_contained_if(QT.Qualifiers(), model::Qualifier::isPointer)) {
+    // It doesn't matter what the type of a pointer is, it is just a pointer.
+    rc_return ABI.Types().at(It->Size()).AlignAt();
   }
-
+  
+  // The type has no pointer qualifier, strip all the `array`s and `const`s,
+  // since they have no impact on the alignment.
   rc_return rc_recur naturalAlignment(ABI, VH, *QT.UnqualifiedType().get());
+}
+
+static RecursiveCoroutine<std::optional<bool>>
+isNonNaturallyAligned(const abi::Definition &ABI,
+                      model::VerifyHelper &VH,
+                      const model::QualifiedType &QT) {
+  if (revng::is_contained_if(QT.Qualifiers(), model::Qualifier::isPointer)) {
+    // It doesn't matter what the type of a pointer is, it is just a pointer.
+    rc_return ABI.Types().at(It->Size()).AlignAt();
+  }
+  
+  // The type has no pointer qualifier, strip all the `array`s and `const`s,
+  // since they have no impact on the alignment.
+  auto MaybeA = rc_recur naturalAlignment(ABI, VH, *QT.UnqualifiedType().get());
+  if (MaybeA)
+    return VH.isNonNaturallyAligned(*QT.UnqualifiedType().get());
+  else
+    return std::nullopt;
 }
 
 std::optional<uint64_t>
@@ -360,10 +365,26 @@ Definition::alignment(model::VerifyHelper &VH,
                       const model::QualifiedType &QT) const {
   std::optional<uint64_t> Result = naturalAlignment(*this, VH, QT);
   revng_check(Result);
+  
+  if (!isNonNaturallyAligned(*this, VH, QT)) {
+    // Mark all non-naturally aligned types as "packed",
+    // which is what `_AlignOf` does in C.
+    return 1;
+  }
+
   if (*Result != 0)
     return *Result;
   else
     return std::nullopt;
+}
+
+std::optional<bool>
+isNaturallyAligned(model::VerifyHelper &VH,
+                   const model::QualifiedType &QT) const {
+  std::optional<uint64_t> Result = naturalAlignment(*this, VH, QT);
+  revng_check(Result);
+
+  return !isNonNaturallyAligned(*this, VH, QT);
 }
 
 } // namespace abi
