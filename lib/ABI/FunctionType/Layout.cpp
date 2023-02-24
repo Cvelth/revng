@@ -261,7 +261,7 @@ ToRawConverter::convert(const model::CABIFunctionType &FunctionType,
                       << serializeToString(Register));
         }
 
-        NewType.Arguments().insert(Argument);
+        NewType.Arguments().emplace(Argument);
       }
     }
 
