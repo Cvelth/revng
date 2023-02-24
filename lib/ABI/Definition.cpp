@@ -264,11 +264,11 @@ naturalAlignment(const abi::Definition &ABI,
       auto Iterator = ABI.FloatingPointScalarTypes().find(P->Size());
       revng_assert(Iterator != ABI.FloatingPointScalarTypes().end(),
                    "Unsupported floating point scalar.");
-      Alignment = Iterator->alignsAt();
+      Alignment = Iterator->alignedAt();
     } else {
       auto Iterator = ABI.ScalarTypes().find(P->Size());
       revng_assert(Iterator != ABI.ScalarTypes().end(), "Unsupported scalar.");
-      Alignment = Iterator->alignsAt();
+      Alignment = Iterator->alignedAt();
     }
   } break;
 
@@ -329,7 +329,7 @@ naturalAlignment(const abi::Definition &ABI,
     switch (It->Kind()) {
     case model::QualifierKind::Pointer:
       // Doesn't matter what the type is, use alignment of the pointer.
-      rc_return ABI.ScalarTypes().at(It->Size()).alignsAt();
+      rc_return ABI.ScalarTypes().at(It->Size()).alignedAt();
 
     case model::QualifierKind::Array: {
       // The alignment of an array is the same as the alignment of its element.

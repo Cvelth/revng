@@ -70,10 +70,10 @@ ScalarTypes:
   - Size: 4
   - Size: 8
   - Size: 16
-    AlignAs: 8
+    AlignedAt: 8
 
 FloatingPointScalarTypes:
   - Size: 4
   - Size: 8
   - Size: 16
-    AlignAs: 8
+    AlignedAt: 8

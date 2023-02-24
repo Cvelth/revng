@@ -41,11 +41,12 @@ ScalarTypes:
   - Size: 2
   - Size: 4
   - Size: 8
+    AlignedAt: 4
 
 FloatingPointScalarTypes:
   - Size: 4
   - Size: 8
-    AlignAs: 4
+    AlignedAt: 4
   - Size: 12
-    AlignAs: 4
+    AlignedAt: 4
   - Size: 16

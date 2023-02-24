@@ -184,7 +184,7 @@ void VH::verify(const abi::FunctionType::Layout &FunctionLayout,
 
         revng_assert(!ABI.ScalarTypes().empty());
         auto &BiggestScalarType = *std::prev(ABI.ScalarTypes().end());
-        if (BiggestScalarType.alignsAt() != ABI.getPointerSize()) {
+        if (BiggestScalarType.alignedAt() != ABI.getPointerSize()) {
           // If the ABI supports unusual alignment, try to account for it,
           // by dropping an conflicting part of the stack data.
           if (StackBytes.size() < ABI.getPointerSize())

@@ -17,7 +17,7 @@ fields:
   - name: Size
     type: uint64_t
 
-  - name: AlignsAt
+  - name: AlignedAt
     doc: |
       When set to `0` (default), the alignment of this type matches its size
     type: uint64_t
@@ -36,9 +36,9 @@ class ScalarType : public generated::ScalarType {
 public:
   using generated::ScalarType::ScalarType;
 
-  std::uint64_t alignsAt() const {
+  std::uint64_t alignedAt() const {
     revng_assert(Size() != 0);
-    return AlignsAt() != 0 ? AlignsAt() : Size();
+    return AlignedAt() != 0 ? AlignedAt() : Size();
   }
 };
 
