@@ -263,7 +263,6 @@ ToRawConverter::convert(const model::CABIFunctionType &FunctionType,
 
         NewType.Arguments().emplace(Argument);
       }
-    }
 
       // Then stack arguments.
       if (Distributed.SizeOnStack != 0) {
