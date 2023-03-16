@@ -8,6 +8,7 @@
 #include <set>
 #include <vector>
 
+#include "revng/ADT/FilteredGraphTraits.h"
 #include "revng/Support/GraphAlgorithms.h"
 
 #include "InternalCompute.h"
@@ -47,32 +48,63 @@ static SelfLoopContainer extractSelfLoops(InternalGraph &Graph) {
 /// real entry point.
 static void
 ensureSingleEntry(InternalGraph &Graph, RankContainer *MaybeRanks = nullptr) {
-  auto EntryNodes = entryPoints(&Graph);
-  revng_assert(!EntryNodes.empty());
+  auto EntryPoints = entryPoints(&Graph);
+  revng_assert(!EntryPoints.empty());
 
-  if (EntryNodes.size() == 1) {
+  if (EntryPoints.size() == 1) {
     // If there's only a single entry point, make sure it's set.
-    Graph.setEntryNode(EntryNodes.front());
+    Graph.setEntryNode(EntryPoints.front());
   } else {
     // If there's more than one, add a new virtual node with all the real
     // entry nodes as its direct successors.
-
-    // BUT if the currently set entry node is already virtual, remove it first:
-    // this prevents the possibility of chaining virtual entry nodes when this
-    // function is invoked on a slightly-modified graph multiple times.
-    if (Graph.getEntryNode() != nullptr) {
-      if (Graph.getEntryNode()->IsVirtual) {
-        Graph.removeNode(Graph.getEntryNode());
-        if (MaybeRanks != nullptr)
-          MaybeRanks->erase(Graph.getEntryNode());
+    InternalNode *EntryNode = Graph.getEntryNode();
+    if (EntryNode != nullptr) {
+      // If there is already an entry node present for the graph,
+      if (EntryNode->IsVirtual) {
+        // and it's virtual, reuse it,
+      } else {
+        // otherwise, ignore it.
+        EntryNode = nullptr;
       }
     }
 
-    InternalNode *EntryPoint = Graph.makeVirtualNode();
-    for (InternalNode *Node : Graph.nodes())
-      if (!Node->hasPredecessors() && Node->index() != EntryPoint->index())
-        Graph.makeEdge(EntryPoint, Node);
-    Graph.setEntryNode(EntryPoint);
+    if (EntryNode == nullptr) {
+      // If there's no node to reuse, make a new one.
+      EntryNode = Graph.makeVirtualNode();
+    }
+
+    // Add all the entry points entry node is not aware off as successors.
+    for (InternalNode *EntryPoint : EntryPoints)
+      if (!EntryNode->hasSuccessor(EntryPoint))
+        Graph.makeEdge(EntryNode, EntryPoint);
+
+    // Set the computed "virtual" entry as the official entry point of the graph
+    Graph.setEntryNode(EntryNode);
+  }
+}
+
+/// Restores the original state of the graph as if \ref ensureSingleEntry was
+/// never called on it, by deleting the entirety of the virtual tree at
+/// the top of the graph, if one is present.
+static void stripArtificialEntryPoint(InternalGraph &Graph,
+                                      RankContainer *MaybeRanks = nullptr) {
+  static constexpr auto Filter = [](InternalNode *const &,
+                                    InternalNode *const &Successor) {
+    revng_assert(Successor != nullptr);
+    return Successor->IsVirtual;
+  };
+  using FilteredGraphType = NodePairFilteredGraph<InternalNode *, Filter>;
+
+  if (InternalNode *Entry = Graph.getEntryNode(); Entry && Entry->IsVirtual) {
+    std::vector<NodeView> ToRemove;
+    for (InternalNode *Current : llvm::depth_first(FilteredGraphType(Entry)))
+      ToRemove.emplace_back(Current);
+
+    for (NodeView Node : ToRemove) {
+      if (MaybeRanks != nullptr)
+        MaybeRanks->erase(Node);
+      Graph.removeNode(Node);
+    }
   }
 }
 
@@ -166,31 +198,13 @@ RankContainer partitionLongEdges(InternalGraph &Graph,
   // specifying the entry point in a mutable way.
   static_assert(InternalGraph::hasEntryNode == true);
 
-  ensureSingleEntry(Graph);
-
-  // Helper lambda for graph verification.
-  auto HasSingleEntryPoint = [](const InternalGraph &Graph) -> bool {
-    auto HasNoPredecessors = [](const InternalGraph::Node *Node) -> bool {
-      return !Node->predecessorCount();
-    };
-    if (llvm::count_if(Graph.nodes(), HasNoPredecessors) != 1)
-      return false;
-
-    if (auto Iterator = llvm::find_if(Graph.nodes(), HasNoPredecessors);
-        Iterator == Graph.nodes().end() || *Iterator != Graph.getEntryNode()) {
-      return false;
-    }
-
-    return true;
-  };
-
   // Because a long edge can also be a backwards edge, edges that are certainly
   // long need to be removed first, so that DFS-based ranking algorithms don't
   // mistakenly take any undesired shortcuts. Simple BFS ranking used
   // internally to differentiate such "certainly long" edges.
 
   // Rank nodes based on a BreadthFirstSearch pass-through.
-  revng_assert(HasSingleEntryPoint(Graph));
+  ensureSingleEntry(Graph);
   auto Ranks = rankNodes<RankingStrategy::BreadthFirstSearch>(Graph);
 
   // Temporary save them outside of the graph.
@@ -219,7 +233,6 @@ RankContainer partitionLongEdges(InternalGraph &Graph,
 
   // Calculate real ranks for the remainder of the graph.
   ensureSingleEntry(Graph, &Ranks);
-  revng_assert(HasSingleEntryPoint(Graph));
   Ranks = rankNodes<Strategy>(Graph);
 
   // Pick new long edges based on the real ranks.
@@ -237,7 +250,6 @@ RankContainer partitionLongEdges(InternalGraph &Graph,
   // is greater than the rank of its predecessors.
   //
   // Eventually, this ranking score becomes a proper hierarchy.
-  revng_assert(HasSingleEntryPoint(Graph));
   updateRanks(Graph, Ranks);
 
   // Make sure that new long edges are properly broken up.
@@ -246,17 +258,11 @@ RankContainer partitionLongEdges(InternalGraph &Graph,
   for (auto &Edge : NewLongEdges)
     Edge.From->removeSuccessors(Edge.To);
 
-  revng_assert(HasSingleEntryPoint(Graph));
   updateRanks(Graph, Ranks);
 
   // Remove an artificial entry node if it was ever added.
-  revng_assert(HasSingleEntryPoint(Graph));
-  if (Graph.getEntryNode() != nullptr) {
-    if (Graph.getEntryNode()->IsVirtual) {
-      Ranks.erase(Graph.getEntryNode());
-      Graph.removeNode(Graph.getEntryNode());
-    }
-  }
+  revng_assert(Graph.getEntryNode() != nullptr);
+  stripArtificialEntryPoint(Graph, &Ranks);
 
   revng_assert(pickLongEdges(Graph, Ranks).empty());
   return Ranks;
