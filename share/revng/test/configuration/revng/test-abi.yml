@@ -15,6 +15,11 @@ commands:
       - [i386-regparm-3-systemv-abi]
       - [i386-regparm-2-systemv-abi]
       - [i386-regparm-1-systemv-abi]
+      - [i386-cdecl-microsoft-abi]
+      - [i386-fastcall-microsoft-abi]
+      - [i386-stdcall-microsoft-abi]
+      - [i386-thiscall-microsoft-abi]
+      - [i386-vectorcall-microsoft-abi]
       - [arm-aapcs-abi]
     command: |-
       "${SOURCES_ROOT}/share/revng/test/tests/abi/test-layout.sh" "${ABI_NAME}" "${INPUT1}/default.stdout" "${INPUT2}"
@@ -31,6 +36,11 @@ commands:
       - [i386-regparm-3-systemv-abi]
       - [i386-regparm-2-systemv-abi]
       - [i386-regparm-1-systemv-abi]
+      - [i386-cdecl-microsoft-abi]
+      - [i386-fastcall-microsoft-abi]
+      - [i386-stdcall-microsoft-abi]
+      - [i386-thiscall-microsoft-abi]
+      - [i386-vectorcall-microsoft-abi]
       - [arm-aapcs-abi]
     command: |-
       "${SOURCES_ROOT}/share/revng/test/tests/abi/test-conversion.sh" "${ABI_NAME}" "${INPUT1}/default.stdout" "${INPUT2}"
