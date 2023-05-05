@@ -13,6 +13,7 @@
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/iterator_range.h"
 
 #include <array>
