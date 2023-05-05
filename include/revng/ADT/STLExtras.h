@@ -19,6 +19,7 @@
 #include <array>
 #include <concepts>
 #include <iterator>
+#include <ostream>
 #include <string>
 #include <string_view>
 #include <type_traits>
