@@ -19,7 +19,7 @@
 #include <array>
 #include <concepts>
 #include <iterator>
-#include <ostream>
+#include <iostream>
 #include <string>
 #include <string_view>
 #include <type_traits>
