@@ -5,9 +5,13 @@
 //
 
 #include <array>
+#include <concepts>
+#include <format>
+#include <iostream>
 #include <iterator>
 #include <optional>
 #include <set>
+#include <string>
 #include <string_view>
 #include <type_traits>
 
@@ -15,14 +19,6 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/iterator_range.h"
-
-#include <array>
-#include <concepts>
-#include <iterator>
-#include <iostream>
-#include <string>
-#include <string_view>
-#include <type_traits>
 
 /// Allows passing strings as template parameters
 ///
