@@ -112,8 +112,9 @@ static_assert(not TupleLike<std::vector<int>>);
 /// `SpecializationOf<GenericGraph>` on the interface boundaries and get
 /// the expected check.
 template<typename Type, template<typename...> class Ref>
-concept SpecializationOf = requires(Type &&Value) {
-  []<typename... Ts>(Ref<Ts...> &){}(Value);
+concept SpecializationOf = requires(Type &Value) {
+  []<typename... Ts>(Ref<Ts...> &) {
+  }(const_cast<std::remove_const_t<Type> &>(Value));
 };
 
 static_assert(SpecializationOf<std::pair<int, long>, std::pair>);
