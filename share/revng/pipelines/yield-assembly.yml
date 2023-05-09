@@ -7,6 +7,8 @@ Containers:
     Type: FunctionAssemblyInternal
   - Name: assembly-ptml.yml
     Type: FunctionAssemblyPTML
+  - Name: assembly-evaluation.S
+    Type: AssemblyEvaluation
 Branches:
   - From: Isolate
     Steps:
@@ -21,4 +23,14 @@ Branches:
         Artifacts:
           Container: assembly-ptml.yml
           Kind: FunctionAssemblyPTML
+          SingleTargetFilename: disassembly.S
+  - From: ProcessAssembly
+    Steps:
+      - Name: EvaluateAssembly
+        Pipes:
+          - Type: EvaluateAssembly
+            UsedContainers: [assembly-internal.yml, assembly-evaluation.S]
+        Artifacts:
+          Container: assembly-evaluation.S
+          Kind: AssemblyEvaluation
           SingleTargetFilename: disassembly.S

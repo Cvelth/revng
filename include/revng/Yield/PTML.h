@@ -32,6 +32,13 @@ std::string controlFlowNode(const ::ptml::PTMLBuilder &ThePTMLBuilder,
                             const yield::Function &Function,
                             const model::Binary &Binary);
 
+std::string blockPieceAssembly(const ::ptml::PTMLBuilder &ThePTMLBuilder,
+                               const BasicBlockID &Block,
+                               const yield::Function &Function,
+                               const MetaAddress &From,
+                               const MetaAddress &To,
+                               const model::Binary &Binary);
+
 /// Emits a PTML containing a function name marked as a definition (it can be
 /// jumped to).
 ///

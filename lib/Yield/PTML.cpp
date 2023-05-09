@@ -657,6 +657,31 @@ static std::string labeledBlock(const PTMLBuilder &ThePTMLBuilder,
   return Result;
 }
 
+std::string yield::ptml::blockPieceAssembly(const PTMLBuilder &ThePTMLBuilder,
+                                            const BasicBlockID &BlockID,
+                                            const yield::Function &Function,
+                                            const MetaAddress &From,
+                                            const MetaAddress &To,
+                                            const model::Binary &Binary) {
+  const yield::BasicBlock &Block = Function.ControlFlowGraph().at(BlockID);
+  yield::BasicBlock Clone = Block;
+  for (auto Iterator = Clone.Instructions().begin();
+       Iterator != Clone.Instructions().end();) {
+    if (Iterator->Address() < From || Iterator->Address() >= To)
+      Iterator = Clone.Instructions().erase(Iterator);
+    else
+      ++Iterator;
+  }
+
+  revng_assert(!Block.Instructions().empty());
+  revng_assert(!Clone.Instructions().empty());
+  if (auto &OldAddress = (--Block.Instructions().end())->Address();
+      OldAddress != (--Clone.Instructions().end())->Address())
+    Clone.Successors().clear();
+
+  return labeledBlock<false>(ThePTMLBuilder, Clone, Function, Binary);
+}
+
 std::string yield::ptml::functionAssembly(const PTMLBuilder &ThePTMLBuilder,
                                           const yield::Function &Function,
                                           const model::Binary &Binary) {

@@ -43,6 +43,9 @@ inline FunctionKind FunctionAssemblyPTML("FunctionAssemblyPTML",
                                              ranks::Instruction),
                                          {});
 
+inline pipeline::SingleElementKind
+  AssemblyEvaluation("AssemblyEvaluation", ranks::Binary, {}, {});
+
 inline FunctionKind FunctionControlFlowGraphSVG("FunctionControlFlowGraphSVG",
                                                 ranks::Function,
                                                 {},
