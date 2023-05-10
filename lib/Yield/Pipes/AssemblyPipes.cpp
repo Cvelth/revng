@@ -156,9 +156,16 @@ void EvaluateAssembly::run(pipeline::Context &Context,
     auto [It, Success] = FunctionCache.emplace(std::move(*MaybeFunction));
     revng_assert(Success);
 
-    for (const auto &BasicBlock : (*It)->ControlFlowGraph())
+    dbg << "Basic blocks of " << serializeToString(Address) << ":\n";
+    for (const auto &BasicBlock : (*It)->ControlFlowGraph()) {
+      dbg << "  - " << serializeToString(BasicBlock.ID()) << '\n';
       DeduplicatedBlocks.emplace(BasicBlock, **It);
+    }
   }
+
+  dbg << "Final list:";
+  for (const auto &Element : DeduplicatedBlocks)
+    dbg << "  - " << serializeToString(Element.BasicBlock) << '\n';
 
   // Cut overlapping blocks up.
   for (auto Iterator = DeduplicatedBlocks.begin();
