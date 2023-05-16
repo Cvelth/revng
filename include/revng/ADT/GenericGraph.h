@@ -45,34 +45,37 @@
 ///     you are going to write. So just inherit one of our nodes, or even copy
 ///     it and modify it so that it suits your graphs as nicely as possible.
 ///
-///  On the side-note, we're providing a couple of helpful concepts to help
-///  differentiate different node types. This is helpful in the projects that
-///  use multiple different graph architectures side by side.
-
-template<typename T>
-concept SpecializationOfForwardNode = requires { T::is_forward_node; };
-
-template<typename T>
-concept StrictSpecializationOfBidirectionalNode = requires {
-  T::is_bidirectional_node;
-  typename llvm::Inverse<T *>;
-};
-
-template<typename T>
-concept StrictSpecializationOfMutableEdgeNode = requires {
-  T::is_mutable_edge_node;
-  typename llvm::Inverse<T *>;
-};
-
-template<typename T>
-concept SpecializationOfGenericGraph = requires {
-  T::is_generic_graph;
-  typename T::Node;
-};
+/// Additionally, the concepts for differentiating between these node types
+/// are provided in the form of (non-strict) `SpecializationOf` (see related
+/// documentation in the `Concepts.h` header).
 
 struct Empty {
   bool operator==(const Empty &) const { return true; }
 };
+
+template<typename Node,
+         typename EdgeLabel = Empty,
+         bool NeedsParent = true,
+         size_t SmallSize = 2,
+         typename FinalType = std::false_type,
+         size_t ParentSmallSize = 16,
+         bool ParentHasEntryNode = true>
+class ForwardNode;
+
+template<typename Node,
+         typename EdgeLabel = Empty,
+         bool NeedsParent = true,
+         size_t SmallSize = 2>
+class BidirectionalNode;
+
+template<typename Node,
+         typename EdgeLabel,
+         bool NeedsParent = true,
+         size_t SmallSize = 2,
+         typename FinalType = std::false_type,
+         size_t ParentSmallSize = 16,
+         bool ParentHasEntryNode = true>
+class MutableEdgeNode;
 
 template<typename Node, size_t SmallSize = 16, bool HasEntryNode = true>
 class GenericGraph;
@@ -187,12 +190,12 @@ struct ForwardNodeBaseTCalc {
 
 /// Basic nodes type, only forward edges, possibly with parent
 template<typename Node,
-         typename EdgeLabel = Empty,
-         bool NeedsParent = true,
-         size_t SmallSize = 2,
-         typename FinalType = std::false_type,
-         size_t ParentSmallSize = 16,
-         bool ParentHasEntryNode = true>
+         typename EdgeLabel,
+         bool NeedsParent,
+         size_t SmallSize,
+         typename FinalType,
+         size_t ParentSmallSize,
+         bool ParentHasEntryNode>
 class ForwardNode
   : public revng::detail::ForwardNodeBaseTCalc<Node,
                                                EdgeLabel,
@@ -203,7 +206,6 @@ class ForwardNode
                                                ParentSmallSize,
                                                ParentHasEntryNode>::Result {
 public:
-  static constexpr bool is_forward_node = true;
   static constexpr bool HasParent = NeedsParent;
   using TypeCalc = revng::detail::ForwardNodeBaseTCalc<Node,
                                                        EdgeLabel,
@@ -348,20 +350,13 @@ using revng::detail::BidirectionalNodeBaseTCalc;
 
 /// Same as ForwardNode, but with backward links too
 /// TODO: Make edge labels immutable
-template<typename Node,
-         typename EdgeLabel = Empty,
-         bool NeedsParent = true,
-         size_t SmallSize = 2>
+template<typename Node, typename EdgeLabel, bool NeedsParent, size_t SmallSize>
 class BidirectionalNode
   : public BidirectionalNodeBaseTCalc<Node,
                                       EdgeLabel,
                                       NeedsParent,
                                       SmallSize,
                                       BidirectionalNode>::Result {
-public:
-  // NOLINTNEXTLINE
-  static const bool is_bidirectional_node = true;
-
 public:
   using NodeData = Node;
   using EdgeLabelData = EdgeLabel;
@@ -616,11 +611,11 @@ struct ConstEdgeView {
 /// to copy or need to be modified often.
 template<typename Node,
          typename EdgeLabel,
-         bool NeedsParent = true,
-         size_t SmallSize = 2,
-         typename FinalType = std::false_type,
-         size_t ParentSmallSize = 16,
-         bool ParentHasEntryNode = true>
+         bool NeedsParent,
+         size_t SmallSize,
+         typename FinalType,
+         size_t ParentSmallSize,
+         bool ParentHasEntryNode>
 class MutableEdgeNode
   : public revng::detail::MutableEdgeNodeBaseTCalc<Node,
                                                    EdgeLabel,
@@ -631,7 +626,6 @@ class MutableEdgeNode
                                                    ParentSmallSize,
                                                    ParentHasEntryNode>::Result {
 public:
-  static constexpr bool is_mutable_edge_node = true;
   static constexpr bool HasParent = NeedsParent;
   using TypeCalc = revng::detail::MutableEdgeNodeBaseTCalc<Node,
                                                            EdgeLabel,
@@ -1274,6 +1268,54 @@ public:
   void setEntryNode(NodeT *EntryNode) { this->EntryNode = EntryNode; }
 };
 
+template<typename Type>
+concept SpecializationOfForwardNode = requires(Type &Value) {
+  []<typename Node,
+     typename EdgeLabel,
+     bool NeedsParent,
+     size_t SmallSize,
+     typename FinalType,
+     size_t ParentSmallSize,
+     bool ParentHasEntryNode>(ForwardNode<Node,
+                                          EdgeLabel,
+                                          NeedsParent,
+                                          SmallSize,
+                                          FinalType,
+                                          ParentSmallSize,
+                                          ParentHasEntryNode> &) {
+  }(const_cast<std::remove_const_t<Type> &>(Value));
+};
+
+template<typename Type>
+concept SpecializationOfBidirectionalNode = requires(Type &Value) {
+  []<typename NodeType,
+     typename EdgeLabelType,
+     bool NeedsParent,
+     size_t SmallSize>(BidirectionalNode<NodeType,
+                                         EdgeLabelType,
+                                         NeedsParent,
+                                         SmallSize> &) {
+  }(const_cast<std::remove_const_t<Type> &>(Value));
+};
+
+template<typename Type>
+concept SpecializationOfMutableEdgeNode = requires(Type &Value) {
+  []<typename Node,
+     typename EdgeLabel,
+     bool NeedsParent,
+     size_t SmallSize,
+     typename FinalType,
+     size_t ParentSmallSize,
+     bool ParentHasEntryNode>(MutableEdgeNode<Node,
+                                              EdgeLabel,
+                                              NeedsParent,
+                                              SmallSize,
+                                              FinalType,
+                                              ParentSmallSize,
+                                              ParentHasEntryNode> &) {
+  }(const_cast<std::remove_const_t<Type> &>(Value));
+};
+
 /// Generic graph parametrized in the node type
 ///
 /// This graph owns its nodes (but not the edges).
@@ -1282,8 +1324,6 @@ template<typename NodeT, size_t SmallSize, bool HasEntryNode>
 class GenericGraph
   : public std::conditional_t<HasEntryNode, EntryNode<NodeT>, Empty> {
 public:
-  // NOLINTNEXTLINE
-  static const bool is_generic_graph = true;
   using NodesContainer = llvm::SmallVector<std::unique_ptr<NodeT>, SmallSize>;
   using Node = NodeT;
   static constexpr bool hasEntryNode = HasEntryNode;
@@ -1359,7 +1399,7 @@ public:
   }
 
   nodes_iterator removeNode(nodes_iterator It) {
-    if constexpr (StrictSpecializationOfMutableEdgeNode<Node>)
+    if constexpr (SpecializationOfMutableEdgeNode<Node>)
       (*It.getCurrent())->disconnect();
 
     auto InternalIt = Nodes.erase(It.getCurrent());
@@ -1390,14 +1430,21 @@ protected:
   NodesContainer Nodes;
 };
 
+template<typename Type>
+concept SpecializationOfGenericGraph = requires(Type &Value) {
+  []<typename NodeT,
+     size_t SmallSize,
+     bool HasEntryNode>(GenericGraph<NodeT, SmallSize, HasEntryNode> &) {
+  }(const_cast<std::remove_const_t<Type> &>(Value));
+};
+
 //
 // GraphTraits implementation for GenericGraph
 //
-namespace llvm {
+namespace revng::detail {
 
-/// Specializes GraphTraits<ForwardNode<...> *>
-template<SpecializationOfForwardNode T>
-struct GraphTraits<T *> {
+template<typename T>
+struct ForwardsNodeTraitsImpl {
 public:
   using NodeRef = T *;
   using ChildIteratorType = std::conditional_t<std::is_const_v<T>,
@@ -1433,9 +1480,8 @@ public:
   static NodeRef getEntryNode(NodeRef N) { return N; };
 };
 
-/// Specializes GraphTraits<llvm::Inverse<BidirectionalNode<...> *>>
-template<StrictSpecializationOfBidirectionalNode T>
-struct GraphTraits<llvm::Inverse<T *>> {
+template<typename T>
+struct BackwardsNodeTraitsImpl {
 public:
   using NodeRef = T *;
   using ChildIteratorType = std::conditional_t<std::is_const_v<T>,
@@ -1481,10 +1527,8 @@ public:
   static T *getEntryNode(T *N) { return N; };
 };
 
-// TODO: implement const version of GraphTraits
-/// Specializes GraphTraits<llvm::Inverse<MutableEdgeNode<...> *>>
-template<StrictSpecializationOfMutableEdgeNode T>
-struct GraphTraits<llvm::Inverse<T *>> {
+template<typename T>
+struct InverseMutableEdgeNodeTraitsImpl {
 public:
   using NodeRef = T *;
   using EdgeRef = typename T::EdgeView;
@@ -1508,13 +1552,9 @@ public:
   static T *getEntryNode(llvm::Inverse<T *> N) { return N.Graph; };
 };
 
-/// Specializes GraphTraits<GenericGraph<...> *>>
-template<SpecializationOfGenericGraph T>
-struct GraphTraits<T *>
-  : public GraphTraits<std::conditional_t<std::is_const_v<T>,
-                                          const typename T::Node *,
-                                          typename T::Node *>> {
-
+template<typename T>
+struct GraphTraitsImpl : public llvm::GraphTraits<typename T::Node *> {
+public:
   using NodeRef = std::conditional_t<std::is_const_v<T>,
                                      const typename T::Node *,
                                      typename T::Node *>;
@@ -1531,14 +1571,10 @@ struct GraphTraits<T *>
   static size_t size(T *G) { return G->size(); }
 };
 
-/// Specializes GraphTraits<llvm::Inverse<GenericGraph<...> *>>>
-template<SpecializationOfGenericGraph T>
-struct GraphTraits<llvm::Inverse<T *>>
-  : public GraphTraits<
-      llvm::Inverse<std::conditional_t<std::is_const_v<T>,
-                                       const typename T::Node *,
-                                       typename T::Node *>>> {
-
+template<typename T>
+struct InverseGraphTraitsImpl
+  : public llvm::GraphTraits<llvm::Inverse<typename T::Node *>> {
+public:
   using NodeRef = std::conditional_t<std::is_const_v<T>,
                                      const typename T::Node *,
                                      typename T::Node *>;
@@ -1562,5 +1598,50 @@ struct GraphTraits<llvm::Inverse<T *>>
 
   static size_t size(T *G) { return G->size(); }
 };
+
+// Because of what seems to be a clang bug (it works fine in both gcc and msvc),
+// the deduction of qualified types restricted by a requires clause in a type
+// specialization is not possible, so to make it work until the bug is fixed,
+// we need to shift the partial type template deduction into a function template
+// deduction, hence this trick:
+template<SpecializationOfForwardNode T>
+consteval auto forwardsSpecializationTrick() {
+  return ForwardsNodeTraitsImpl<T>{};
+}
+template<SpecializationOfMutableEdgeNode T>
+consteval auto forwardsSpecializationTrick() {
+  return MutableEdgeNodeTraitsImpl<T>{};
+}
+template<SpecializationOfGenericGraph T>
+consteval auto forwardsSpecializationTrick() {
+  return GraphTraitsImpl<T>{};
+}
+
+template<SpecializationOfBidirectionalNode T>
+consteval auto backwardsSpecializationTrick() {
+  return BackwardsNodeTraitsImpl<T>{};
+}
+template<SpecializationOfMutableEdgeNode T>
+consteval auto backwardsSpecializationTrick() {
+  return InverseMutableEdgeNodeTraitsImpl<T>{};
+}
+template<SpecializationOfGenericGraph T>
+consteval auto backwardsSpecializationTrick() {
+  return InverseGraphTraitsImpl<T>{};
+}
+
+// TODO: remove this and declare the traits directly once the bug is fixed.
+
+} // namespace revng::detail
+
+namespace llvm {
+
+template<typename T>
+struct GraphTraits<T *>
+  : public decltype(revng::detail::forwardsSpecializationTrick<T>()) {};
+
+template<typename T>
+struct GraphTraits<Inverse<T *>>
+  : public decltype(revng::detail::backwardsSpecializationTrick<T>()) {};
 
 } // namespace llvm

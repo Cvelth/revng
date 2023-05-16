@@ -102,7 +102,7 @@ void routeWithStraightLines(const OrderedEdgeContainer &OrderedListOfEdges);
 /// \note: it only works with `MutableEdgeNode`s.
 template<yield::layout::sugiyama::RankingStrategy RS>
 bool computeInternal(InternalGraph &Graph, const Configuration &Configuration) {
-  static_assert(StrictSpecializationOfMutableEdgeNode<InternalNode>,
+  static_assert(SpecializationOfMutableEdgeNode<InternalNode>,
                 "LayouterSugiyama requires mutable edge nodes.");
 
   // There's nothing we can do for a graph without any nodes.
