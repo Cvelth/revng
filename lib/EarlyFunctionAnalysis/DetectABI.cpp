@@ -12,6 +12,7 @@
 #include "llvm/Support/GraphWriter.h"
 
 #include "revng/ABI/Definition.h"
+#include "revng/ABI/FunctionType/Layout.h"
 #include "revng/ADT/Queue.h"
 #include "revng/BasicAnalyses/GeneratedCodeBasicInfo.h"
 #include "revng/EarlyFunctionAnalysis/CFGAnalyzer.h"
@@ -22,6 +23,7 @@
 #include "revng/EarlyFunctionAnalysis/FunctionMetadata.h"
 #include "revng/EarlyFunctionAnalysis/FunctionSummaryOracle.h"
 #include "revng/Model/Binary.h"
+#include "revng/Model/Register.h"
 #include "revng/Pipeline/Pipe.h"
 #include "revng/Pipeline/RegisterAnalysis.h"
 #include "revng/Pipes/Kinds.h"
@@ -99,6 +101,18 @@ static pipeline::RegisterAnalysis<DetectABIAnalysis> A1;
 
 namespace efa {
 
+static bool isWritingToMemory(llvm::Instruction &I) {
+  if (auto *StoreInst = dyn_cast<llvm::StoreInst>(&I)) {
+    auto *Destination = StoreInst->getPointerOperand();
+
+    if (auto *GV = dyn_cast<llvm::GlobalVariable>(Destination)) {
+      return isMemory(GV);
+    }
+  }
+
+  return false;
+}
+
 using BasicBlockQueue = UniquedQueue<const BasicBlockNode *>;
 
 class DetectABI {
@@ -146,6 +160,9 @@ public:
     // Propagate results between call-sites and functions
     interproceduralPropagation();
 
+    // Propagate prototypes
+    propagatePrototypes();
+
     // Refine results with ABI-specific information
     applyABIDeductions();
 
@@ -159,6 +176,8 @@ private:
   void initializeInterproceduralQueue();
   void runInterproceduralAnalysis();
   void interproceduralPropagation();
+  void propagatePrototypesInFunction(model::Function &Function);
+  void propagatePrototypes();
   void finalizeModel();
   void applyABIDeductions();
 
@@ -488,6 +507,81 @@ void DetectABI::interproceduralPropagation() {
   }
 }
 
+void DetectABI::propagatePrototypesInFunction(model::Function &Function) {
+  const MetaAddress &Entry = Function.Entry();
+
+  FunctionSummary &Summary = Oracle.getLocalFunction(Entry);
+  ABIAnalyses::ABIAnalysesResults &ABI = Summary.ABIResults;
+  SortedVector<efa::BasicBlock> &CFG = Summary.CFG;
+  std::set<llvm::GlobalVariable *> &WrittenRegisters = Summary.WrittenRegisters;
+
+  const bool HasArguments = ABI.ArgumentsRegisters.size() > 0;
+  const bool HasReturns = ABI.FinalReturnValuesRegisters.size() > 0;
+  const bool IsSingleNode = CFG.size() == 1;
+
+  if (HasReturns or HasArguments or !IsSingleNode) {
+    return;
+  }
+
+  efa::BasicBlock &Block = *CFG.begin();
+
+  const bool HasSingleSuccessor = Block.Successors().size() == 1;
+  if (!HasSingleSuccessor) {
+    return;
+  }
+
+  auto &Successor = *Block.Successors().begin();
+
+  // Select new prototype for wrapper function
+  if (const auto &Call = dyn_cast<efa::CallEdge>(Successor.get())) {
+    auto Prototype = getPrototype(*Binary, Entry, Block, *Call);
+
+    using abi::FunctionType::Layout;
+    // Get layout of wrapped function
+    Layout CalleeLayout = Layout::make(Prototype);
+
+    // Verify that wrapper function:
+    //  - don't write stack pointer
+    //  - don't write to callee arguments
+    //  - every store instruction writes to registers (not memory)
+    llvm::BasicBlock *BB = GCBI.getBlockAt(Block.ID().start());
+
+    llvm::GlobalVariable *StackPointer = GCBI.spReg();
+
+    // Check if wrapper writes to Stack Pointer
+    const bool WritesSP = WrittenRegisters.contains(StackPointer);
+
+    using std::ranges::count_if;
+    auto IsWrittenByCaller = [this, &WrittenRegisters](auto &Argument) {
+      auto *CSV = M.getGlobalVariable(model::Register::getName(Argument));
+      return WrittenRegisters.count(CSV);
+    };
+    const auto &Arguments = CalleeLayout.argumentRegisters();
+    const bool WritesCalleeArgs = count_if(Arguments, IsWrittenByCaller);
+
+    const auto WritesToMemory = count_if(*BB, isWritingToMemory);
+    const bool WritesOnlyRegisters = WritesToMemory == 0;
+
+    // When above conditions are met, overwrite wrappers prototype with
+    // wrapped function prototype (CABIFunctionType or RawFunctionType)
+    if (not WritesSP and not WritesCalleeArgs and WritesOnlyRegisters) {
+      revng_log(Log,
+                "Overwriting " << Entry.toString() << " prototype ("
+                               << Function.Prototype().toString()
+                               << ") with wrapped function's prototype: "
+                               << Prototype.toString());
+      Function.Prototype() = Prototype;
+    }
+  }
+}
+
+void DetectABI::propagatePrototypes() {
+  using std::ranges::for_each;
+  for (model::Function &Function : Binary->Functions()) {
+    propagatePrototypesInFunction(Function);
+  }
+}
+
 using MaybeRegisterState = std::optional<abi::RegisterState::Values>;
 using ABIAnalyses::RegisterStateMap;
 
@@ -769,8 +863,8 @@ void DetectABI::runInterproceduralAnalysis() {
     Set.insert(EntryPointAddress);
 
     // If we got improved results for a function, we need to recompute its
-    // callers, and if a caller turns out to be an inline function, the callers
-    // of the inline function too.
+    // callers, and if a caller turns out to be an inline function, the
+    // callers of the inline function too.
     if (Changed) {
       revng_log(Log,
                 "Entry " << EntryPointAddress.toString() << " has changed");
