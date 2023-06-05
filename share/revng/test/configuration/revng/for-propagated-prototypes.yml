@@ -1,0 +1,16 @@
+#
+# This file is distributed under the MIT License. See LICENSE.md for details.
+#
+
+commands:
+  - type: revng.test-propagated-prototypes
+    from:
+      - type: revng-qa.compiled-with-debug-info
+        filter: for-propagated-prototypes
+    command: |-
+      RESUME=$$(temp -d);
+      revng analyze --model-type-id-seed=0 --resume "$$RESUME" ImportBinary "$INPUT" -o /dev/null;
+      revng analyze --model-type-id-seed=0 --resume "$$RESUME" AddPrimitiveTypes "$INPUT" -o /dev/null;
+      revng model apply "$$RESUME/context/model.yml" "$SOURCE.add-puts.yml" -o "$$RESUME/context/model.yml";
+      revng analyze --model-type-id-seed=0 --resume "$$RESUME" DetectABI "$INPUT" |
+      revng model compare "$SOURCE".model.yml
