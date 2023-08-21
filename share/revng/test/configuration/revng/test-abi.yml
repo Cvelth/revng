@@ -6,41 +6,17 @@ commands:
   - type: revng.test-layout
     from:
       - type: revng.qemu-run
-        filter: abi-describe-functions
+        filter: abi-test-function-description
       - type: revng-qa.compiled-with-debug-info
-        filter: abi-functions-library
-    repeat-for:
-      - [x86-64-systemv-abi]
-      - [i386-systemv-abi]
-      - [i386-regparm-3-systemv-abi]
-      - [i386-regparm-2-systemv-abi]
-      - [i386-regparm-1-systemv-abi]
-      - [i386-cdecl-microsoft-abi]
-      - [i386-fastcall-microsoft-abi]
-      - [i386-stdcall-microsoft-abi]
-      - [i386-thiscall-microsoft-abi]
-      - [i386-vectorcall-microsoft-abi]
-      - [arm-aapcs-abi]
+        filter: abi-test-function-prototypes
     command: |-
       "${SOURCES_ROOT}/share/revng/test/tests/abi/test-layout.sh" "${ABI_NAME}" "${INPUT1}/default.stdout" "${INPUT2}"
 
   - type: revng.test-conversion
     from:
       - type: revng.qemu-run
-        filter: abi-describe-functions
+        filter: abi-test-function-description
       - type: revng-qa.compiled-with-debug-info
-        filter: abi-functions-library
-    repeat-for:
-      - [x86-64-systemv-abi]
-      - [i386-systemv-abi]
-      - [i386-regparm-3-systemv-abi]
-      - [i386-regparm-2-systemv-abi]
-      - [i386-regparm-1-systemv-abi]
-      - [i386-cdecl-microsoft-abi]
-      - [i386-fastcall-microsoft-abi]
-      - [i386-stdcall-microsoft-abi]
-      - [i386-thiscall-microsoft-abi]
-      - [i386-vectorcall-microsoft-abi]
-      - [arm-aapcs-abi]
+        filter: abi-test-function-prototypes
     command: |-
       "${SOURCES_ROOT}/share/revng/test/tests/abi/test-conversion.sh" "${ABI_NAME}" "${INPUT1}/default.stdout" "${INPUT2}"
