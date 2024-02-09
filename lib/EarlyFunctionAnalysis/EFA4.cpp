@@ -3,17 +3,19 @@
 //
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
-
+#if 0
 #include <cstdint>
 #include <iterator>
 
 #include "llvm/ADT/BitVector.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/CFG.h"
 #include "llvm/IR/Function.h"
 
 #include "revng/ADT/GenericGraph.h"
+#include "revng/MFP/MFP.h"
 #include "revng/Model/Generated/Early/Register.h"
 #include "revng/Model/Register.h"
-#include "revng/MFP/MFP.h"
 
 using namespace llvm;
 
@@ -21,16 +23,15 @@ namespace efa {
 
 namespace OperationType {
 enum Values : uint8_t {
-    Invalid,
-    Read,
-    Write,
-    Clobber
+  Invalid,
+  Read,
+  Write,
+  Clobber
 };
-}
+} // namespace OperationType
 
 class Operation {
 public:
-  // WIP: collapse in a single byte
   OperationType::Values Type = OperationType::Invalid;
   uint8_t Target = model::Register::Invalid;
 };
@@ -60,27 +61,73 @@ public:
 
   auto rbegin() { return Operations.rbegin(); }
   auto rend() { return Operations.rend(); }
-
 };
 
 using BlockNode = BidirectionalNode<Block>;
 
+std::pair<OperationType::Values, model::Register::Values>
+processInstruction(llvm::Instruction &I);
+
+// WIP: getExitNode
 // WIP: implement DOTGraphTraits
 struct Function : GenericGraph<BlockNode> {
 private:
-  // WIP: DenseMap<model::Register::Values, uint8_t> RegisterToIndex;
+  DenseMap<uint8_t, model::Register::Values> IndexToRegister;
+  uint8_t RegistersCount = 0;
 
 public:
+  Function() = default;
+
   static Function fromLLVMFunction(llvm::Function &F) {
-    // WIP
-    revng_abort();
+    using namespace model;
+
+    Function Result;
+    DenseMap<llvm::BasicBlock *, BlockNode *> BlocksMap;
+
+    DenseMap<model::Register::Values, uint8_t> RegisterToIndex;
+    auto GetIndex = [&RegisterToIndex,
+                     &Result](model::Register::Values Register) -> uint8_t {
+      auto It = RegisterToIndex.find(Register);
+      if (It != RegisterToIndex.end())
+        return It->second;
+
+      RegisterToIndex[Register] = Result.RegistersCount;
+      Result.IndexToRegister[Result.RegistersCount] = Register;
+
+      ++Result.RegistersCount;
+
+      return Result.RegistersCount - 1;
+    };
+
+    // Create nodes
+    for (llvm::BasicBlock &BB : F) {
+      auto *NewNode = Result.addNode();
+      BlocksMap[&BB] = NewNode;
+
+      // Process instructions
+      for (llvm::Instruction &I : BB) {
+        auto [OperationType, Register] = processInstruction(I);
+        if (OperationType != OperationType::Invalid)
+          NewNode->Operations.emplace_back(OperationType, GetIndex(Register));
+      }
+    }
+
+    // Create edges
+    for (llvm::BasicBlock &BB : F)
+      for (llvm::BasicBlock *Successor : succ_range(BB))
+        BlocksMap[&BB]->addSuccessor(BlocksMap[Successor]);
+
+    return Result;
   }
 
 public:
-  uint8_t registersCount() const {
-    // WIP
-    revng_abort();
+  model::Register::Values registerByIndex(uint8_t Index) const {
+    auto It = IndexToRegister.find(Index);
+    revng_assert(It != IndexToRegister.end());
+    return It->second;
   }
+
+  uint8_t registersCount() const { return RegistersCount; }
 
 public:
   // WIP: do we actually need this?
@@ -98,12 +145,13 @@ public:
     Original.addSuccessor(NewNode);
 
     // Move instructions over from the original node to the new node
-    std::copy(SplitBefore, Original.end(), std::back_inserter(NewNode->Operations));
+    std::copy(SplitBefore,
+              Original.end(),
+              std::back_inserter(NewNode->Operations));
     Original.Operations.erase(SplitBefore, Original.end());
 
     return *NewNode;
   }
-
 };
 
 class LivenessAnalysis {
@@ -134,7 +182,7 @@ public:
                                     const RegisterSet &InitialState) const {
     RegisterSet Result = InitialState;
 
-    for (const Operation &Operation:
+    for (const Operation &Operation :
          make_range(Block->rbegin(), Block->rend())) {
 
       switch (Operation.Type) {
@@ -150,14 +198,11 @@ public:
       case OperationType::Invalid:
         revng_abort();
         break;
-
       }
     }
 
     return Result;
-
   }
-
 };
 
 static_assert(MFP::MonotoneFrameworkInstance<LivenessAnalysis>);
@@ -247,18 +292,278 @@ public:
         revng_abort();
         break;
       }
-
     }
 
     return Result;
   }
-
 };
 
 static_assert(MFP::MonotoneFrameworkInstance<ReachingDefinitions>);
 
-inline void asd() {
-  Function Graph;
+} // namespace efa
+
+static efa::Function
+createSingleNode(efa::Block::OperationsVector &&Operations) {
+  efa::Function F;
+  auto *Entry = F.addNode();
+  Entry->Operations = Operations;
+  return F;
 }
 
+struct TestAnalysisResult {
+  efa::Function Function;
+  efa::BlockNode *Entry = nullptr;
+  efa::BlockNode *Exit = nullptr;
+};
+
+static TestAnalysisResult createDiamond(efa::Block::OperationsVector &&Header,
+                                        efa::Block::OperationsVector &&Left,
+                                        efa::Block::OperationsVector &&Right,
+                                        efa::Block::OperationsVector &&Footer) {
+  efa::Function F;
+
+  auto *HeaderBlock = F.addNode();
+  HeaderBlock->Operations = Header;
+
+  auto *LeftBlock = F.addNode();
+  LeftBlock->Operations = Left;
+
+  auto *RightBlock = F.addNode();
+  RightBlock->Operations = Right;
+
+  auto *FooterBlock = F.addNode();
+  FooterBlock->Operations = Footer;
+
+  HeaderBlock->addSuccessor(LeftBlock);
+  HeaderBlock->addSuccessor(RightBlock);
+  LeftBlock->addSuccessor(FooterBlock);
+  RightBlock->addSuccessor(FooterBlock);
+
+  return { std::move(F), HeaderBlock, FooterBlock };
 }
+
+static TestAnalysisResult createLoop(efa::Block::OperationsVector &&Header,
+                                     efa::Block::OperationsVector &&LoopHeader,
+                                     efa::Block::OperationsVector &&LoopBody,
+                                     efa::Block::OperationsVector &&Footer) {
+  efa::Function F;
+
+  auto *HeaderBlock = F.addNode();
+  HeaderBlock->Operations = Header;
+
+  auto *LoopHeaderBlock = F.addNode();
+  LoopHeaderBlock->Operations = LoopHeader;
+
+  auto *LoopBodyBlock = F.addNode();
+  LoopBodyBlock->Operations = LoopBody;
+
+  auto *FooterBlock = F.addNode();
+  FooterBlock->Operations = Footer;
+
+  // digraph {
+  //   Header -> LoopHeader -> LoopBody -> LoopHeader -> Footer;
+  // }
+  HeaderBlock->addSuccessor(LoopHeaderBlock);
+  LoopHeaderBlock->addSuccessor(LoopBodyBlock);
+  LoopHeaderBlock->addSuccessor(FooterBlock);
+  LoopBodyBlock->addSuccessor(LoopHeaderBlock);
+
+  return { std::move(F), HeaderBlock, FooterBlock };
+};
+
+inline void testLivenessAnalysis() {
+  using namespace efa;
+
+  auto RunAnalysis = [](BlockNode *Entry) {
+    return MFP::getMaximalFixedPoint(LivenessAnalysis(),
+                                     Entry,
+                                     {},
+                                     {},
+                                     { Entry })[Entry]
+      .OutValue;
+  };
+
+  auto RunOnSingleNode =
+    [&RunAnalysis](efa::Block::OperationsVector &&Operations) -> BitVector {
+    return RunAnalysis(createSingleNode(std::move(Operations)).getEntryNode());
+  };
+
+  BitVector Result;
+
+  // Only read a register
+  Result = RunOnSingleNode({
+    Operation(OperationType::Read, 0),
+  });
+  revng_check(Result.size() == 1);
+  revng_check(Result[0]);
+
+  // Read then write
+  Result = RunOnSingleNode({
+    Operation(OperationType::Read, 0),
+    Operation(OperationType::Write, 0),
+  });
+  revng_check(Result.size() == 1);
+  revng_check(Result[0]);
+
+  // Write then read
+  Result = RunOnSingleNode({
+    Operation(OperationType::Write, 0),
+    Operation(OperationType::Read, 0),
+  });
+  revng_check(Result.size() == 1);
+  revng_check(not Result[0]);
+
+  // Write another register before reading the target register
+  Result = RunOnSingleNode({
+    Operation(OperationType::Write, 1),
+    Operation(OperationType::Read, 0),
+    Operation(OperationType::Write, 0),
+  });
+  revng_check(Result.size() == 2);
+  revng_check(Result[0]);
+  revng_check(not Result[1]);
+
+  auto RunOnDiamond =
+    [&RunAnalysis](efa::Block::OperationsVector &&Header,
+                   efa::Block::OperationsVector &&Left,
+                   efa::Block::OperationsVector &&Right,
+                   efa::Block::OperationsVector &&Footer) -> BitVector {
+    return RunAnalysis(createDiamond(std::move(Header),
+                                     std::move(Left),
+                                     std::move(Right),
+                                     std::move(Footer))
+                         .Exit);
+  };
+
+  // Read in footer
+  Result = RunOnDiamond({}, {}, {}, { Operation(OperationType::Read, 0) });
+  revng_assert(Result.size() == 1 and Result[0]);
+
+  // Read in header
+  Result = RunOnDiamond({ Operation(OperationType::Read, 0) }, {}, {}, {});
+  revng_assert(Result.size() == 1 and Result[0]);
+
+  // Read in left
+  Result = RunOnDiamond({}, { Operation(OperationType::Read, 0) }, {}, {});
+  revng_assert(Result.size() == 1 and Result[0]);
+
+  // Read on one path, write on the other
+  Result = RunOnDiamond({},
+                        { Operation(OperationType::Write, 0) },
+                        { Operation(OperationType::Read, 0) },
+                        {});
+  revng_assert(Result.size() == 1 and Result[0]);
+
+  // Read in footer, write on both paths
+  Result = RunOnDiamond({},
+                        { Operation(OperationType::Write, 0) },
+                        { Operation(OperationType::Write, 0) },
+                        { Operation(OperationType::Read, 0) });
+  revng_assert(Result.size() == 1 and not Result[0]);
+
+  // Read in footer, write on one path
+  Result = RunOnDiamond({},
+                        {},
+                        { Operation(OperationType::Write, 0) },
+                        { Operation(OperationType::Read, 0) });
+  revng_assert(Result.size() == 1 and Result[0]);
+
+  auto RunOnLoop =
+    [&RunAnalysis](efa::Block::OperationsVector &&Header,
+                   efa::Block::OperationsVector &&LoopHeader,
+                   efa::Block::OperationsVector &&LoopBody,
+                   efa::Block::OperationsVector &&Footer) -> BitVector {
+    return RunAnalysis(createLoop(std::move(Header),
+                                  std::move(LoopHeader),
+                                  std::move(LoopBody),
+                                  std::move(Footer))
+                         .Exit);
+  };
+
+  // Read in loop header, clobber in loop body
+  Result = RunOnLoop({},
+                     { Operation(OperationType::Read, 0) },
+                     { Operation(OperationType::Write, 0) },
+                     {});
+  revng_assert(Result.size() == 1 and Result[0]);
+
+  // Viceversa
+  Result = RunOnLoop({},
+                     { Operation(OperationType::Write, 0) },
+                     { Operation(OperationType::Read, 0) },
+                     {});
+  revng_assert(Result.size() == 1 and not Result[0]);
+
+  // WIP: test using unreachable stuff
+}
+
+inline void testReachingDefinitions() {
+  using namespace efa;
+
+  // WIP: actually check analysis results
+  auto RunAnalysis = [](efa::Function &&F) {
+    return MFP::getMaximalFixedPoint(ReachingDefinitions(F),
+                                     F.getEntryNode(),
+                                     {},
+                                     {},
+                                     { F.getEntryNode() })[nullptr]
+      .OutValue;
+  };
+
+  auto RunOnSingleNode =
+    [&RunAnalysis](efa::Block::OperationsVector &&Operations) {
+      return RunAnalysis(createSingleNode(std::move(Operations)));
+    };
+
+  RunOnSingleNode({ Operation(OperationType::Write, 0) });
+  // Yes
+
+  RunOnSingleNode({ Operation(OperationType::Write, 0),
+                    Operation(OperationType::Read, 0) });
+  // No
+
+  RunOnSingleNode({ Operation(OperationType::Write, 0),
+                    Operation(OperationType::Read, 0),
+                    Operation(OperationType::Write, 0) });
+  // Yes
+
+  auto RunOnDiamond = [&RunAnalysis](efa::Block::OperationsVector &&Header,
+                                     efa::Block::OperationsVector &&Left,
+                                     efa::Block::OperationsVector &&Right,
+                                     efa::Block::OperationsVector &&Footer) {
+    return RunAnalysis(std::move(createDiamond(std::move(Header),
+                                               std::move(Left),
+                                               std::move(Right),
+                                               std::move(Footer))
+                                   .Function));
+  };
+
+  // Write read on all paths
+  RunOnDiamond({ Operation(OperationType::Write, 0) },
+               { Operation(OperationType::Read, 0) },
+               { Operation(OperationType::Read, 0) },
+               {});
+  // No
+
+  // Write read on one paths
+  RunOnDiamond({ Operation(OperationType::Write, 0) },
+               { Operation(OperationType::Read, 0) },
+               {},
+               {});
+  // No
+
+  // Distinct writes on all paths
+  RunOnDiamond({},
+               { Operation(OperationType::Write, 0) },
+               { Operation(OperationType::Write, 0) },
+               {});
+  // Yes
+
+  // Write on only one path
+  RunOnDiamond({}, {}, { Operation(OperationType::Write, 0) }, {});
+  // Yes
+
+  // WIP: test using unreachable stuff
+}
+
+#endif

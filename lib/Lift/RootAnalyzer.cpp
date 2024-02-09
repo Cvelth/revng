@@ -368,6 +368,8 @@ Function *RootAnalyzer::createTemporaryRoot(Function *TheFunction,
 
   // Clone the function
   OptimizedFunction = CloneFunction(TheFunction, OldToNew);
+  OptimizedFunction->setName("temporary_root");
+  OptimizedFunction->dump();
 
   // Restore callees after function_call
   for (auto [U, BB] : Undo)

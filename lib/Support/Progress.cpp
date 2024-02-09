@@ -74,7 +74,7 @@ public:
     emitEvent(T->stepName(), "task", "B");
   }
 
-  template<bool EmitTrailingComma=true>
+  template<bool EmitTrailingComma = true>
   void emitEvent(llvm::StringRef Name,
                  llvm::StringRef Category,
                  llvm::StringRef Phase) {
