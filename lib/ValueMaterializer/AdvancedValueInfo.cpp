@@ -244,10 +244,19 @@ runAVI(const DataFlowGraph &DFG,
 
   // Identify initial nodes for the monotone framework
   std::vector<const ControlFlowEdgesGraph::Node *> InitialNodes;
-  for (BasicBlock *Entry : DFGEntryPoints)
-    InitialNodes.push_back(CFEG.at(Entry));
+  for (BasicBlock *Entry : DFGEntryPoints) {
+    if (CFEG.contains(Entry))
+      InitialNodes.push_back(CFEG.at(Entry));
+  }
 
-  revng_assert(InitialNodes.size() > 0);
+  if (InitialNodes.empty()) {
+    return {
+      std::map<llvm::Instruction *, ConstantRangeSet>{},
+      ControlFlowEdgesGraph(),
+      map<const ForwardNode<ControlFlowEdgesNode> *,
+          MFP::MFPResult<map<llvm::Instruction *, ConstantRangeSet>>>{}
+    };
+  }
 
   // Run MFP
   AdvancedValueInfoMFI AVIMFI(LVI, DT, Context, Targets, ZeroExtendConstraints);

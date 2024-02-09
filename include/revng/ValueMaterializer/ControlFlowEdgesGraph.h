@@ -39,6 +39,10 @@ public:
   ControlFlowEdgesGraph() = default;
 
 public:
+  bool contains(llvm::BasicBlock *BB) const {
+    return NodeMap.find(BB) != NodeMap.end();
+  }
+
   Node *at(llvm::BasicBlock *BB) {
     auto It = NodeMap.find(BB);
     revng_assert(It != NodeMap.end());
