@@ -21,6 +21,16 @@ The notice below applies to the generated files.
 #include "revng/TupleTree/TupleLikeTraits.h"
 #include "revng/TupleTree/TupleTree.h"
 
+/** if root_type == struct.name -**/
+/** for dependency in struct.dependencies -**/
+/** if schema.get_definition_for(dependency).abstract -**/
+/** for child_type in schema.get_upcastable_types(schema.get_definition_for(dependency)) -**/
+#include "/*= user_include_path =*//*= child_type.name =*/.h"
+/** endfor **/
+/**- endif **/
+/**- endfor **/
+/**- endif **/
+
 using namespace std::string_view_literals;
 
 /*# --- TupleLikeTraits --- -#*/
