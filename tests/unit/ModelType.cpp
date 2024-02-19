@@ -10,7 +10,6 @@ bool init_unit_test();
 
 #include "revng/Model/ABI.h"
 #include "revng/Model/Binary.h"
-#include "revng/Model/Types.h"
 
 using namespace model;
 
