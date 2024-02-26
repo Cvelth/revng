@@ -7,6 +7,7 @@ Functions:
   - OriginalName: uraof
     Prototype: "/TypeDefinitions/1-RawFunctionDefinition"
 TypeDefinitions:
-  - Arguments:
-      - Location: rax_x86_64
+  - Kind: RawFunctionDefinition
     ID: 1
+    Arguments:
+      - Location: rax_x86_64

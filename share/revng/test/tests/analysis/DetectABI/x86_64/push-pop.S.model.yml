@@ -7,8 +7,9 @@ Functions:
   - OriginalName: push_pop
     Prototype: "/TypeDefinitions/1-RawFunctionDefinition"
 TypeDefinitions:
-  - Arguments:
-      - Location: rax_x86_64
+  - Kind: RawFunctionDefinition
     ID: 1
+    Arguments:
+      - Location: rax_x86_64
     ReturnValues:
       - Location: rdx_x86_64
