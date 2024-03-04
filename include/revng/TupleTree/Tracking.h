@@ -102,8 +102,13 @@ private:
 
   template<typename M, StrictSpecializationOf<UpcastablePointer> T>
   static void collectImpl(const T &UP, TupleTreePath &Stack, ReadFields &Info) {
-    if (!UP.empty())
-      UP.upcast([&](auto &Upcasted) { collectImpl<M>(Upcasted, Stack, Info); });
+    if (!UP.empty()) {
+      UP.upcast([&](auto &Upcasted) {
+        Stack.push_back(Upcasted.Kind());
+        collectImpl<M>(Upcasted, Stack, Info);
+        Stack.pop_back();
+      });
+    }
   }
 
   template<typename M, TupleSizeCompatible T>

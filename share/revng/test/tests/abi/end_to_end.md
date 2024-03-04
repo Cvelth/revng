@@ -110,16 +110,16 @@ For our `test_args`, the prototype looks like
     Kind:            CABIFunctionDefinition
     ABI:             SystemV_x86_64
     ReturnType:
-      UnqualifiedType: "/TypeDefinitions/256-PrimitiveDefinition" # void
+      UnqualifiedType: "/TypeDefinitions[256-PrimitiveDefinition]" # void
     Arguments:
       - Index:           0
         Type:
-          UnqualifiedType: "/TypeDefinitions/2-StructDefinition"
+          UnqualifiedType: "/TypeDefinitions[2-StructDefinition]"
         CustomName:      "argument_0"
         OriginalName:    argument_0
       - Index:           1
         Type:
-          UnqualifiedType: "/TypeDefinitions/3-StructDefinition"
+          UnqualifiedType: "/TypeDefinitions[3-StructDefinition]"
         CustomName:      "argument_1"
         OriginalName:    argument_1
   - ID:              2
@@ -130,12 +130,12 @@ For our `test_args`, the prototype looks like
         CustomName:      "a"
         OriginalName:    a
         Type:
-          UnqualifiedType: "/TypeDefinitions/1282-PrimitiveDefinition"
+          UnqualifiedType: "/TypeDefinitions[1282-PrimitiveDefinition]"
       - Offset:          2
         CustomName:      "b"
         OriginalName:    b
         Type:
-          UnqualifiedType: "/TypeDefinitions/1282-PrimitiveDefinition"
+          UnqualifiedType: "/TypeDefinitions[1282-PrimitiveDefinition]"
   - ID:              3
     Kind:            StructDefinition
     Size:            64
@@ -144,7 +144,7 @@ For our `test_args`, the prototype looks like
         CustomName:      "a"
         OriginalName:    a
         Type:
-          UnqualifiedType: "/TypeDefinitions/1288-PrimitiveDefinition"
+          UnqualifiedType: "/TypeDefinitions[1288-PrimitiveDefinition]"
           Qualifiers:
             - Kind:            Array
               Size:            8

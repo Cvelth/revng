@@ -119,7 +119,7 @@ export /** if class_.abstract **/abstract/** endif **/ class /*= class_.name =*/
         /**- endif **/
         /**- if class_.inherits **/
         /**- if class_.inherits | get_guid **/
-        super(rawObject, gen/*= class_.name =*/Guid);
+        super(rawObject, genGuid);
         /**- else **/
         super(rawObject)
         /**- endif **/
@@ -131,6 +131,8 @@ export /** if class_.abstract **/abstract/** endif **/ class /*= class_.name =*/
 
     /** if class_.abstract **/
     static parse(rawObject: I/*= class_.name =*/): /*= class_.name =*/ {
+        if (rawObject === undefined)
+            return undefined;
         switch(rawObject.Kind) {
         /**- for child in class_.children **/
         case "/*= child.name =*/":
@@ -169,7 +171,11 @@ export /** if class_.abstract **/abstract/** endif **/ class /*= class_.name =*/
         const result = /*= "super.toJSON()" if class_.inherits else "{}" =*/;
         /**- for field in class_.fields **/
         /**- if is_optional(field) **/
+        /**- if is_upcastable(field) **/
+        if (!deepEqual(this./*= field.name =*/, {} as I/*= field.type =*/)) {
+        /**- else **/
         if (!deepEqual(this./*= field.name =*/, /*= default_value(field) =*/)) {
+        /**- endif **/
             result["/*= field.name =*/"] = this./*= field.name =*/;
         }
         /**- else **/

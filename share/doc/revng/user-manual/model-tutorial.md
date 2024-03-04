@@ -140,12 +140,12 @@ In the model type system, it looks like this:
     Arguments:
       - Index: 0
         Type:
-          UnqualifiedType: "/TypeDefinitions/1288-PrimitiveDefinition"
+          UnqualifiedType: "/TypeDefinitions[1288-PrimitiveDefinition]"
       - Index: 1
         Type:
-          UnqualifiedType: "/TypeDefinitions/1288-PrimitiveDefinition"
+          UnqualifiedType: "/TypeDefinitions[1288-PrimitiveDefinition]"
     ReturnType:
-      UnqualifiedType: "/TypeDefinitions/1288-PrimitiveDefinition"
+      UnqualifiedType: "/TypeDefinitions[1288-PrimitiveDefinition]"
 ```
 
 OK, there's a lot here. Let's go through it:
@@ -155,7 +155,7 @@ OK, there's a lot here. Let's go through it:
 * `ID: ...`: a unique identifier;
 * `Arguments`: we have two arguments (index `0` and index `1`);
   * `Type`: a qualified type, i.e., a type plus (optionally) one or more qualifiers such as `const`, pointer (`*`) and so on;
-    * `UnqualifiedType: "/TypeDefinitions/PrimitiveDefinition-1288"`: a reference to the actual, unqualified, type; in this case, it's a reference to the *primitive type* with ID 1288, i.e., the `uint64_t` defined above;
+    * `UnqualifiedType: "/TypeDefinitions[PrimitiveDefinition-1288]"`: a reference to the actual, unqualified, type; in this case, it's a reference to the *primitive type* with ID 1288, i.e., the `uint64_t` defined above;
 * `ReturnType`: again, a reference to `uint64_t`;
 
 At this point, we can associate the function prototype with the previously defined function:
@@ -167,7 +167,7 @@ At this point, we can associate the function prototype with the previously defin
      IsExecutable: true
  Functions:
    - Entry: "0x400000:Code_x86_64"
-+    Prototype: "/TypeDefinitions/1809-CABIFunctionDefinition"
++    Prototype: "/TypeDefinitions[1809-CABIFunctionDefinition]"
  TypeDefinitions:
    - Kind: PrimitiveDefinition
      ID: 1288
@@ -198,7 +198,7 @@ One of the main activities of a reverse engineer is giving things a name, just l
 @@ -11,6 +11,7 @@ Segments:
  Functions:
    - Entry: "0x400000:Code_x86_64"
-     Prototype: "/TypeDefinitions/1809-CABIFunctionDefinition"
+     Prototype: "/TypeDefinitions[1809-CABIFunctionDefinition]"
 +    CustomName: Sum
  TypeDefinitions:
    - Kind: PrimitiveDefinition
@@ -217,14 +217,14 @@ Almost everything in the model can have a name. Let's add a name to the function
      Arguments:
        - Index: 0
          Type:
-           UnqualifiedType: "/TypeDefinitions/1288-PrimitiveDefinition"
+           UnqualifiedType: "/TypeDefinitions[1288-PrimitiveDefinition]"
 +        CustomName: FirstAddend
        - Index: 1
          Type:
-           UnqualifiedType: "/TypeDefinitions/1288-PrimitiveDefinition"
+           UnqualifiedType: "/TypeDefinitions[1288-PrimitiveDefinition]"
 +        CustomName: SecondAddend
      ReturnType:
-       UnqualifiedType: "/TypeDefinitions/1288-PrimitiveDefinition"
+       UnqualifiedType: "/TypeDefinitions[1288-PrimitiveDefinition]"
 ```
 
 Here's what we get now if we try to decompile again:

@@ -18,7 +18,7 @@ The notice below applies to the generated files.
 
 #include "/*= user_include_path =*//*= struct.name =*/.h"
 
-/** if upcastable **/
+/** if upcastable and struct.key_definition._key **/
 
 using /*= struct.name =*/Key = /*= struct | user_fullname =*/::Key;
 using U/*= struct.name =*/ = /*= struct.namespace =*/::Upcastable/*= struct.name =*/;

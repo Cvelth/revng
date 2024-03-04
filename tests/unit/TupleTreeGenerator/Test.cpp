@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_CASE(YAMLSerializationRoundTripTest) {
   ReferenceInstance.SequenceField() = { 1, 2, 3, 4, 5 };
   using RefType = TupleTreeReference<uint64_t, TestClass>;
   ReferenceInstance.ReferenceField() = RefType::fromString(&ReferenceInstance,
-                                                           "/SequenceField/1");
+                                                           "/SequenceField[1]");
 
   revng_assert(ReferenceInstance.ReferenceField().isValid());
   revng_assert(ReferenceInstance.ReferenceField().get());

@@ -50,38 +50,38 @@ BOOST_AUTO_TEST_CASE(TestIntrospection) {
 }
 
 BOOST_AUTO_TEST_CASE(TestPathAccess) {
-  Binary TheBinary;
-  using FunctionsType = std::decay_t<decltype(TheBinary.Functions())>;
+  Binary Binary;
+  using FunctionsType = std::decay_t<decltype(Binary.Functions())>;
   TupleTreePath Zero;
   Zero.push_back(size_t(0));
-  auto *FirstField = getByPath<FunctionsType>(Zero, TheBinary);
-  revng_check(FirstField == &TheBinary.Functions());
+  auto *FirstField = getByPath<FunctionsType>(Zero, Binary);
+  revng_check(FirstField == &Binary.Functions());
 
-  auto *FunctionsField = getByPath<FunctionsType>("/Functions", TheBinary);
-  revng_check(FunctionsField == &TheBinary.Functions());
+  auto *FunctionsField = getByPath<FunctionsType>("/Functions", Binary);
+  revng_check(FunctionsField == &Binary.Functions());
 
   // Test non existing field
-  revng_check(getByPath<FunctionsType>("/Function", TheBinary) == nullptr);
+  revng_check(getByPath<FunctionsType>("/Function", Binary) == nullptr);
 
   // Test non existing entry in container
-  revng_check(getByPath<Function>("/Functions/:Invalid", TheBinary) == nullptr);
+  revng_check(getByPath<Function>("/Functions[:Invalid]", Binary) == nullptr);
 
   // Test existing entry in container
-  Function &F = TheBinary.Functions()[MetaAddress::invalid()];
-  revng_check(getByPath<Function>("/Functions/:Invalid", TheBinary) == &F);
+  Function &F = Binary.Functions()[MetaAddress::invalid()];
+  revng_check(getByPath<Function>("/Functions[:Invalid]", Binary) == &F);
 
   // Test UpcastablePointer
-  auto UInt8Path = TheBinary.getPrimitiveType(PrimitiveKind::Unsigned, 8);
-  model::TypeDefinition *UInt8 = UInt8Path.get();
+  auto [Typedef, TypedefType] = Binary.makeTypedefDefinition();
+  Typedef.UnderlyingType() = model::PrimitiveType::make(PrimitiveKind::Unsigned,
+                                                        8);
 
-  std::string Path = "/TypeDefinitions/" + std::to_string(UInt8->ID())
-                     + "-PrimitiveDefinition/OriginalName";
-  auto *OriginalNamePointer = getByPath<std::string>(Path, TheBinary);
-  revng_check(OriginalNamePointer == &UInt8->OriginalName());
+  std::string Path = "/TypeDefinitions[" + serializeToString(Typedef.key())
+                     + "]/TypedefDefinition::OriginalName";
+  auto *OriginalNamePointer = getByPath<std::string>(Path, Binary);
+  revng_check(OriginalNamePointer == &Typedef.OriginalName());
 
-  Path = "/TypeDefinitions/" + std::to_string(UInt8->ID())
-         + "-PrimitiveDefinition";
-  revng_check(getByPath<model::TypeDefinition>(Path, TheBinary) == UInt8);
+  Path = "/TypeDefinitions[" + serializeToString(Typedef.key()) + "]";
+  revng_check(getByPath<model::TypeDefinition>(Path, Binary) == &Typedef);
 }
 
 BOOST_AUTO_TEST_CASE(TestCompositeScalar) {
@@ -102,12 +102,12 @@ BOOST_AUTO_TEST_CASE(TestStringPathConversion) {
   TupleTreePath InvalidFunctionPath;
   InvalidFunctionPath.push_back(size_t(0));
   InvalidFunctionPath.push_back(MetaAddress::invalid());
-  auto MaybeInvalidFunctionPath = stringAsPath<Binary>("/Functions/:Invalid");
+  auto MaybeInvalidFunctionPath = stringAsPath<Binary>("/Functions[:Invalid]");
   revng_check(MaybeInvalidFunctionPath.value() == InvalidFunctionPath);
 
   TupleTreePath InvalidFunctionNamePath = InvalidFunctionPath;
   InvalidFunctionNamePath.push_back(size_t(1));
-  auto MaybePath = stringAsPath<Binary>("/Functions/:Invalid/CustomName");
+  auto MaybePath = stringAsPath<Binary>("/Functions[:Invalid]/CustomName");
   revng_check(MaybePath.value() == InvalidFunctionNamePath);
 
   auto CheckRoundTrip = [](const char *String) {
@@ -117,9 +117,9 @@ BOOST_AUTO_TEST_CASE(TestStringPathConversion) {
   };
 
   CheckRoundTrip("/Functions");
-  CheckRoundTrip("/Functions/:Invalid");
-  CheckRoundTrip("/Functions/:Invalid/Entry");
-  CheckRoundTrip("/Functions/0x1000:Code_arm/Entry");
+  CheckRoundTrip("/Functions[:Invalid]");
+  CheckRoundTrip("/Functions[:Invalid]/Entry");
+  CheckRoundTrip("/Functions[0x1000:Code_arm]/Entry");
 }
 
 BOOST_AUTO_TEST_CASE(TestPathMatcher) {
@@ -127,12 +127,12 @@ BOOST_AUTO_TEST_CASE(TestPathMatcher) {
   // Test regular matcher
   //
   {
-    auto Matcher = PathMatcher::create<Binary>("/Functions/*/Entry").value();
+    auto Matcher = PathMatcher::create<Binary>("/Functions[*]/Entry").value();
 
     auto ARM1000EntryPath = pathAsString<Binary>(Matcher.apply(ARM1000));
-    revng_check(ARM1000EntryPath == "/Functions/0x1000:Code_arm/Entry");
+    revng_check(ARM1000EntryPath == "/Functions[0x1000:Code_arm]/Entry");
 
-    auto MaybeToMatch = stringAsPath<Binary>("/Functions/0x1000:Code_arm/"
+    auto MaybeToMatch = stringAsPath<Binary>("/Functions[0x1000:Code_arm]/"
                                              "Entry");
     auto MaybeMatch = Matcher.match<MetaAddress>(MaybeToMatch.value());
     revng_check(MaybeMatch);
@@ -143,8 +143,9 @@ BOOST_AUTO_TEST_CASE(TestPathMatcher) {
   // Test matching through an UpcastablePointer
   //
   {
-    auto Matcher = PathMatcher::create<Binary>("/TypeDefinitions/"
-                                               "*-RawFunctionDefinition/"
+    auto Matcher = PathMatcher::create<Binary>("/TypeDefinitions"
+                                               "[*-RawFunctionDefinition]/"
+                                               "RawFunctionDefinition::"
                                                "FinalStackOffset")
                      .value();
 
@@ -152,9 +153,9 @@ BOOST_AUTO_TEST_CASE(TestPathMatcher) {
       1000, model::TypeDefinitionKind::RawFunctionDefinition
     };
     auto Path1000 = pathAsString<Binary>(Matcher.apply(Key));
-    std::string SerializedPath1000 = "/TypeDefinitions/"
-                                     "1000-RawFunctionDefinition/"
-                                     "FinalStackOffset";
+    std::string SerializedPath1000 = "/TypeDefinitions"
+                                     "[1000-RawFunctionDefinition]/"
+                                     "RawFunctionDefinition::FinalStackOffset";
     revng_check(Path1000 == SerializedPath1000);
 
     auto ToMatch = stringAsPath<Binary>(*Path1000);
@@ -163,16 +164,12 @@ BOOST_AUTO_TEST_CASE(TestPathMatcher) {
     revng_check(Match);
     revng_check(std::get<0>(*Match) == Key);
 
-    ToMatch = stringAsPath<Binary>("/TypeDefinitions/"
-                                   "1000-CABIFunctionDefinition/ID");
+    ToMatch = stringAsPath<Binary>("/TypeDefinitions"
+                                   "[1000-CABIFunctionDefinition]/"
+                                   "CABIFunctionDefinition::ID");
     Match = Matcher.match<model::TypeDefinition::Key>(ToMatch.value());
     revng_check(not Match);
   }
-}
-
-template<typename T>
-static T *createType(model::Binary &Model) {
-  return &Model.makeTypeDefinition<T>().first;
 }
 
 BOOST_AUTO_TEST_CASE(TestModelDeduplication) {
@@ -184,73 +181,68 @@ BOOST_AUTO_TEST_CASE(TestModelDeduplication) {
     return OldTypesCount - NewTypesCount;
   };
 
-  auto UInt8 = Model->getPrimitiveType(PrimitiveKind::Generic, 4);
+  auto UInt32 = model::PrimitiveType::makeGeneric(4);
 
   // Two typedefs
   {
-    auto *Typedef1 = createType<TypedefDefinition>(*Model);
-    Typedef1->UnderlyingType() = { UInt8, {} };
-
-    auto *Typedef2 = createType<TypedefDefinition>(*Model);
-    Typedef2->UnderlyingType() = { UInt8, {} };
+    auto &Typedef1 = Model->makeTypedefDefinition(UInt32.copy()).first;
+    auto &Typedef2 = Model->makeTypedefDefinition(UInt32.copy()).first;
 
     revng_check(Dedup() == 0);
 
-    Typedef1->OriginalName() = "MyUInt8";
-    Typedef2->OriginalName() = "MyUInt8";
+    Typedef1.OriginalName() = "MyUInt8";
+    Typedef2.OriginalName() = "MyUInt8";
 
     revng_check(Dedup() == 1);
   }
 
   // Two structs
   {
-    auto *Struct1 = createType<StructDefinition>(*Model);
-    Struct1->Fields()[0].CustomName() = "FirstField";
-    Struct1->Fields()[0].Type() = { UInt8, {} };
-    Struct1->OriginalName() = "MyStruct";
+    auto &Struct1 = Model->makeStructDefinition().first;
+    Struct1.Fields()[0].CustomName() = "FirstField";
+    Struct1.Fields()[0].Type() = UInt32.copy();
+    Struct1.OriginalName() = "MyStruct";
 
-    auto *Struct2 = createType<StructDefinition>(*Model);
-    Struct2->Fields()[0].CustomName() = "DifferentName";
-    Struct2->Fields()[0].Type() = { UInt8, {} };
-    Struct2->OriginalName() = "MyStruct";
+    auto &Struct2 = Model->makeStructDefinition().first;
+    Struct2.Fields()[0].CustomName() = "DifferentName";
+    Struct2.Fields()[0].Type() = UInt32.copy();
+    Struct2.OriginalName() = "MyStruct";
 
     revng_check(Dedup() == 0);
 
-    Struct1->Fields()[0].CustomName() = Struct2->Fields()[0].CustomName();
+    Struct1.Fields()[0].CustomName() = Struct2.Fields()[0].CustomName();
 
     revng_check(Dedup() == 1);
   }
 
   // Two pairs of cross-referencing structs
   {
-    auto PointerQualifier = Qualifier::createPointer(8);
+    using Pointer = model::PointerType;
 
-    auto *Left1 = createType<StructDefinition>(*Model);
-    auto *Left2 = createType<StructDefinition>(*Model);
+    auto [LeftStruct1, LeftType1] = Model->makeStructDefinition();
+    auto [LeftStruct2, LeftType2] = Model->makeStructDefinition();
 
-    Left1->Fields()[0].Type() = { Model->getDefinitionReference(Left2),
-                                  { PointerQualifier } };
-    Left2->Fields()[0].Type() = { Model->getDefinitionReference(Left1),
-                                  { PointerQualifier } };
+    LeftStruct1.Fields()[0].Type() = Pointer::make(std::move(LeftType2), 8);
+    LeftStruct2.Fields()[0].Type() = Pointer::make(std::move(LeftType1), 8);
 
-    Left1->OriginalName() = "LoopingStructs1";
-    Left2->OriginalName() = "LoopingStructs2";
+    LeftStruct1.OriginalName() = "LoopingStructs1";
+    LeftStruct2.OriginalName() = "LoopingStructs2";
 
-    auto *Right1 = createType<StructDefinition>(*Model);
-    auto *Right2 = createType<StructDefinition>(*Model);
+    auto [RightStruct1, RightType1] = Model->makeStructDefinition();
+    auto [RightStruct2, RightType2] = Model->makeStructDefinition();
 
-    Right1->Fields()[0].Type() = { Model->getDefinitionReference(Right2),
-                                   { PointerQualifier } };
-    Right2->Fields()[0].Type() = { Model->getDefinitionReference(Right1),
-                                   { PointerQualifier, PointerQualifier } };
+    RightStruct1.Fields()[0].Type() = Pointer::make(std::move(RightType2), 8);
 
-    Right1->OriginalName() = "LoopingStructs1";
-    Right2->OriginalName() = "LoopingStructs2";
+    auto DoublePtr = Pointer::make(Pointer::make(std::move(RightType1), 8), 8);
+    RightStruct2.Fields()[0].Type() = std::move(DoublePtr);
+
+    RightStruct1.OriginalName() = "LoopingStructs1";
+    RightStruct2.OriginalName() = "LoopingStructs2";
 
     revng_check(Dedup() == 0);
 
-    Right2->Fields()[0].Type() = { Model->getDefinitionReference(Right1),
-                                   { PointerQualifier } };
+    model::UpcastableType &FieldType = RightStruct2.Fields()[0].Type();
+    FieldType = std::move(llvm::cast<Pointer>(*FieldType).PointeeType());
 
     revng_check(Dedup() == 2);
   }
@@ -289,13 +281,14 @@ BOOST_AUTO_TEST_CASE(TestTupleTreeDiffDeserialization) {
 }
 
 BOOST_AUTO_TEST_CASE(CABIFunctionTypePathShouldParse) {
-  const char *Path = "/TypeDefinitions/10000-CABIFunctionDefinition";
+  const char *Path = "/TypeDefinitions[10000-CABIFunctionDefinition]";
   auto MaybeParsed = stringAsPath<model::Binary>(Path);
   BOOST_TEST(MaybeParsed.has_value());
 }
 
 BOOST_AUTO_TEST_CASE(CABIFunctionTypeArgumentsPathShouldParse) {
-  const char *Path = "/TypeDefinitions/10000-CABIFunctionDefinition/Arguments";
+  const char *Path = "/TypeDefinitions[10000-CABIFunctionDefinition]/"
+                     "CABIFunctionDefinition::Arguments";
   auto MaybeParsed = stringAsPath<model::Binary>(Path);
   BOOST_TEST(MaybeParsed.has_value());
 }
@@ -371,7 +364,7 @@ BOOST_AUTO_TEST_CASE(CollectReadFieldsShouldCollectSegments) {
   BOOST_TEST(Collected.Read.size() == 2);
   std::vector StringPaths = {
     "/Segments",
-    "/Segments/0x0:Code_x86_64-1000",
+    "/Segments[0x0:Code_x86_64-1000]",
   };
 
   std::set<TupleTreePath> Paths;
@@ -393,7 +386,7 @@ BOOST_AUTO_TEST_CASE(CollectReadFieldsShouldCollectNotFoundSegments) {
   BOOST_TEST(Collected.Read.size() == 2);
   std::set<TupleTreePath> Paths = {
     *stringAsPath<model::Binary>("/Segments"),
-    *stringAsPath<model::Binary>("/Segments/0x0:Code_x86_64-1000"),
+    *stringAsPath<model::Binary>("/Segments[0x0:Code_x86_64-1000]"),
   };
   BOOST_TEST(Collected.Read == Paths);
 }
@@ -414,24 +407,4 @@ BOOST_AUTO_TEST_CASE(CollectReadFieldsShouldCollectAllSegments) {
   };
   BOOST_TEST(Collected.Read == Paths);
   BOOST_TEST(Collected.ExactVectors == Paths);
-}
-
-/// This test asserts that Tracking visits do no inspect inside a vector.
-/// We need to find a way to represent non sorted vector, using regular vectors
-/// breaks diffs, since they don't have a index to represent a child
-BOOST_AUTO_TEST_CASE(QualifiersInsideAVectorAreNotVisited) {
-  model::QualifiedType Type;
-  const auto MetaAddress = MetaAddress::fromPC(llvm::Triple::ArchType::x86_64,
-                                               0);
-  Type.Qualifiers().push_back(Qualifier());
-  revng::Tracking::clearAndResume(Type);
-  const auto &ConstType = Type;
-  ConstType.Qualifiers().at(0).Size();
-
-  auto Collected = revng::Tracking::collect(Type);
-  BOOST_TEST(Collected.Read.size() == 1);
-  std::set<TupleTreePath> Paths = {
-    *stringAsPath<model::QualifiedType>("/Qualifiers"),
-  };
-  BOOST_TEST(Collected.Read == Paths);
 }

@@ -23,8 +23,10 @@ The notice below applies to the generated files.
 
 /** if root_type == struct.name -**/
 /** for type in schema.struct_definitions() -**/
+/** if type.name != root_type -**/
 #include "/*= user_include_path =*//*= type.name =*/.h"
-/** endfor **/
+/** endif **/
+/**- endfor **/
 /**- endif **/
 
 /**- if struct.inherits **/
@@ -60,15 +62,6 @@ template <> struct TupleLikeTraits</*=- struct | user_fullname =*/> {
 };
 
 namespace /*= struct.namespace =*/ {
-template <int I> auto &get(/*= struct.name =*/ &&x) {
-  /**- for field in struct.all_fields **/
-  if constexpr (I == /*= loop.index0 =*/)
-    return x./*= field.name =*/();
-  else
-  /**- endfor **/
-    static_assert(value_always_false_v<I>);
-}
-
 template <int I> const auto &get(const /*= struct.name =*/ &x) {
   /**- for field in struct.all_fields **/
   if constexpr (I == /*= loop.index0 =*/)
@@ -79,12 +72,12 @@ template <int I> const auto &get(const /*= struct.name =*/ &x) {
 }
 
 template <int I> auto &get(/*= struct.name =*/ &x) {
-  if constexpr (false)
-    return __null;
   /**- for field in struct.all_fields **/
-  else if constexpr (I == /*= loop.index0 =*/)
+  if constexpr (I == /*= loop.index0 =*/)
     return x./*= field.name =*/();
+  else
   /**- endfor **/
+    static_assert(value_always_false_v<I>);
 }
 }
 /*# --- End TupleLikeTraits --- -#*/
@@ -148,12 +141,14 @@ template<>
 struct llvm::yaml::MappingTraits<UpcastablePointer</*= struct | user_fullname =*/>>
   : public PolymorphicMappingTraits<UpcastablePointer</*= struct | user_fullname =*/>> {};
 
+/** if struct._key **/
 template<>
 struct KeyedObjectTraits<UpcastablePointer</*= struct | user_fullname =*/>> {
   using Key = /*= struct | user_fullname =*/::Key;
   static Key key(const UpcastablePointer</*= struct | user_fullname =*/> &Obj);
   static UpcastablePointer</*= struct | user_fullname =*/> fromKey(const Key &K);
 };
+/** endif **/
 
 namespace /*= struct.namespace =*/ {
 

@@ -148,6 +148,12 @@ public:
     }
   /** endif **/
 
+  /** if struct.inherits **/
+  /// Parent construct
+  /*= struct.name =*/(const /*= struct.inherits.name =*/ &Parent)
+    : /*=- struct.inherits.name =*/(Parent) {}
+  /** endif **/
+
   /** if struct.emit_full_constructor **/
   /// Full constructor
   /*= struct.name =*/(

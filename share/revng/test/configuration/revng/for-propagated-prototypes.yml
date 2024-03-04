@@ -8,9 +8,9 @@ commands:
       - type: revng-qa.compiled-stripped
         filter: for-propagated-prototypes
     command: |-
-      RESUME=$$(temp -d);
+      RESUME="/root/orchestra/sources/revng/log/resume";
+      rm -rf $$RESUME;
       revng analyze --resume "$$RESUME" import-binary "$INPUT" -o /dev/null --debug-info=no;
-      revng analyze --resume "$$RESUME" add-primitive-types "$INPUT" -o /dev/null;
       revng model apply "$$RESUME/context/model.yml" "$SOURCE.add-puts.yml" -o "$$RESUME/context/model.yml";
       revng analyze --resume "$$RESUME" detect-abi "$INPUT" |
       revng model compare "$SOURCE".model.yml

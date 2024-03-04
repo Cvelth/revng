@@ -106,12 +106,10 @@ static void model::purgeTypesImpl(TupleTree<model::Binary> &Model,
   }
 
   // Create type system edges
-  for (const model::UpcastableTypeDefinition &T : Model->TypeDefinitions()) {
-    for (const model::QualifiedType &QT : T->edges()) {
-      auto *DependantType = QT.UnqualifiedType().get();
-      TypeToNode.at(T.get())->addSuccessor(TypeToNode.at(DependantType));
-    }
-  }
+  for (const model::UpcastableTypeDefinition &D : Model->TypeDefinitions())
+    for (const model::Type *Edge : D->edges())
+      if (const model::TypeDefinition *Definition = Edge->skipToDefinition())
+        TypeToNode.at(D.get())->addSuccessor(TypeToNode.at(Definition));
 
   // Record references to types *outside* of Model->Types
   auto VisitBinary = [&](auto &Field) {
@@ -127,10 +125,6 @@ static void model::purgeTypesImpl(TupleTree<model::Binary> &Model,
 
   // Visit all the nodes reachable from ToKeep
   df_iterator_default_set<Node *> Visited;
-  for (const model::UpcastableTypeDefinition &T : Model->TypeDefinitions())
-    if (isa<model::PrimitiveDefinition>(T.get()))
-      Visited.insert(TypeToNode.at(T.get()));
-
   for (model::TypeDefinition *T : ToKeep)
     for (Node *N : depth_first_ext(TypeToNode.at(T), Visited))
       ;

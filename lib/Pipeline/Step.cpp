@@ -412,8 +412,18 @@ Step::loadInvalidationMetadataImpl(const revng::DirectoryPath &Path,
                                         Container.first()));
       if (not Parsed)
         return Parsed.takeError();
+
+      using MetadataType = ContainerInvalidationMetadata;
+      auto Serialize = MetadataType::serialize;
+      Serialize(*Parsed, *Global, Pipe.Pipe->getName(), Container.first());
+
       Pipe.InvalidationMetadata.getPathCache(Global->getName())
         .merge(std::move(*Parsed));
+
+      Serialize(Pipe.InvalidationMetadata.getPathCache(Global->getName()),
+                *Global,
+                Pipe.Pipe->getName(),
+                Container.first());
     }
   }
   return llvm::Error::success();

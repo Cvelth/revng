@@ -203,7 +203,7 @@ class StructDefinition(Definition):
         if self._key:
             self.key_definition = self
 
-        elif self.inherits:
+        elif self.inherits and self.inherits._key:
             # TODO: support indirect inheritance
             self.key_definition = self.inherits
 
@@ -231,7 +231,7 @@ class StructDefinition(Definition):
         all_field_names = {f.name for f in self.all_fields}
         self.emit_full_constructor = key_fields_names != all_field_names
 
-        if self.inherits or self.abstract:
+        if (self.inherits or self.abstract) and self.keytype:
             assert self._key_kind_index is not None, "A polymorphic type without kind in the key"
 
     @staticmethod

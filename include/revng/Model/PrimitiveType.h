@@ -99,6 +99,54 @@ public:
   static UpcastableType makeGeneric(Register::Values Register) {
     return makeGeneric(model::Register::getSize(Register));
   }
+
+public:
+  //
+  // Naming helpers
+  //
+
+  std::string getCName() const {
+    if (PrimitiveKind() == model::PrimitiveKind::Void) {
+      revng_assert(Size() == 0);
+      return "void";
+    } else {
+      revng_assert(Size() != 0);
+      return model::PrimitiveKind::getCPrefix(PrimitiveKind()).str()
+             + std::to_string(Size() * 8) + "_t";
+    }
+  }
+
+  static UpcastableType fromCName(llvm::StringRef Name) {
+    // Figure the primitive kind out.
+    auto [Kind, RemainingName] = PrimitiveKind::tryConsumeCPrefix(Name);
+    if (Kind == PrimitiveKind::Invalid || RemainingName == Name)
+      return nullptr;
+
+    if (Kind == PrimitiveKind::Void)
+      return makeVoid();
+
+    // Ensure the name ends with _t
+    if (not RemainingName.consume_back("_t"))
+      return nullptr;
+
+    // Consume bit size
+    unsigned Bits = 0;
+    if (RemainingName.consumeInteger(10, Bits))
+      return nullptr;
+
+    // Ensure we consumed everything
+    if (RemainingName.size() != 0)
+      return nullptr;
+
+    // Ensure the bit size is a multiple of 8
+    if (Bits % 8 != 0)
+      return nullptr;
+
+    model::UpcastableType Result = make(Kind, Bits / 8);
+    revng_assert(Result->verify(true));
+
+    return Result;
+  }
 };
 
 #include "revng/Model/Generated/Late/PrimitiveType.h"

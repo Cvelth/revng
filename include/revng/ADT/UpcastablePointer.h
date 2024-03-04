@@ -14,9 +14,6 @@
 #include "revng/Support/Assert.h"
 
 template<typename T>
-struct KeyedObjectTraits;
-
-template<typename T>
 struct concrete_types_traits;
 
 template<typename T>
@@ -66,7 +63,7 @@ ReturnT upcast(P &&Upcastable, const L &Callable, ReturnT &&IfNull) {
     if (auto *Upcasted = llvm::dyn_cast<type>(Pointer)) {
       return Callable(*Upcasted);
     } else {
-      return upcast<ReturnT, L, P, I + 1>(Upcastable,
+      return upcast<ReturnT, L, P, I + 1>(std::forward<P>(Upcastable),
                                           Callable,
                                           std::forward<ReturnT>(IfNull));
     }
@@ -103,25 +100,6 @@ void upcast(P &&Upcastable, L &&Callable) {
     return true;
   };
   upcast(Upcastable, Wrapper, false);
-}
-
-template<UpcastablePointerLike P, typename KeyT, typename L>
-void invokeByKey(const KeyT &Key, L &&Callable) {
-  auto Upcastable = KeyedObjectTraits<P>::fromKey(Key);
-
-  upcast(Upcastable, [&Callable]<typename UpcastedT>(const UpcastedT &C) {
-    Callable(static_cast<UpcastedT *>(nullptr));
-  });
-}
-
-template<UpcastablePointerLike P, typename KeyT, typename L, typename ReturnT>
-ReturnT invokeByKey(const KeyT &Key, L &&Callable, const ReturnT &IfNull) {
-  auto Upcastable = KeyedObjectTraits<P>::fromKey(Key);
-
-  auto ToCall = [&Callable]<typename UpcastedT>(const UpcastedT &C) {
-    return Callable(static_cast<UpcastedT *>(nullptr));
-  };
-  return upcast(Upcastable, ToCall, IfNull);
 }
 
 /// A unique_ptr copiable thanks to LLVM RTTI
