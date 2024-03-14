@@ -508,9 +508,9 @@ Changes DetectABI::analyzeFunctionABI(const model::Function &Function,
           // Note: injecting this is detrimental for RAOFC, it prevents it from
           //       detecting an argument of a call site. However, this is not a
           //       problem, since we already marked the current register as an
-          //       argument of the all site, and we only add (never remove)
+          //       argument of the call site, and we only add (never remove)
           //       registers to the set of arguments.
-          // TODO: we should also do this for return values of the function
+          // WIP: we should also do this for return values of the function
           // TODO: drop const_cast. Unfortunately it requires a significant
           //       refactoring.
           RegisterReader.read(Builder, const_cast<GlobalVariable *>(Register));
@@ -1040,6 +1040,7 @@ Changes DetectABI::runAnalyses(MetaAddress EntryAddress,
   // Run ABI-independent data-flow analyses
   ABIResults = analyzeOutlinedFunction(OutlinedFunction.Function.get(),
                                        GCBI,
+                                       Binary->Architecture(),
                                        Analyzer.preCallHook(),
                                        Analyzer.postCallHook(),
                                        Analyzer.retHook());

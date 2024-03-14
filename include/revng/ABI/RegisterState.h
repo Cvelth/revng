@@ -13,6 +13,7 @@
 
 namespace abi::RegisterState {
 
+// WIP: turn this into a bool
 enum Values {
   Invalid,
   No,

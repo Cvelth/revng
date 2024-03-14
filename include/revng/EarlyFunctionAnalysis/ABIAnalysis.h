@@ -19,6 +19,7 @@
 
 namespace ABIAnalyses {
 
+// WIP: turn this into a set
 using RegisterStateMap = std::map<const llvm::GlobalVariable *,
                                   abi::RegisterState::Values>;
 
@@ -119,11 +120,13 @@ ABIAnalyses::ABIAnalysesResults::dump<Logger<true>>(Logger<true> &,
 abi::RegisterState::Values combine(abi::RegisterState::Values,
                                    abi::RegisterState::Values);
 
-ABIAnalysesResults analyzeOutlinedFunction(llvm::Function *F,
-                                           const GeneratedCodeBasicInfo &,
-                                           llvm::Function *,
-                                           llvm::Function *,
-                                           llvm::Function *);
+ABIAnalysesResults
+analyzeOutlinedFunction(llvm::Function *F,
+                        const GeneratedCodeBasicInfo &,
+                        model::Architecture::Values Architecture,
+                        llvm::Function *,
+                        llvm::Function *,
+                        llvm::Function *);
 
 void finalizeReturnValues(ABIAnalysesResults &);
 

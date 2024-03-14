@@ -2,7 +2,8 @@
 # This file is distributed under the MIT License. See LICENSE.md for details.
 #
 
-add_subdirectory(ABIAnalyses)
+# WIP add_subdirectory(ABIAnalyses)
+add_subdirectory(ABIAnalyses/MFIGraphs)
 
 # Define revngEarlyFunctionAnalysis library
 revng_add_analyses_library_internal(
@@ -23,7 +24,19 @@ revng_add_analyses_library_internal(
   Outliner.cpp
   PromoteGlobalToLocalVars.cpp
   SegregateDirectStackAccesses.cpp
-  ${GENERATED_IMPLS})
+  ${GENERATED_IMPLS}
+  ABIAnalyses/ABIAnalysis.cpp
+  ABIAnalyses/DeadRegisterArgumentsOfFunction.cpp
+  ABIAnalyses/DeadReturnValuesOfFunctionCall.cpp
+  ABIAnalyses/RegisterArgumentsOfFunctionCall.cpp
+  ABIAnalyses/UsedArgumentsOfFunction.cpp
+  ABIAnalyses/UsedReturnValuesOfFunction.cpp
+  ABIAnalyses/UsedReturnValuesOfFunctionCall.cpp)
+
+target_include_directories(revngEarlyFunctionAnalysis
+                           PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/ABIAnalyses")
+
+add_dependencies(revngEarlyFunctionAnalysis abi-analyses-headers)
 
 llvm_map_components_to_libnames(
   LLVM_LIBRARIES
@@ -38,7 +51,6 @@ target_link_libraries(
   revngEarlyFunctionAnalysis
   revngBasicAnalyses
   revngABI
-  revngABIAnalyses
   revngSupport
   revngModel
   revngPipes
