@@ -139,10 +139,15 @@ static_assert(not StrictSpecializationOf<ProtectedInheritance, std::pair>);
 template<typename T, typename R>
 concept ConstOrNot = std::is_same_v<R, T> or std::is_same_v<const R, T>;
 
-template<class R, typename ValueType>
-concept range_with_value_type = std::ranges::range<R>
-                                && std::is_convertible_v<typename R::value_type,
-                                                         ValueType>;
+namespace detail {
+template<class R, typename V>
+constexpr bool
+  ItConv = std::is_convertible_v<decltype(*std::begin(std::declval<R>())), V>;
+} // namespace detail
+
+template<class Range, typename ValueType>
+concept range_with_value_type = std::ranges::range<Range>
+                                and detail::ItConv<Range, ValueType>;
 
 template<typename T, typename... Types>
   requires(sizeof...(Types) > 0)
