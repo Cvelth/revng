@@ -12,7 +12,6 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "revng/ABI/RegisterState.h"
 #include "revng/ADT/ZipMapIterator.h"
 #include "revng/EarlyFunctionAnalysis/AnalyzeRegisterUsage.h"
 #include "revng/EarlyFunctionAnalysis/BasicBlock.h"

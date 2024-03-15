@@ -19,7 +19,6 @@
 
 #include "revng/ABI/Definition.h"
 #include "revng/ABI/FunctionType/Layout.h"
-#include "revng/ABI/RegisterState.h"
 #include "revng/ADT/Queue.h"
 #include "revng/BasicAnalyses/GeneratedCodeBasicInfo.h"
 #include "revng/EarlyFunctionAnalysis/CFGAnalyzer.h"
@@ -238,8 +237,6 @@ private:
                                 const efa::BasicBlock &CallerBlock);
 
   bool getRegisterState(model::Register::Values, const CSVSet &);
-
-  void initializeMapForDeductions(FunctionSummary &, abi::RegisterState::Map &);
 };
 
 void DetectABI::computeApproximateCallGraph() {
@@ -531,69 +528,72 @@ Changes DetectABI::analyzeFunctionABI(const model::Function &Function,
   return Changes;
 }
 
+// TODO: drop this.
+// Since function type conversion is capable of handling the holes
+// internally, there's not much reason to push such invasive changes
+// this early in the pipeline.
 void DetectABI::applyABIDeductions() {
-  using namespace abi;
-
   if (ABIEnforcement == NoABIEnforcement)
     return;
 
+  auto ABI = abi::Definition::get(Binary->DefaultABI());
   for (const model::Function &Function : Binary->Functions()) {
     auto &Summary = Oracle.getLocalFunction(Function.Entry());
 
-    RegisterState::Map StateMap(Binary->Architecture());
-    initializeMapForDeductions(Summary, StateMap);
-
-    bool EnforceABIConformance = ABIEnforcement == FullABIEnforcement;
-    std::optional<abi::RegisterState::Map> ResultMap;
-
-    // TODO: drop this.
-    // Since function type conversion is capable of handling the holes
-    // internally, there's not much reason to push such invasive changes
-    // this early in the pipeline.
-    auto ABI = abi::Definition::get(Binary->DefaultABI());
-    if (EnforceABIConformance)
-      ResultMap = ABI.enforceRegisterState(StateMap);
-    else
-      ResultMap = ABI.tryDeducingRegisterState(StateMap);
-
-    if (!ResultMap.has_value())
-      continue;
-
-    for (const auto &[Register, State] : *ResultMap) {
+    abi::Definition::RegisterSet Arguments;
+    abi::Definition::RegisterSet RValues;
+    model::Architecture::Values Architecture = Binary->Architecture();
+    for (const auto &Register : model::Architecture::registers(Architecture)) {
       llvm::StringRef Name = model::Register::getCSVName(Register);
       if (llvm::GlobalVariable *CSV = M.getGlobalVariable(Name, true)) {
-        auto MaybeArg = State.IsUsedForPassingArguments;
-        auto MaybeRV = State.IsUsedForReturningValues;
-
-#ifdef IVAN_HELP
-
-        // ABI-refined results per function
         if (Summary.ABIResults.ArgumentsRegisters.contains(CSV))
-          Summary.ABIResults.ArgumentsRegisters[CSV] = MaybeArg;
+          Arguments.emplace(Register);
 
         if (Summary.ABIResults.ReturnValuesRegisters.contains(CSV))
-          Summary.ABIResults.ReturnValuesRegisters[CSV] = MaybeRV;
-
-        // ABI-refined results per indirect call-site
-        for (auto &Block : Summary.CFG) {
-          for (auto &Edge : Block.Successors()) {
-            if (efa::FunctionEdgeType::isCall(Edge->Type())
-                && Edge->Type() != efa::FunctionEdgeType::FunctionCall) {
-              revng_assert(Block.ID().isValid());
-              auto &CSSummary = Summary.ABIResults.CallSites.at(Block.ID());
-
-              if (CSSummary.ArgumentsRegisters.contains(CSV))
-                CSSummary.ArgumentsRegisters[CSV] = MaybeArg;
-
-              if (CSSummary.ReturnValuesRegisters.contains(CSV))
-                CSSummary.ReturnValuesRegisters[CSV] = MaybeRV;
-            }
-          }
-        }
-
-#endif
+          RValues.emplace(Register);
       }
     }
+
+    if (ABIEnforcement == FullABIEnforcement) {
+      Arguments = ABI.enforceArgumentRegisterState(std::move(Arguments));
+      RValues = ABI.enforceReturnValueRegisterState(std::move(RValues));
+    } else {
+      if (auto R = ABI.tryDeducingArgumentRegisterState(std::move(Arguments)))
+        Arguments = *R;
+      else
+        continue; // Register deduction failed.
+
+      if (auto R = ABI.tryDeducingReturnValueRegisterState(std::move(RValues)))
+        RValues = *R;
+      else
+        continue; // Register deduction failed.
+    }
+
+    efa::CSVSet ResultingArguments;
+    efa::CSVSet ResultingReturnValues;
+    for (const auto &Register : model::Architecture::registers(Architecture)) {
+      llvm::StringRef Name = model::Register::getCSVName(Register);
+      if (llvm::GlobalVariable *CSV = M.getGlobalVariable(Name, true)) {
+        if (Arguments.contains(Register))
+          ResultingArguments.insert(CSV);
+        if (RValues.contains(Register))
+          ResultingReturnValues.insert(CSV);
+      }
+    }
+
+    for (auto &Block : Summary.CFG) {
+      for (auto &Edge : Block.Successors()) {
+        if (efa::FunctionEdgeType::isCall(Edge->Type())
+            && Edge->Type() != efa::FunctionEdgeType::FunctionCall) {
+          revng_assert(Block.ID().isValid());
+          auto &CSSummary = Summary.ABIResults.CallSites.at(Block.ID());
+          CSSummary.ArgumentsRegisters = ResultingArguments;
+          CSSummary.ReturnValuesRegisters = ResultingReturnValues;
+        }
+      }
+    }
+    Summary.ABIResults.ArgumentsRegisters = std::move(ResultingArguments);
+    Summary.ABIResults.ReturnValuesRegisters = std::move(ResultingReturnValues);
 
     if (Log.isEnabled()) {
       Log << "Summary for " << Function.OriginalName() << ":\n";
@@ -602,6 +602,7 @@ void DetectABI::applyABIDeductions() {
     }
   }
 }
+
 void DetectABI::recordRegisters(const efa::CSVSet &CSVs, auto Inserter) {
   using namespace model;
   for (auto *CSV : CSVs) {
@@ -858,21 +859,6 @@ bool DetectABI::getRegisterState(model::Register::Values RegisterValue,
   }
 
   return false;
-}
-
-void DetectABI::initializeMapForDeductions(FunctionSummary &Summary,
-                                           abi::RegisterState::Map &Map) {
-  auto Arch = model::ABI::getArchitecture(Binary->DefaultABI());
-  revng_assert(Arch == Binary->Architecture());
-
-  for (const auto &Reg : model::Architecture::registers(Arch)) {
-    const auto &ArgRegisters = Summary.ABIResults.ArgumentsRegisters;
-    const auto &RVRegisters = Summary.ABIResults.ReturnValuesRegisters;
-
-    Map[Reg].IsUsedForPassingArguments = getRegisterState(Reg, ArgRegisters);
-
-    Map[Reg].IsUsedForReturningValues = getRegisterState(Reg, RVRegisters);
-  }
 }
 
 CSVSet DetectABI::findWrittenRegisters(llvm::Function *F) {

@@ -11,7 +11,6 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/raw_ostream.h"
 
-#include "revng/ABI/RegisterState.h"
 #include "revng/BasicAnalyses/GeneratedCodeBasicInfo.h"
 #include "revng/Model/Binary.h"
 #include "revng/Support/Debug.h"
