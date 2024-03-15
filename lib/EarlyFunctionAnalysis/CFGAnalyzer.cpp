@@ -1023,12 +1023,10 @@ FunctionSummary CFGAnalyzer::milkInfo(OutlinedFunction *OutlinedFunction,
 FunctionSummary CFGAnalyzer::analyze(llvm::BasicBlock *Entry) {
   using namespace llvm;
   using llvm::BasicBlock;
-  using namespace ABIAnalyses;
 
   BasicBlockID EntryID = getBasicBlockID(Entry);
 
   IRBuilder<> Builder(M.getContext());
-  ABIAnalysesResults ABIResults;
 
   // Detect function boundaries
   OutlinedFunction OutlinedFunction = outline(Entry);

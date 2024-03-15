@@ -212,7 +212,7 @@ TCC::tryConvertingRegisterArguments(RFTArguments Registers) {
   // present in-between the argument registers.
   abi::RegisterState::Map Map(model::ABI::getArchitecture(ABI.ABI()));
   for (const model::NamedTypedRegister &Reg : Registers)
-    Map[Reg.Location()].IsUsedForPassingArguments = abi::RegisterState::Yes;
+    Map[Reg.Location()].IsUsedForPassingArguments = true;
   abi::RegisterState::Map DeductionResults = Map;
   if (UseSoftRegisterStateDeductions) {
     std::optional MaybeDeductionResults = ABI.tryDeducingRegisterState(Map);
@@ -226,7 +226,7 @@ TCC::tryConvertingRegisterArguments(RFTArguments Registers) {
 
   llvm::SmallVector<model::Register::Values, 8> ArgumentRegisters;
   for (auto [Register, Pair] : DeductionResults)
-    if (abi::RegisterState::shouldEmit(Pair.IsUsedForPassingArguments))
+    if (Pair.IsUsedForPassingArguments)
       ArgumentRegisters.emplace_back(Register);
 
   // But just knowing which registers we need is not sufficient, we also have to
@@ -586,7 +586,7 @@ TCC::tryConvertingReturnValue(RFTReturnValues Registers) {
 
   abi::RegisterState::Map Map(model::ABI::getArchitecture(ABI.ABI()));
   for (const model::NamedTypedRegister &Register : Registers)
-    Map[Register.Location()].IsUsedForReturningValues = abi::RegisterState::Yes;
+    Map[Register.Location()].IsUsedForReturningValues = true;
   abi::RegisterState::Map DeductionResults = Map;
   if (UseSoftRegisterStateDeductions) {
     std::optional MaybeDeductionResults = ABI.tryDeducingRegisterState(Map);
@@ -600,7 +600,7 @@ TCC::tryConvertingReturnValue(RFTReturnValues Registers) {
 
   SortedVector<model::Register::Values> ReturnValueRegisters;
   for (auto [Register, Pair] : DeductionResults)
-    if (abi::RegisterState::shouldEmit(Pair.IsUsedForReturningValues))
+    if (Pair.IsUsedForReturningValues)
       ReturnValueRegisters.insert_or_assign(Register);
   auto Ordered = ABI.sortReturnValues(ReturnValueRegisters);
 
