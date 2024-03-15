@@ -332,28 +332,19 @@ target_link_libraries(
 revng_add_test(NAME test_pipeline_c COMMAND test_pipeline_c)
 set_tests_properties(test_pipeline_c PROPERTIES LABELS "unit")
 
-# #
-# # test_register_state_deductions
-# #
-# 
+# # # test_register_state_deductions #
+#
 # revng_add_test_executable(test_register_state_deductions
-#                           "${SRC}/RegisterStateDeductions.cpp")
-# target_compile_definitions(test_register_state_deductions
-#                            PRIVATE "BOOST_TEST_DYN_LINK=1")
-# target_include_directories(test_register_state_deductions
-#                            PRIVATE "${CMAKE_SOURCE_DIR}")
-# target_link_libraries(
-#   test_register_state_deductions
-#   revngABI
-#   revngModel
-#   revngSupport
-#   revngUnitTestHelpers
-#   Boost::unit_test_framework
-#   ${LLVM_LIBRARIES})
-# revng_add_test(NAME test_register_state_deductions COMMAND
-#                test_register_state_deductions)
+# "${SRC}/RegisterStateDeductions.cpp")
+# target_compile_definitions(test_register_state_deductions PRIVATE
+# "BOOST_TEST_DYN_LINK=1")
+# target_include_directories(test_register_state_deductions PRIVATE
+# "${CMAKE_SOURCE_DIR}") target_link_libraries( test_register_state_deductions
+# revngABI revngModel revngSupport revngUnitTestHelpers
+# Boost::unit_test_framework ${LLVM_LIBRARIES}) revng_add_test(NAME
+# test_register_state_deductions COMMAND test_register_state_deductions)
 # set_tests_properties(test_register_state_deductions PROPERTIES LABELS
-#                                                                "unit;abi")
+# "unit;abi")
 
 #
 # test_location_infrastructure

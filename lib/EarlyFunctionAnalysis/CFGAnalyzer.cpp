@@ -665,15 +665,13 @@ public:
 
 private:
   const CSVVector &ABICSVs;
-  std::set<GlobalVariable *> ClobberedRegs;
+  CSVSet ClobberedRegs;
 
 public:
   ClobberedRegistersRegistry(const CSVVector &ABICSVs) : ABICSVs(ABICSVs) {}
 
 public:
-  const std::set<GlobalVariable *> &getClobberedRegisters() const {
-    return ClobberedRegs;
-  }
+  const CSVSet &getClobberedRegisters() const { return ClobberedRegs; }
 
 public:
   void recordClobberedRegisters(llvm::CallBase *CI) {
@@ -685,7 +683,7 @@ public:
     }
   }
 
-  void add(const std::set<GlobalVariable *> &Clobbered) {
+  void add(const CSVSet &Clobbered) {
     for (auto *GV : Clobbered)
       ClobberedRegs.insert(GV);
   }
@@ -1088,8 +1086,6 @@ CallSummarizer::CallSummarizer(llvm::Module *M,
   Clobberer(M) {
 }
 
-using CSVSet = std::set<llvm::GlobalVariable *>;
-
 void CallSummarizer::handleCall(MetaAddress CallerBlock,
                                 llvm::IRBuilder<> &Builder,
                                 MetaAddress Callee,
@@ -1138,8 +1134,7 @@ void CallSummarizer::handlePostNoReturn(llvm::IRBuilder<> &Builder) {
 
 void CallSummarizer::handleIndirectJump(llvm::IRBuilder<> &Builder,
                                         MetaAddress Block,
-                                        const std::set<llvm::GlobalVariable *>
-                                          &ClobberedRegisters,
+                                        const CSVSet &ClobberedRegisters,
                                         llvm::Value *SymbolNamePointer) {
   bool EmitCallHook = true;
 

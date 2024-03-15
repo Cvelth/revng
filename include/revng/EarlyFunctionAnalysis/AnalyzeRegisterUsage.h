@@ -20,7 +20,7 @@
 namespace efa {
 
 // WIP: switch to model::Register?
-using CSVSet = llvm::SmallPtrSet<const llvm::GlobalVariable *, 16>;
+using CSVSet = llvm::SmallPtrSet<llvm::GlobalVariable *, 16>;
 
 class RUAResults {
 public:
@@ -45,8 +45,7 @@ public:
 
 public:
   void combine(const RUAResults &Other) {
-    auto HandleMap = [](CSVSet &ThisSet,
-                        const CSVSet &OtherSet) {
+    auto HandleMap = [](CSVSet &ThisSet, const CSVSet &OtherSet) {
       for (auto *CSV : OtherSet)
         ThisSet.insert(CSV);
     };

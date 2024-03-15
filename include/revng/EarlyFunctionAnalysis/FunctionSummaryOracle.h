@@ -35,17 +35,17 @@ using AttributesSet = MutableSet<model::FunctionAttribute::Values>;
 struct FunctionSummary {
 public:
   AttributesSet Attributes;
-  std::set<llvm::GlobalVariable *> ClobberedRegisters;
+  efa::CSVSet ClobberedRegisters;
   // TODO: this field is populated in a different maneer from all the others,
   //       consider changing how this works
   RUAResults ABIResults;
   SortedVector<efa::BasicBlock> CFG;
   std::optional<int64_t> ElectedFSO;
-  std::set<llvm::GlobalVariable *> WrittenRegisters;
+  CSVSet WrittenRegisters;
 
 public:
   FunctionSummary(MutableSet<model::FunctionAttribute::Values> Attributes,
-                  std::set<llvm::GlobalVariable *> ClobberedRegisters,
+                  CSVSet ClobberedRegisters,
                   RUAResults ABIResults,
                   SortedVector<efa::BasicBlock> CFG,
                   std::optional<int64_t> ElectedFSO) :

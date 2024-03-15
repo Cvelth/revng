@@ -376,7 +376,7 @@ void RUAResults::dump(T &Output, const char *Prefix) const {
            << "  "
            << "Return values:\n";
     for (auto *CSV : StateMap.ReturnValuesRegisters) {
-      Output << Prefix << "      " << CSV->getName().str() <<  '\n';
+      Output << Prefix << "      " << CSV->getName().str() << '\n';
     }
   }
 

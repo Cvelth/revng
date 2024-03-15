@@ -4,6 +4,8 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include "llvm/IR/GlobalVariable.h"
+
 #include "revng/ABI/FunctionType/Layout.h"
 #include "revng/EarlyFunctionAnalysis/FunctionSummaryOracle.h"
 
@@ -48,16 +50,15 @@ importPrototype(Module &M,
         Summary.ABIResults.ReturnValuesRegisters.insert(CSV);
     }
 
-    std::set<llvm::GlobalVariable *> PreservedRegisters;
+    CSVSet PreservedRegisters;
     for (Register CalleeSavedRegister : Layout.CalleeSavedRegisters) {
       StringRef Name = model::Register::getCSVName(CalleeSavedRegister);
       if (GlobalVariable *CSV = M.getGlobalVariable(Name, true))
         PreservedRegisters.insert(CSV);
     }
 
-    std::erase_if(Summary.ClobberedRegisters, [&](const auto &E) {
-      return PreservedRegisters.contains(E);
-    });
+    for (GlobalVariable *PreservedRegister : PreservedRegisters)
+      Summary.ClobberedRegisters.erase(PreservedRegister);
 
     Summary.ElectedFSO = Layout.FinalStackOffset;
   }

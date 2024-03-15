@@ -13,7 +13,7 @@ revng_add_analyses_library_internal(
   FunctionType/Support.cpp
   FunctionType/ValueDistributor.cpp
   # RegisterStateDeductions.cpp
-  )
+)
 
 target_link_libraries(
   revngABI
