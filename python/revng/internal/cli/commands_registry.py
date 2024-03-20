@@ -61,6 +61,7 @@ class CommandsRegistry:
         )
         parser.add_argument("--gdb", action="store_true", help="Run programs under gdb.")
         parser.add_argument("--lldb", action="store_true", help="Run programs under lldb.")
+        parser.add_argument("--gdb-server", action="store_true", help="Run programs under gdb-server.")
         parser.add_argument("--valgrind", action="store_true", help="Run programs under valgrind.")
         parser.add_argument(
             "--callgrind", action="store_true", help="Run programs under callgrind."
@@ -114,6 +115,9 @@ class CommandsRegistry:
 
             if args.lldb:
                 options.command_prefix += ["lldb", "--"]
+
+            if args.gdb_server:
+                options.command_prefix += ["gdbserver", "localhost:14234"]
 
             if args.valgrind:
                 suppressions = collect_files(options.search_prefixes, ["share", "revng"], "*.supp")
