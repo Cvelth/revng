@@ -276,33 +276,6 @@ public:
 private:
   bool verifyTypeDefinitions(VerifyHelper &VH) const;
   bool verifyGlobalNamespace(VerifyHelper &VH) const;
-
-  template<typename T>
-  static std::string key(const T &Object) {
-    return getNameFromYAMLScalar(KeyedObjectTraits<T>::key(Object));
-  }
-
-  std::string path(const model::Function &F) const {
-    return "/Functions[" + key(F) + "]";
-  }
-
-  std::string path(const model::DynamicFunction &F) const {
-    return "/ImportedDynamicFunctions[" + key(F) + "]";
-  }
-
-  std::string path(const model::TypeDefinition &T) const {
-    return "/TypeDefinitions[" + key(T) + "]";
-  }
-
-  std::string path(const model::EnumDefinition &D,
-                   const model::EnumEntry &Entry) const {
-    return path(static_cast<const model::TypeDefinition &>(D))
-           + "/EnumDefinition.Entries[" + key(Entry) + "]";
-  }
-
-  std::string path(const model::Segment &Segment) const {
-    return "/Segments[" + key(Segment) + "]";
-  }
 };
 
 #include "revng/Model/Generated/Late/Binary.h"
