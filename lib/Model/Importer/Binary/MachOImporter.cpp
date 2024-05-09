@@ -214,6 +214,10 @@ Error MachOImporter::import() {
                                       StringDataRef.size());
   bool MustSwap = IsLittleEndian != sys::IsLittleEndianHost;
 
+  model::ABI::Values &Default = Model->DefaultABI();
+  if (Default == model::ABI::Invalid)
+    Default = model::ABI::getDefaultForMachO(Model->Architecture());
+
   bool EntryPointFound = false;
   std::optional<uint64_t> EntryPointOffset;
   for (const LoadCommandInfo &LCI : MachO.load_commands()) {

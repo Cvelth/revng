@@ -193,7 +193,7 @@ public:
 
     // Detect default ABI from the architecture.
     if (Model->DefaultABI() == model::ABI::Invalid)
-      Model->DefaultABI() = model::ABI::getDefault(Model->Architecture());
+      Model->DefaultABI() = model::ABI::getDefaultForELF(Model->Architecture());
   }
 
 private:

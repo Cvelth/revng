@@ -497,7 +497,7 @@ Error PECOFFImporter::import(const ImporterOptions &Options) {
 
   if (Model->DefaultABI() == model::ABI::Invalid) {
     auto &Architecture = Model->Architecture();
-    Model->DefaultABI() = model::ABI::getDefaultMicrosoftABI(Architecture);
+    Model->DefaultABI() = model::ABI::getDefaultForPECOFF(Architecture);
   }
 
   // Create a default prototype.

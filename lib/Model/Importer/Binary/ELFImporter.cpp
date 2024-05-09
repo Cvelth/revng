@@ -178,7 +178,7 @@ Error ELFImporter<T, HasAddend>::import(const ImporterOptions &Options) {
   Architecture = Model->Architecture();
 
   // Set default ABI
-  Model->DefaultABI() = model::ABI::getDefault(Model->Architecture());
+  Model->DefaultABI() = model::ABI::getDefaultForELF(Model->Architecture());
 
   // BaseAddress makes sense only for shared (relocatable, PIC) objects
   auto Type = TheELF.getHeader().e_type;

@@ -69,10 +69,11 @@ int main(int Argc, char *Argv[]) {
     MetaAddress ImageBase = MetaAddress::invalid();
     auto LLVMArchitecture = ObjectFile.makeTriple().getArch();
     using namespace model::Architecture;
-    using namespace model::ABI;
     Model->Architecture() = fromLLVMArchitecture(LLVMArchitecture);
-    if (Model->DefaultABI() == model::ABI::Invalid)
-      Model->DefaultABI() = getDefaultMicrosoftABI(Model->Architecture());
+
+    model::ABI::Values &Default = Model->DefaultABI();
+    if (Default == model::ABI::Invalid)
+      Default = model::ABI::getDefaultForPECOFF(Model->Architecture());
 
     // Create a default prototype.
     Model->DefaultPrototype() = abi::registerDefaultFunctionPrototype(*Model);

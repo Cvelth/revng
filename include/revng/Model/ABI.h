@@ -231,7 +231,9 @@ inline constexpr uint64_t getPointerSize(model::ABI::Values V) {
   return model::Architecture::getPointerSize(getArchitecture(V));
 }
 
-inline constexpr model::ABI::Values getDefault(model::Architecture::Values V) {
+// TODO: Consider moving these binary specific things away from a major header.
+inline constexpr model::ABI::Values
+getDefaultFallback(model::Architecture::Values V) {
   switch (V) {
   case model::Architecture::x86:
     return model::ABI::SystemV_x86;
@@ -251,28 +253,47 @@ inline constexpr model::ABI::Values getDefault(model::Architecture::Values V) {
   case model::Architecture::Invalid:
   case model::Architecture::Count:
   default:
-    revng_abort();
+    revng_abort("Unsupported architecture.");
   }
 }
 
-// TODO: Consider factoring these binary specific things into a ELF/PEModel.h.
 inline constexpr model::ABI::Values
-getDefaultMicrosoftABI(model::Architecture::Values V) {
+getDefaultForELF(model::Architecture::Values V) {
+  switch (V) {
+  case model::Architecture::x86:
+    return model::ABI::SystemV_x86;
+  case model::Architecture::x86_64:
+    return model::ABI::SystemV_x86_64;
+  case model::Architecture::mips:
+    return model::ABI::SystemV_MIPS_o32;
+  case model::Architecture::mipsel:
+    return model::ABI::SystemV_MIPSEL_o32;
+  default:
+    return getDefaultFallback(V);
+  }
+}
+
+inline constexpr model::ABI::Values
+getDefaultForPECOFF(model::Architecture::Values V) {
   switch (V) {
   case model::Architecture::x86_64:
     return model::ABI::Microsoft_x86_64;
   case model::Architecture::x86:
     return model::ABI::Microsoft_x86_cdecl;
-  case model::Architecture::mips:
-    return model::ABI::SystemV_MIPS_o32;
-  case model::Architecture::mipsel:
-    return model::ABI::SystemV_MIPSEL_o32;
-  case model::Architecture::arm:
-    return model::ABI::AAPCS;
   case model::Architecture::aarch64:
-    return model::ABI::AAPCS64;
+    return model::ABI::Microsoft_AAPCS64;
   default:
-    revng_abort();
+    return getDefaultFallback(V);
+  }
+}
+
+inline constexpr model::ABI::Values
+getDefaultForMachO(model::Architecture::Values V) {
+  switch (V) {
+  case model::Architecture::aarch64:
+    return model::ABI::Apple_AAPCS64;
+  default:
+    return getDefaultFallback(V);
   }
 }
 
