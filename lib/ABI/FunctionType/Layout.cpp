@@ -163,11 +163,13 @@ ToRawConverter::convert(const model::CABIFunctionDefinition &FunctionType,
                 "Return value is returned through a shadow-argument-pointer:\n"
                   << serializeToString(ReturnType));
 
-      revng_assert(!ABI.GeneralPurposeReturnValueRegisters().empty());
-      auto FirstRegister = ABI.GeneralPurposeReturnValueRegisters()[0];
-      model::NamedTypedRegister OutputPointer(FirstRegister);
-      OutputPointer.Type() = std::move(ReturnType);
-      NewPrototype.ReturnValues().emplace(std::move(OutputPointer));
+      if (ABI.ReturnValueLocationIsReturned()) {
+        revng_assert(!ABI.GeneralPurposeReturnValueRegisters().empty());
+        auto FirstRegister = ABI.GeneralPurposeReturnValueRegisters()[0];
+        model::NamedTypedRegister OutputPointer(FirstRegister);
+        OutputPointer.Type() = std::move(ReturnType);
+        NewPrototype.ReturnValues().emplace(std::move(OutputPointer));
+      }
     } else {
       // The function returns `void`: no need to do anything special.
       revng_log(Log, "Return value is `void`\n");
@@ -414,18 +416,17 @@ Layout::Layout(const model::CABIFunctionDefinition &Function) {
       }
 
       // Also return the same pointer using normal means.
-      //
-      // NOTE: maybe some architectures do not require this.
-      // TODO: investigate.
-      auto &RVLocationOut = ReturnValues.emplace_back(RVLocationIn.Type.copy());
+      if (ABI.ReturnValueLocationIsReturned()) {
+        auto &RVLocationOut = ReturnValues.emplace_back(RVLocationIn.Type.copy());
 
-      // To simplify selecting the register for it, use the full distribution
-      // routine again, but with the pointer instead of the original type.
-      auto RVOut = Converter.distributeReturnValue(*RVLocationOut.Type);
-      revng_assert(RVOut.Size == model::ABI::getPointerSize(ABI.ABI()));
-      revng_assert(RVOut.Registers.size() == 1);
-      revng_assert(RVOut.SizeOnStack == 0);
-      RVLocationOut.Registers = std::move(RVOut.Registers);
+        // To simplify selecting the register for it, use the full distribution
+        // routine again, but with the pointer instead of the original type.
+        auto RVOut = Converter.distributeReturnValue(*RVLocationOut.Type);
+        revng_assert(RVOut.Size == model::ABI::getPointerSize(ABI.ABI()));
+        revng_assert(RVOut.Registers.size() == 1);
+        revng_assert(RVOut.SizeOnStack == 0);
+        RVLocationOut.Registers = std::move(RVOut.Registers);
+      }
     }
   }
 
