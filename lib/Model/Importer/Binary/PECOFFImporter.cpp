@@ -108,7 +108,7 @@ Error PECOFFImporter::parseSectionsHeaders() {
     const object::coff_section *CoffRef = *SecOrErr;
 
     MetaAddress Start = ImageBase + u64(CoffRef->VirtualAddress);
-    Segment Segment({ Start, u64(CoffRef->VirtualSize) });
+    Segment Segment({ Start.toGeneric(), u64(CoffRef->VirtualSize) });
 
     Segment.StartOffset() = CoffRef->PointerToRawData;
 
