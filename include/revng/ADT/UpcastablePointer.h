@@ -204,7 +204,7 @@ public:
   template<UpcastablePointerLike PointerLike>
     requires(std::equality_comparable_with<T, Dereferenced<PointerLike>>)
   bool operator==(const PointerLike &Other) const {
-    if (isEmpty() || Other.isEmpty())
+    if (this->empty() || Other.empty())
       return Pointer == Other.Pointer;
 
     bool Result = false;
@@ -238,8 +238,8 @@ public:
 
   void reset(pointer Other = pointer()) noexcept { Pointer.reset(Other); }
 
-  bool isEmpty() const noexcept { return Pointer == nullptr; }
-  constexpr static UpcastablePointer empty() noexcept {
+  bool empty() const noexcept { return Pointer == nullptr; }
+  constexpr static UpcastablePointer makeEmpty() noexcept {
     return UpcastablePointer(nullptr);
   }
 

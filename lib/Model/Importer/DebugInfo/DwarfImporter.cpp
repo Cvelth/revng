@@ -213,9 +213,9 @@ private:
   const model::UpcastableType &record(const DWARFDie &Die,
                                       model::UpcastableType &&Type,
                                       bool IsNotPlaceholder) {
-    revng_assert(!Type.isEmpty());
+    revng_assert(!Type.empty());
     if (not IsNotPlaceholder) {
-      // `model::UpcastableType::empty()` (as in, no definition) represents
+      // `model::UpcastableType::makeEmpty()` (as in, no definition) represents
       // a primitive placeholder.
       Placeholders[Die.getOffset()] = Type->tryGetAsDefinition();
     }
@@ -232,8 +232,8 @@ private:
   std::pair<TypeSearchResult, model::UpcastableType>
   findType(const DWARFDie &Die) {
     auto Found = Importer.findType({ Index, Die.getOffset() });
-    if (Found.isEmpty())
-      return { TypeSearchResult::Absent, model::UpcastableType::empty() };
+    if (Found.empty())
+      return { TypeSearchResult::Absent, model::UpcastableType::makeEmpty() };
     else if (Placeholders.contains(Die.getOffset()))
       return { TypeSearchResult::PlaceholderType, std::move(Found) };
     else
@@ -448,7 +448,7 @@ private:
       DWARFDie Origin = DICtx.getDIEForOffset(*MaybeOrigin->getAsReference());
       rc_return rc_recur makeType(Origin);
     } else {
-      rc_return model::UpcastableType::empty();
+      rc_return model::UpcastableType::makeEmpty();
     }
   }
 
@@ -493,7 +493,7 @@ private:
         if (ChildDie.getTag() == DW_TAG_formal_parameter) {
 
           model::UpcastableType ArgumentType = rc_recur makeType(ChildDie);
-          if (ArgumentType.isEmpty()) {
+          if (ArgumentType.empty()) {
             reportIgnoredDie(Die,
                              "The type of argument " + Twine(++Index)
                                + " cannot be resolved");
@@ -549,7 +549,7 @@ private:
           }
 
           model::UpcastableType MemberType = rc_recur makeType(ChildDie);
-          if (MemberType.isEmpty()) {
+          if (MemberType.empty()) {
             reportIgnoredDie(Die,
                              "The type of member " + Twine(Index + 1)
                                + " cannot be resolved");
@@ -579,7 +579,7 @@ private:
       for (const DWARFDie &ChildDie : Die.children()) {
         if (ChildDie.getTag() == DW_TAG_member) {
           model::UpcastableType MemberType = rc_recur makeType(ChildDie);
-          if (MemberType.isEmpty()) {
+          if (MemberType.empty()) {
             reportIgnoredDie(Die,
                              "The type of one of the fields cannot be "
                              "resolved");
@@ -604,7 +604,7 @@ private:
       Enum.OriginalName() = Name;
 
       const model::UpcastableType UnderlyingType = rc_recur makeType(Die);
-      if (UnderlyingType.isEmpty()) {
+      if (UnderlyingType.empty()) {
         reportIgnoredDie(Die, "The enum underlying type cannot be resolved");
         rc_return;
       }
@@ -661,7 +661,7 @@ private:
     ScopedSetElement InProgressDie(InProgressDies, &Die);
     if (not InProgressDie.insert()) {
       reportIgnoredDie(Die, "Recursive die");
-      rc_return model::UpcastableType::empty();
+      rc_return model::UpcastableType::makeEmpty();
     }
 
     auto Tag = Die.getTag();
@@ -692,7 +692,7 @@ private:
 
         if (not HasType) {
           reportIgnoredDie(Die, "Array does not specify element type");
-          rc_return model::UpcastableType::empty();
+          rc_return model::UpcastableType::makeEmpty();
         }
 
         for (const DWARFDie &ChildDie : Die.children()) {
@@ -704,7 +704,7 @@ private:
             if (MaybeUpperBound and MaybeCount
                 and *MaybeUpperBound != *MaybeCount + 1) {
               reportIgnoredDie(Die, "DW_AT_upper_bound != DW_AT_count + 1");
-              rc_return model::UpcastableType::empty();
+              rc_return model::UpcastableType::makeEmpty();
             }
 
             if (MaybeUpperBound) {
@@ -716,7 +716,7 @@ private:
               reportIgnoredDie(Die,
                                "Array upper bound/elements count missing or "
                                "invalid");
-              rc_return model::UpcastableType::empty();
+              rc_return model::UpcastableType::makeEmpty();
             }
           }
         }
@@ -727,7 +727,7 @@ private:
         if (not MaybeByteSize) {
           // TODO: force architecture pointer size
           reportIgnoredDie(Die, "Pointer has no size");
-          rc_return model::UpcastableType::empty();
+          rc_return model::UpcastableType::makeEmpty();
         }
 
         uint64_t PointerSize = *MaybeByteSize->getAsUnsignedConstant();
@@ -736,15 +736,15 @@ private:
 
       default:
         reportIgnoredDie(Die, "Unknown type");
-        rc_return model::UpcastableType::empty();
+        rc_return model::UpcastableType::makeEmpty();
       }
 
       rc_return record(Die, std::move(Result), true).copy();
     }
     case TypeSearchResult::PlaceholderType: {
-      if (Type.isEmpty()) {
+      if (Type.empty()) {
         reportIgnoredDie(Die, "Couldn't materialize type");
-        rc_return model::UpcastableType::empty();
+        rc_return model::UpcastableType::makeEmpty();
       }
 
       revng_assert(Placeholders.contains(Die.getOffset()));
@@ -758,9 +758,9 @@ private:
     }
 
     case TypeSearchResult::RegularType:
-      if (Type.isEmpty()) {
+      if (Type.empty()) {
         reportIgnoredDie(Die, "Couldn't materialize type");
-        rc_return model::UpcastableType::empty();
+        rc_return model::UpcastableType::makeEmpty();
       }
 
       rc_return std::move(Type);
@@ -795,7 +795,7 @@ private:
 
     if (FunctionType.ABI() == model::ABI::Invalid) {
       reportIgnoredDie(Die, "Unknown calling convention");
-      return model::UpcastableType::empty();
+      return model::UpcastableType::makeEmpty();
     }
 
     // Arguments
@@ -803,11 +803,11 @@ private:
     for (const DWARFDie &ChildDie : Die.children()) {
       if (ChildDie.getTag() == DW_TAG_formal_parameter) {
         model::UpcastableType ArgumentType = makeType(ChildDie);
-        if (ArgumentType.isEmpty()) {
+        if (ArgumentType.empty()) {
           reportIgnoredDie(Die,
                            "The type of argument " + Twine(++Index)
                              + " cannot be resolved");
-          return model::UpcastableType::empty();
+          return model::UpcastableType::makeEmpty();
         }
 
         // Note: at this stage we don't check the size. If an argument is
@@ -851,7 +851,7 @@ private:
           // Get/create the local function
           auto &Function = Model->Functions()[LowPC];
 
-          if (Prototype.isEmpty())
+          if (Prototype.empty())
             revng_log(DILogger, "Can't get the prototype");
           else if (not Function.prototype())
             Function.Prototype() = std::move(Prototype);
@@ -866,7 +866,7 @@ private:
             Function.Attributes().insert(model::FunctionAttribute::NoReturn);
         } else if (not SymbolName.empty() and Functions.contains(SymbolName)) {
           // It's a dynamic function
-          if (Prototype.isEmpty()) {
+          if (Prototype.empty()) {
             reportIgnoredDie(Die, "Couldn't build subprogram prototype");
             continue;
           }
@@ -1367,7 +1367,7 @@ inline void detectAliases(const llvm::object::ObjectFile &ELF,
         // If DynamicFunction doesn't have a prototype, register it for copying
         // it from the leader.
         // Otherwise, record the type as the leader.
-        if (Found and not It->Prototype().isEmpty()) {
+        if (Found and not It->Prototype().empty()) {
           Prototype = It->Prototype().copy();
         } else {
           UnprototypedFunctionsNames.push_back(Name);
@@ -1397,7 +1397,7 @@ inline void detectAliases(const llvm::object::ObjectFile &ELF,
       }
 
       // Consider it as a Dynamic function.
-      if (not Prototype.isEmpty()) {
+      if (not Prototype.empty()) {
         for (const std::string &Name : UnprototypedFunctionsNames) {
           auto It = ImportedDynamicFunctions.find(Name);
           if (It == ImportedDynamicFunctions.end())

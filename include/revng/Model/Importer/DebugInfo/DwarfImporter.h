@@ -24,7 +24,7 @@ public:
   model::UpcastableType findType(DwarfID ID) {
     auto It = DwarfToModel.find(ID);
     return It != DwarfToModel.end() ? It->second.copy() :
-                                      model::UpcastableType::empty();
+                                      model::UpcastableType::makeEmpty();
   }
 
   model::UpcastableType &recordType(DwarfID ID,

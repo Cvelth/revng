@@ -96,7 +96,7 @@ static FieldList collectFields(const model::TypeDefinition *T) {
     for (auto &Field : RawFunc->Arguments())
       Fields.push_back(Field.Type().get());
 
-    if (not RawFunc->StackArgumentsType().isEmpty())
+    if (not RawFunc->StackArgumentsType().empty())
       Fields.push_back(RawFunc->StackArgumentsType().get());
   } else if (auto *Typedef = llvm::dyn_cast<model::TypedefDefinition>(T)) {
     Fields.push_back(Typedef->UnderlyingType().get());
@@ -243,7 +243,7 @@ static void dumpFunctionType(llvm::raw_ostream &Out,
     for (auto &ArgTy : RawFunc->Arguments())
       Arguments.push_back(ArgTy.Type().get());
 
-    if (not RawFunc->StackArgumentsType().isEmpty())
+    if (not RawFunc->StackArgumentsType().empty())
       Arguments.push_back(RawFunc->StackArgumentsType().get());
 
   } else if (auto *CABIFunc = dyn_cast<CABIFunctionDefinition>(T)) {

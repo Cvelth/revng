@@ -258,7 +258,7 @@ namespace ranks = revng::ranks;
 static llvm::SmallVector<DoxygenLine, 16>
 gatherArgumentComments(const model::Binary &Binary,
                        const model::Function &Function) {
-  if (Function.Prototype().isEmpty())
+  if (Function.Prototype().empty())
     return {};
 
   static constexpr std::string_view Keyword = "\\param ";
@@ -459,7 +459,7 @@ gatherArgumentComments(const model::Binary &Binary,
 static llvm::SmallVector<DoxygenLine, 16>
 gatherReturnValueComments(const model::Binary &Binary,
                           const model::Function &Function) {
-  if (Function.Prototype().isEmpty())
+  if (Function.Prototype().empty())
     return {};
 
   static constexpr std::string_view Keyword = "\\returns ";

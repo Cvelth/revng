@@ -19,7 +19,7 @@ public:
   /// Use this when you need to access/modify the existing prototype,
   /// and \ref Prototype() when you need to assign a new one.
   model::TypeDefinition *prototype() {
-    if (auto &This = *static_cast<CRTP *>(this); This.Prototype().isEmpty())
+    if (auto &This = *static_cast<CRTP *>(this); This.Prototype().empty())
       return nullptr;
     else
       return &This.Prototype()->toPrototype();
@@ -29,8 +29,7 @@ public:
   /// Use this when you need to access/modify the existing prototype,
   /// and \ref Prototype() when you need to assign a new one.
   const model::TypeDefinition *prototype() const {
-    if (auto &This = *static_cast<const CRTP *>(this);
-        This.Prototype().isEmpty())
+    if (auto &This = *static_cast<const CRTP *>(this); This.Prototype().empty())
       return nullptr;
     else
       return &This.Prototype()->toPrototype();

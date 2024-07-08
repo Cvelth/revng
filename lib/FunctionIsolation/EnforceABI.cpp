@@ -518,11 +518,11 @@ struct EnforceABIPipe {
   llvm::Error checkPrecondition(const pipeline::Context &Ctx) const {
     const auto &Model = *revng::getModelFromContext(Ctx);
 
-    if (!Model.DefaultPrototype().isEmpty())
+    if (!Model.DefaultPrototype().empty())
       return llvm::Error::success();
 
     for (const auto &Function : Model.Functions()) {
-      if (Function.Prototype().isEmpty()) {
+      if (Function.Prototype().empty()) {
         return llvm::createStringError(inconvertibleErrorCode(),
                                        "Binary needs to either have a default "
                                        "prototype, or a prototype for each "
@@ -531,7 +531,7 @@ struct EnforceABIPipe {
     }
 
     for (const auto &Function : Model.ImportedDynamicFunctions()) {
-      if (Function.Prototype().isEmpty()) {
+      if (Function.Prototype().empty()) {
         return llvm::createStringError(inconvertibleErrorCode(),
                                        "Binary needs to either have a default "
                                        "prototype, or a prototype for each "

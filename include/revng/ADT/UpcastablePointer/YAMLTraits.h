@@ -46,7 +46,7 @@ template<UpcastablePointerLike T>
 struct PolymorphicMappingTraits {
   static void mapping(llvm::yaml::IO &TheIO, T &Obj) {
     // Skip empty pointers when serializing
-    if (TheIO.outputting() && Obj.isEmpty())
+    if (TheIO.outputting() && Obj.empty())
       return;
 
     if (!TheIO.outputting()) {

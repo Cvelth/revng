@@ -74,7 +74,7 @@ public:
   /// Use this when you need to access/modify the existing struct,
   /// and \ref Type() when you need to assign a new one.
   model::StructDefinition *type() {
-    if (Type().isEmpty())
+    if (Type().empty())
       return nullptr;
     else
       return &Type()->toStruct();
@@ -84,7 +84,7 @@ public:
   /// Use this when you need to access/modify the existing struct,
   /// and \ref Type() when you need to assign a new one.
   const model::StructDefinition *type() const {
-    if (Type().isEmpty())
+    if (Type().empty())
       return nullptr;
     else
       return &Type()->toStruct();

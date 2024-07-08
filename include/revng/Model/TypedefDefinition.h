@@ -32,13 +32,13 @@ public:
 
 public:
   llvm::SmallVector<const model::Type *, 4> edges() const {
-    if (!UnderlyingType().isEmpty())
+    if (!UnderlyingType().empty())
       return { UnderlyingType().get() };
     else
       return {};
   }
   llvm::SmallVector<model::Type *, 4> edges() {
-    if (!UnderlyingType().isEmpty())
+    if (!UnderlyingType().empty())
       return { UnderlyingType().get() };
     else
       return {};

@@ -80,7 +80,7 @@ void fieldAccessed(llvm::StringRef FieldName, llvm::StringRef StructName) {
 
 std::pair<model::TypeDefinition &, model::UpcastableType>
 model::Binary::recordNewType(model::UpcastableTypeDefinition &&T) {
-  revng_assert(!T.isEmpty());
+  revng_assert(!T.empty());
 
   // Assign progressive ID
   if (T->ID() != 0) {
