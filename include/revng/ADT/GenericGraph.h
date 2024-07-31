@@ -997,6 +997,114 @@ public:
   }
 
 private:
+  template<typename SuccessorIterator, typename PredecessorIterator>
+  class ChildIterator : public llvm::iterator_facade_base<
+                          ChildIterator<SuccessorIterator, PredecessorIterator>,
+                          std::forward_iterator_tag,
+                          EdgeView> {
+  private:
+    SuccessorIterator SBegin, SEnd;
+    PredecessorIterator PBegin, PEnd;
+
+    explicit ChildIterator(SuccessorIterator SBegin,
+                           SuccessorIterator SEnd,
+                           PredecessorIterator PBegin,
+                           PredecessorIterator PEnd) :
+      SBegin(SBegin), SEnd(SEnd), PBegin(PBegin), PEnd(PEnd) {}
+
+  public:
+    static ChildIterator<SuccessorIterator, PredecessorIterator>
+    begin(llvm::iterator_range<SuccessorIterator> Successors,
+          llvm::iterator_range<PredecessorIterator> Predecessors) {
+      return ChildIterator<SuccessorIterator,
+                           PredecessorIterator>(std::begin(Successors),
+                                                std::end(Successors),
+                                                std::begin(Predecessors),
+                                                std::end(Predecessors));
+    }
+    static ChildIterator<SuccessorIterator, PredecessorIterator>
+    end(llvm::iterator_range<SuccessorIterator> Successors,
+        llvm::iterator_range<PredecessorIterator> Predecessors) {
+      return ChildIterator<SuccessorIterator,
+                           PredecessorIterator>(std::end(Successors),
+                                                std::end(Successors),
+                                                std::end(Predecessors),
+                                                std::end(Predecessors));
+    }
+
+    using ChildIterator::iterator_facade_base::operator++;
+
+    ChildIterator &operator++() {
+      if (SBegin != SEnd) {
+        ++SBegin;
+        return *this;
+      }
+
+      if (PBegin != PEnd) {
+        ++PBegin;
+        return *this;
+      }
+
+      revng_abort("Attempted to increment an end iterator!");
+    }
+
+    decltype(auto) operator*() {
+      if (SBegin != SEnd)
+        return *SBegin;
+
+      if (PBegin != PEnd)
+        return *PBegin;
+
+      revng_abort("Attempted to dereference an end iterator!");
+    }
+    decltype(auto) operator*() const {
+      if (SBegin != SEnd)
+        return *SBegin;
+
+      if (PBegin != PEnd)
+        return *PBegin;
+
+      revng_abort("Attempted to dereference an end iterator!");
+    }
+
+    struct Proxy {
+      Proxy(EdgeView Value) : Temporary(std::move(Value)) {}
+      EdgeView *const operator->() { return &Temporary; }
+      EdgeView const *const operator->() const { return &Temporary; }
+
+    private:
+      EdgeView Temporary;
+    };
+    Proxy operator->() { return operator*(); }
+    Proxy operator->() const { return operator*(); }
+
+    bool operator==(const ChildIterator &Another) const {
+      auto This = std::tie(SBegin, SEnd, PBegin, PEnd);
+      auto That = std::tie(Another.SBegin,
+                           Another.SEnd,
+                           Another.PBegin,
+                           Another.PEnd);
+      return This == That;
+    }
+  };
+
+public:
+  auto children() {
+    using ResultIterator = ChildIterator<SuccessorIterator,
+                                         PredecessorIterator>;
+    return llvm::make_range(ResultIterator::begin(successors(), predecessors()),
+                            ResultIterator::end(successors(), predecessors()));
+  }
+  auto child_edges() {
+    using ResultIterator = ChildIterator<SuccessorEdgeIterator,
+                                         PredecessorEdgeIterator>;
+    return llvm::make_range(ResultIterator::begin(successor_edges(),
+                                                  predecessor_edges()),
+                            ResultIterator::end(successor_edges(),
+                                                predecessor_edges()));
+  }
+
+private:
   template<typename IteratorType>
   static auto findImpl(DerivedType const *N,
                        IteratorType FromIterator,
@@ -1600,28 +1708,10 @@ public:
   using EdgeRef = typename T::EdgeView;
 
 public:
-  static auto child_begin(NodeRef N) {
-    return llvm::concat<NodeRef>(N->successors(), N->predecessors()).begin();
-  }
-
-  static auto child_end(NodeRef N) {
-    return llvm::concat<NodeRef>(N->successors(), N->predecessors()).end();
-  }
-
-  static auto child_edge_begin(NodeRef N) {
-
-    // IVAN: we want to try to understand if this operation is safe under our
-    // assumptions, to basically get the ranges, concatenate them, and get the
-    // `begin`/`end` iterators out, wrt to the backing storage that
-    // `GenericGraph` uses
-    return llvm::concat<EdgeRef>(N->successor_edges(), N->predecessor_edges())
-      .begin();
-  }
-
-  static auto child_edge_end(NodeRef N) {
-    return llvm::concat<EdgeRef>(N->successor_edges(), N->predecessor_edges())
-      .end();
-  }
+  static auto child_begin(NodeRef N) { return N->children().begin(); }
+  static auto child_end(NodeRef N) { return N->children().end(); }
+  static auto child_edge_begin(NodeRef N) { return N->child_edges().begin(); }
+  static auto child_edge_end(NodeRef N) { return N->child_edges().end(); }
 
   static NodeRef edge_dest(EdgeRef Edge) { return Edge.Neighbor; }
 
