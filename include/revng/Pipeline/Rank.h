@@ -17,27 +17,25 @@ namespace pipeline {
 /// are required to name a target
 class Rank : public DynamicHierarchy<Rank> {
 private:
-  std::string ModelPath;
+  std::string TupleTreePath;
 
 public:
   Rank(llvm::StringRef Name) : DynamicHierarchy(Name) {}
-  Rank(llvm::StringRef Name, std::string_view ModelPath) :
-    DynamicHierarchy(Name), ModelPath(ModelPath) {}
+  Rank(llvm::StringRef Name, std::string_view TupleTreePath) :
+    DynamicHierarchy(Name), TupleTreePath(TupleTreePath) {}
   Rank(llvm::StringRef Name, Rank &Parent) : DynamicHierarchy(Name, Parent) {}
-  Rank(llvm::StringRef Name, Rank &Parent, std::string_view ModelPath) :
-    DynamicHierarchy(Name, Parent), ModelPath(ModelPath) {}
+  Rank(llvm::StringRef Name, Rank &Parent, std::string_view TupleTreePath) :
+    DynamicHierarchy(Name, Parent), TupleTreePath(TupleTreePath) {}
 
-  std::string_view modelPath() const { return ModelPath; }
+  std::string_view tupleTreePath() const { return TupleTreePath; }
 };
 
 // Root rank specialization
-template<ConstexprString String, ConstexprString ModelPathSeparator_>
+template<ConstexprString String>
 class RootRank : public Rank {
 public:
   static constexpr bool RankTag = true;
   static constexpr std::string_view RankName = String;
-  static constexpr std::string_view ModelPathSeparator = ModelPathSeparator_;
-  static constexpr std::string_view ModelPath = "";
   using Type = void;
   using Parent = void;
 
@@ -45,17 +43,19 @@ public:
   static constexpr size_t Depth = 0;
   using Tuple = std::tuple<>;
 
+  consteval static std::string_view buildTupleTreePath() { return ""; }
+
 public:
-  explicit RootRank() : Rank(RankName, ModelPathSeparator) {}
+  explicit RootRank() : Rank(RankName, "/") {}
 };
 
 /// A helper function used for defining a root rank.
 ///
 /// Root rank doesn't have corresponding storage location and is only
 /// used to defining a single logical starting point in the rank hierarchy.
-template<ConstexprString Name, ConstexprString ModelPathSeparator>
-pipeline::RootRank<Name, ModelPathSeparator> defineRootRank() {
-  return pipeline::RootRank<Name, ModelPathSeparator>();
+template<ConstexprString Name>
+pipeline::RootRank<Name> defineRootRank() {
+  return pipeline::RootRank<Name>();
 }
 
 template<typename RankType>
@@ -64,6 +64,7 @@ concept RankSpecialization = requires(RankType &&Rank) {
 
   { RankType::RankName } -> std::convertible_to<std::string_view>;
   { RankType::Depth } -> std::convertible_to<size_t>;
+  { RankType::buildTupleTreePath() } -> std::convertible_to<std::string_view>;
 
   typename RankType::Type;
   typename RankType::Parent;
@@ -88,12 +89,12 @@ struct AppendToTupleHelper {
 template<ConstexprString String,
          HasScalarOrEnumTraits Key,
          RankSpecialization ParentRank,
-         ConstexprString ModelPathComponent_>
+         ConstexprString TupleTreePathComponent>
 class TypedRank : public Rank {
 public:
   static constexpr bool RankTag = true;
   static constexpr std::string_view RankName = String;
-  static constexpr std::string_view ModelPathComponent = ModelPathComponent_;
+  static constexpr std::string_view TTPathComponent = TupleTreePathComponent;
   using Type = Key;
   using Parent = ParentRank;
 
@@ -102,40 +103,18 @@ public:
   static constexpr size_t Depth = Parent::Depth + 1;
   using Tuple = typename detail::AppendToTupleHelper<typename Parent::Tuple,
                                                      Type>::type;
-  static constexpr std::string_view
-    ModelPathSeparator = Parent::ModelPathSeparator;
 
-private:
-  static consteval auto modelPathImpl() {
-    namespace ct = compile_time;
+  static std::string buildTupleTreePath() {
+    if (TTPathComponent.empty())
+      return "";
 
-    constexpr std::string_view Separator = ModelPathSeparator;
-    constexpr ConstexprString<Separator.size() + 1>
-      SeparatorArgument = Separator;
-
-    constexpr std::string_view ParentPath = Parent::ModelPath;
-    constexpr ConstexprString<ParentPath.size() + 1>
-      ParentPathArgument = ParentPath;
-
-    constexpr std::string_view Component = ModelPathComponent;
-    constexpr ConstexprString<Component.size() + 1>
-      ComponentArgument = Component;
-
-    return ct::concatenateWithSeparator<SeparatorArgument,
-                                        ParentPathArgument,
-                                        ComponentArgument>();
+    return std::string(Parent::buildTupleTreePath()) + "/"
+           + std::string(TTPathComponent) + "/$" + std::to_string(Depth);
   }
-  static constexpr std::array ModelPathValue = modelPathImpl();
-
-public:
-  static constexpr auto ModelPath = ModelPathComponent.empty() ?
-                                      std::string_view{} :
-                                      std::string_view(ModelPathValue.data(),
-                                                       ModelPathValue.size());
 
 public:
   explicit TypedRank(Parent &ParentObj) :
-    Rank(RankName, ParentObj, ModelPath) {}
+    Rank(RankName, ParentObj, buildTupleTreePath()) {}
 };
 
 /// A helper function for defining a new rank.
@@ -147,15 +126,15 @@ public:
 /// \arg ParentObject is the rank this rank extends.
 template<ConstexprString Name,
          HasScalarOrEnumTraits Type,
-         ConstexprString ModelPathComponentWithKeyOmitted = ConstexprString{},
+         ConstexprString TupleTreePathComponentWithoutKeys = ConstexprString{},
          RankSpecialization Parent = void>
-pipeline::TypedRank<Name, Type, Parent, ModelPathComponentWithKeyOmitted>
+pipeline::TypedRank<Name, Type, Parent, TupleTreePathComponentWithoutKeys>
 defineRank(Parent &ParentObject) {
   static_assert(not std::same_as<Parent, void>);
   return pipeline::TypedRank<Name,
                              Type,
                              Parent,
-                             ModelPathComponentWithKeyOmitted>(ParentObject);
+                             TupleTreePathComponentWithoutKeys>(ParentObject);
 }
 
 namespace detail {
@@ -174,7 +153,7 @@ inline constexpr bool DepthCheck<void, ExpectedDepth> = (ExpectedDepth == 0);
 
 /// A helper struct that incapsulates reachability logic for connected ranks.
 /// the `value` member is set to `true` if and only if the `To` rank can be
-/// reached from `From` rank by concecutive `From = From::Parent` operations.
+/// reached from `From` rank by consecutive `From = From::Parent` operations.
 template<typename From, typename To>
 struct ReachabilityHelper {
 private:
