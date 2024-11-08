@@ -12,6 +12,7 @@
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "revng/Model/NameBuilder.h"
 #include "revng/Support/Assert.h"
 #include "revng/Support/Debug.h"
 #include "revng/TupleTree/TupleTree.h"
@@ -20,7 +21,6 @@ inline Logger<> ModelVerifyLogger("model-verify");
 
 namespace model {
 class Binary;
-class NameBuilder;
 class TypeDefinition;
 class Identifier;
 class VerifyHelper {
@@ -77,10 +77,7 @@ private:
   std::set<const model::TypeDefinition *> InProgress;
   bool AssertOnFail = false;
 
-  // Name builder is stored as a pointer in order to avoid an inclusion loop:
-  // NameBuilder methods return `model::Identifier`, which depends on this
-  // helper.
-  std::unique_ptr<model::NameBuilder> NameBuilder = nullptr;
+  std::optional<model::NameBuilder> NameBuilder = std::nullopt;
 
   bool HasPushedTracking = false;
 
