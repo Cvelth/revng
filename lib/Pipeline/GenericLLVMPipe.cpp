@@ -35,17 +35,20 @@ public:
 
 public:
   Context &TheContext;
+  llvm::StringRef Name;
   llvm::ArrayRef<ContractGroup> Contract;
   ContainerToTargetsMap &Requested;
   llvm::ArrayRef<std::string> ContainersName;
 
 public:
   UpdateContract(Context &TheContext,
+                 llvm::StringRef Name,
                  llvm::ArrayRef<ContractGroup> Contract,
                  ContainerToTargetsMap &Requested,
                  const std::string &ContainersName) :
     llvm::ModulePass(ID),
     TheContext(TheContext),
+    Name(Name),
     Contract(Contract),
     Requested(Requested),
     ContainersName(ContainersName) {}
@@ -54,6 +57,7 @@ public:
   bool runOnModule(llvm::Module &Module) override {
     for (auto &Entry : Contract)
       Entry.deduceResults(TheContext, Requested, { ContainersName });
+    dumpNext(Module, "(pass) " + Name.str());
     return false;
   }
 };
@@ -73,6 +77,7 @@ void GenericLLVMPipe::run(ExecutionContext &EC, LLVMContainer &Container) {
   for (const ElementType &Element : Passes) {
     Element->registerPasses(Manager);
     Manager.add(new UpdateContract(EC.getContext(),
+                                   Element->getName(),
                                    Element->getContract(),
                                    EC.getCurrentRequestedTargets(),
                                    Container.name()));

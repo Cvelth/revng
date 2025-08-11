@@ -4,6 +4,7 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include <fstream>
 #include <unordered_map>
 
 #include "llvm/ADT/PostOrderIterator.h"
@@ -20,6 +21,8 @@
 #include "revng/Yield/ControlFlow/FallthroughDetection.h"
 #include "revng/Yield/Function.h"
 #include "revng/Yield/PTML.h"
+
+#include "revng/Yield/Generated/Early/TagType.h"
 
 using pipeline::locationString;
 using ptml::Tag;
@@ -122,6 +125,36 @@ static std::string taggedLine(const ptml::MarkupBuilder &B,
   return Result += '\n';
 }
 
+static llvm::cl::opt<std::string> LostAddresses("lost-addresses",
+                                                llvm::cl::desc("<list-of-lost-"
+                                                               "addresses>"));
+static std::optional<std::map<MetaAddress, std::string>> lostAddressCache() {
+  if (LostAddresses == "")
+    return std::nullopt;
+
+  static std::optional<std::map<MetaAddress, std::string>> Cache = std::nullopt;
+  if (Cache)
+    return Cache;
+
+  Cache = std::map<MetaAddress, std::string>{};
+
+  std::ifstream Stream(LostAddresses);
+  revng_assert(Stream.is_open());
+
+  std::string CurrentLine;
+  while (std::getline(Stream, CurrentLine)) {
+    auto [Address, Offender] = llvm::StringRef{ CurrentLine }.split(": ");
+    revng_assert(!Address.empty());
+    revng_assert(!Offender.empty());
+
+    auto [_, S] = Cache->try_emplace(MetaAddress::fromString(Address),
+                                     Offender.str());
+    revng_assert(S);
+  }
+
+  return Cache;
+}
+
 /// An internal helper for managing instruction prefixes.
 ///
 /// It builds a map of instructions to prefixes for a passed function, and
@@ -195,10 +228,22 @@ public:
 
     std::string Result;
     if (LongestAddressString != 0) {
-      Result = B.getTag(tags::Span, std::move(Data.Address))
-                 .addAttribute(attributes::Token,
-                               tokenTypes::InstructionAddress)
-                 .toString();
+      if (std::optional LostAddresses = lostAddressCache()) {
+        auto Iterator = LostAddresses->find(Instruction);
+        revng_check(Iterator != LostAddresses->end());
+        llvm::StringRef Token = toPTML(Iterator->second == "SURVIVED" ?
+                                         yield::TagType::Register :
+                                         yield::TagType::Mnemonic);
+        Result = B.getTag(tags::Span, std::move(Data.Address))
+                   .addAttribute(attributes::Token, std::move(Token))
+                   .addAttribute("title", Iterator->second)
+                   .toString();
+      } else {
+        Result = B.getTag(tags::Span, std::move(Data.Address))
+                   .addAttribute(attributes::Token,
+                                 tokenTypes::InstructionAddress)
+                   .toString();
+      }
 
       revng_assert(Data.Address.size() != 0);
       revng_assert(Data.Address.size() <= LongestAddressString);

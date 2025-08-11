@@ -28,8 +28,12 @@
 
 using namespace llvm;
 
+llvm::cl::opt<std::string> DebugInfoInstrumentation("debug-info-"
+                                                    "instrumentation");
+
 void dumpModule(const Module *M, const char *Path) {
   std::ofstream FileStream(Path);
+  revng_assert(FileStream);
   raw_os_ostream Stream(FileStream);
   M->print(Stream, nullptr, false, true);
 }

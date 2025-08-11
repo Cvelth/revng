@@ -4,11 +4,26 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include "revng/Pipeline/LLVMContainer.h"
 #include "revng/Pipeline/Pipe.h"
 
 using namespace pipeline;
 
 using llvm::StringRef;
+
+void dumpNextContainer(pipeline::ContainerSet const &Containers,
+                       llvm::StringRef Name) {
+  static constexpr llvm::StringRef GenericPipeName = "generic-llvm-pipe";
+  if (Name.starts_with(GenericPipeName))
+    return;
+
+  if (Containers.contains("module.bc.zstd")) {
+    auto const &C = Containers.get<pipeline::LLVMContainer>("module.bc.zstd");
+    dumpNext(C.getModule(), "(pipe) " + Name.str());
+  } else {
+    dbg << "No `module.bc.zstd` in `" << Name.str() << "`.\n" << std::endl;
+  }
+}
 
 void InvalidationMetadata::registerTargetsDependingOn(const Context &Context,
                                                       StringRef GlobalName,

@@ -11,6 +11,7 @@
 
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/Analysis/Interval.h"
@@ -32,6 +33,7 @@
 #include "revng/Support/Debug.h"
 #include "revng/Support/Generator.h"
 #include "revng/Support/MetaAddress.h"
+#include "revng/Support/YAMLTraits.h"
 
 class ProgramCounterHandler;
 
@@ -1048,7 +1050,26 @@ inline std::string dumpToString(T TheT) {
   return dumpToString(*TheT);
 }
 
+extern llvm::cl::opt<std::string> DebugInfoInstrumentation;
+
 void dumpModule(const llvm::Module *M, const char *Path) debug_function;
+inline void dumpNext(const llvm::Module &M, llvm::StringRef Name) {
+  if (DebugInfoInstrumentation != "") {
+    static bool ShouldStart = false;
+    if (Name.startswith("(pipe) attach-debug-info"))
+      ShouldStart = true;
+
+    if (ShouldStart) {
+      static uint64_t Counter = 0;
+
+      std::string Path = DebugInfoInstrumentation;
+      Path += "(" + toString(Counter++) + ") " + Name.str() + ".ll";
+
+      dbg << "Writing a module to '" << Path << "'!\n";
+      dumpModule(&M, Path.c_str());
+    }
+  }
+}
 
 llvm::PointerType *getStringPtrType(llvm::LLVMContext &C);
 

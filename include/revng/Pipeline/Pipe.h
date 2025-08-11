@@ -29,6 +29,10 @@
 #include "revng/Pipeline/Invokable.h"
 #include "revng/Pipeline/Target.h"
 #include "revng/Support/Debug.h"
+#include "revng/Support/IRHelpers.h"
+
+void dumpNextContainer(pipeline::ContainerSet const &Containers,
+                       llvm::StringRef Name);
 
 inline Logger<> InvalidationLog("invalidation");
 
@@ -290,7 +294,11 @@ public:
   llvm::Error run(ExecutionContext &Context,
                   ContainerSet &Containers,
                   const llvm::StringMap<std::string> &ExtraArgs) override {
-    return Invokable.run(Context, Containers, ExtraArgs);
+    auto Error = Invokable.run(Context, Containers, ExtraArgs);
+
+    dumpNextContainer(Containers, Invokable.getName());
+
+    return Error;
   }
 
   void invalidate(const GlobalTupleTreeDiff &Diff,

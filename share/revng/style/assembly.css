@@ -1,0 +1,89 @@
+/*
+ * This file is distributed under the MIT License. See LICENSE.md for details.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap');
+body {
+  background-color: #2e2f30;
+  font-family: 'Source Code Pro', monospace;
+  font-size: 18px;
+  line-height: 1.25;
+  white-space: nowrap;
+
+  color: #707070;
+}
+
+[data-token="indentation"] {
+  white-space: pre;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+:target {
+  background-color: #252627;
+}
+
+[data-scope="link"] {
+  color: #a69a3f;
+}
+
+[data-scope="asm.labeled-block"] {
+  padding: 12px;
+}
+
+[data-scope="asm.instruction"] {
+  padding: 2px;
+  /* padding-left: 2ch; */
+  color: #d6cf9a;
+}
+
+[data-token="asm.label"],
+[data-token="asm.label-indicator"],
+[data-token="call-graph.node-label"],
+[data-token="call-graph.shallow-node-label"] {
+  color: #d6c540;
+}
+
+[data-token="asm.opcode"],
+[data-token="asm.mnemonic"],
+[data-token="asm.mnemonic-prefix"],
+[data-token="asm.mnemonic-suffix"] {
+  color: #ff8080;
+}
+
+[data-token="asm.immediate-value"] {
+  color: #a87e49;
+}
+
+[data-token="asm.register"] {
+  color: #66a334;
+}
+
+[data-token="annotation"] {
+  font-size: 12px;
+  color: #71747f;
+}
+
+[data-token="asm.directive"] {
+  color: #a8abb0;
+}
+
+[data-token="comment"],
+[data-token="asm.helper"],
+[data-token="asm.instruction-address"],
+[data-token="asm.raw-bytes"] {
+  color: #a8abb0;
+  /* font-size: 15px; */
+}
+
+[data-token="error"] {
+  color: #e05050;
+  /* font-size: 15px; */
+}
+
+[data-token="indentation"] {
+  color: #2e2f30;
+}
