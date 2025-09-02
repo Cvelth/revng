@@ -219,6 +219,77 @@ static std::string boolLiteral(const llvm::ConstantInt *Int) {
   }
 }
 
+static Logger<> EmissionCheckLog{ "debug-information-emission-check" };
+
+// Ensures that all the debug information that should be emitted is in fact
+// emitted.
+class DebugInfoController {
+  const llvm::Function &Function;
+  std::map<std::string, std::string> HasToBeEmittedLater = {};
+  std::set<std::string> Emitted = {};
+
+private:
+  std::optional<std::string> tryGetLocation(const llvm::Instruction &I) {
+    if (!I.getDebugLoc() || !I.getDebugLoc()->getScope())
+      return std::nullopt;
+
+    std::string Result = I.getDebugLoc()->getScope()->getName().str();
+
+    // TODO: introduce a better prefix to indicate (and be able to check) that
+    //        this is indeed _our_ debug information.
+    revng_assert(Result.starts_with('/'));
+
+    return Result;
+  }
+
+  std::optional<std::string> shouldBeAdded(const llvm::Instruction &I);
+
+public:
+  std::string add(const llvm::Instruction &I,
+                  std::string &&Str,
+                  const ptml::ModelCBuilder &B);
+
+  DebugInfoController(const llvm::Function &Function) : Function(Function) {}
+
+  ~DebugInfoController() {
+    // Basic check (always ran)
+    if (not HasToBeEmittedLater.empty()) {
+      std::string Error = "The following locations were postponed and then "
+                          "lost:\n";
+      for (const auto &[Location, Instruction] : HasToBeEmittedLater) {
+        Error += "- '" + Location + "':\n";
+        if (not Instruction.empty())
+          Error += "  - " + Instruction + '\n';
+      }
+
+      revng_abort(Error.c_str());
+    }
+
+    // Expensive check (Guarded by a logger)
+    if (EmissionCheckLog.isEnabled()) {
+      EmissionCheckLog << "Checking " << Function.getName() << DoLog;
+
+      std::map<std::string, std::string> LostDebugInformation;
+      for (const llvm::BasicBlock &Block : Function)
+        for (const llvm::Instruction &Instruction : Block)
+          if (std::optional DebugLocation = tryGetLocation(Instruction))
+            if (not Emitted.contains(*DebugLocation))
+              LostDebugInformation[*DebugLocation] = dumpToString(Instruction);
+
+      if (not LostDebugInformation.empty()) {
+        std::string Error = "The following locations were never emitted:\n";
+        for (const auto &[Location, Instruction] : LostDebugInformation) {
+          Error += "- '" + Location + "':\n";
+          if (not Instruction.empty())
+            Error += "  - " + Instruction + '\n';
+        }
+
+        revng_abort(Error.c_str());
+      }
+    }
+  }
+};
+
 struct CCodeGenerator {
 private:
   /// The model of the binary being analysed
@@ -276,6 +347,9 @@ private:
   /// Emission of parentheses may change whether the OPRP is enabled or not
   bool IsOperatorPrecedenceResolutionPassEnabled = false;
 
+private:
+  DebugInfoController DIController;
+
 public:
   CCodeGenerator(ControlFlowGraphCache &Cache,
                  const Binary &Model,
@@ -296,7 +370,8 @@ public:
     B(B),
     SwitchStateVars(),
     Cache(Cache),
-    VariableNameBuilder(B.makeLocalVariableNameBuilder(ModelFunction)) {
+    VariableNameBuilder(B.makeLocalVariableNameBuilder(ModelFunction)),
+    DIController(LLVMFunction) {
     // TODO: don't use a global loop state variable
     const auto &Configuration = B.NameBuilder.Configuration;
     llvm::StringRef LoopStateVariable = Configuration.loopStateVariableName();
@@ -338,31 +413,28 @@ private:
   void emitBasicBlock(const BasicBlock *BB, bool EmitReturn);
 
 private:
-  RecursiveCoroutine<std::string> getToken(const llvm::Value *V) const;
+  RecursiveCoroutine<std::string> getToken(const llvm::Value *V);
 
   RecursiveCoroutine<std::string>
   getCallToken(const llvm::CallInst *Call,
                const llvm::StringRef FuncName,
-               const model::TypeDefinition *Prototype) const;
+               const model::TypeDefinition *Prototype);
 
   RecursiveCoroutine<std::string> getConstantToken(const llvm::Value *V) const;
 
   RecursiveCoroutine<std::string>
-  getInstructionToken(const llvm::Instruction *I) const;
+  getInstructionToken(const llvm::Instruction *I);
 
-  RecursiveCoroutine<std::string>
-  getCustomOpcodeToken(const llvm::CallInst *C) const;
+  RecursiveCoroutine<std::string> getCustomOpcodeToken(const llvm::CallInst *C);
 
-  RecursiveCoroutine<std::string>
-  getModelGEPToken(const llvm::CallInst *C) const;
+  RecursiveCoroutine<std::string> getModelGEPToken(const llvm::CallInst *C);
 
   std::string getIsolatedFunctionToken(const llvm::Function *F) const;
 
-  RecursiveCoroutine<std::string>
-  getIsolatedCallToken(const llvm::CallInst *C) const;
+  RecursiveCoroutine<std::string> getIsolatedCallToken(const llvm::CallInst *C);
 
   RecursiveCoroutine<std::string>
-  getNonIsolatedCallToken(const llvm::CallInst *C) const;
+  getNonIsolatedCallToken(const llvm::CallInst *C);
 
 private:
   std::string addParentheses(llvm::StringRef Expr) const;
@@ -604,7 +676,7 @@ CCodeGenerator::getConstantToken(const llvm::Value *C) const {
 }
 
 RecursiveCoroutine<std::string>
-CCodeGenerator::getModelGEPToken(const llvm::CallInst *Call) const {
+CCodeGenerator::getModelGEPToken(const llvm::CallInst *Call) {
 
   revng_assert(isCallToTagged(Call, FunctionTags::ModelGEP)
                or isCallToTagged(Call, FunctionTags::ModelGEPRef));
@@ -769,7 +841,9 @@ CCodeGenerator::getModelGEPToken(const llvm::CallInst *Call) const {
 }
 
 RecursiveCoroutine<std::string>
-CCodeGenerator::getCustomOpcodeToken(const llvm::CallInst *Call) const {
+CCodeGenerator::getCustomOpcodeToken(const llvm::CallInst *Call) {
+
+  Call->dump();
 
   if (isAssignment(Call)) {
     const llvm::Value *StoredVal = Call->getArgOperand(0);
@@ -951,7 +1025,7 @@ CCodeGenerator::getCustomOpcodeToken(const llvm::CallInst *Call) const {
 }
 
 RecursiveCoroutine<std::string>
-CCodeGenerator::getIsolatedCallToken(const llvm::CallInst *Call) const {
+CCodeGenerator::getIsolatedCallToken(const llvm::CallInst *Call) {
 
   // Retrieve the CallEdge
   const auto &[CallEdge, _] = Cache.getCallEdge(Model, Call);
@@ -987,7 +1061,7 @@ CCodeGenerator::getIsolatedCallToken(const llvm::CallInst *Call) const {
 }
 
 RecursiveCoroutine<std::string>
-CCodeGenerator::getNonIsolatedCallToken(const llvm::CallInst *Call) const {
+CCodeGenerator::getNonIsolatedCallToken(const llvm::CallInst *Call) {
   auto *CalledFunc = getCalledFunction(Call);
   revng_assert(CalledFunc and CalledFunc->hasName(),
                "Special functions should all have a name");
@@ -996,25 +1070,69 @@ CCodeGenerator::getNonIsolatedCallToken(const llvm::CallInst *Call) const {
   rc_return rc_recur getCallToken(Call, HelperRef, /*prototype=*/nullptr);
 }
 
-static bool shouldGenerateDebugInfoAsPTML(const llvm::Instruction &I) {
-  if (!I.getDebugLoc() || !I.getDebugLoc()->getScope())
-    return false;
+std::optional<std::string>
+DebugInfoController::shouldBeAdded(const llvm::Instruction &I) {
+  std::optional<std::string> CurrentLocation = tryGetLocation(I);
+  if (not CurrentLocation)
+    return std::nullopt;
 
-  // If the next instruction in the BB has different DebugLoc, generate the
-  // PTML location now.
-  auto NextInstr = std::next(I.getIterator());
-  if (NextInstr == I.getParent()->end() || !NextInstr->getDebugLoc()
-      || NextInstr->getDebugLoc() != I.getDebugLoc())
-    return true;
-  return false;
+  //
+  // Emit the tag IF:
+  //
+
+  dbg << "  - 0\n";
+
+  // 1. There is no next instruction,
+  auto NextInstruction = std::next(I.getIterator());
+  if (NextInstruction == I.getParent()->end())
+    return CurrentLocation;
+
+  dbg << "  - 1\n";
+
+  // 2. The next instruction is a terminator (we never explicitly emit those)
+  if (NextInstruction->isTerminator())
+    return CurrentLocation;
+
+  dbg << "  - 2\n";
+
+  // 3. The next instruction doesn't have debug information,
+  std::optional<std::string> NextLocation = tryGetLocation(*NextInstruction);
+  if (not NextLocation)
+    return CurrentLocation;
+
+  dbg << "  - 3\n";
+
+  // 4. Or the next instruction's location is different from the current one.
+  if (*CurrentLocation != *NextLocation)
+    return CurrentLocation;
+
+  dbg << "  - 4\n";
+
+  //
+  // Otherwise, postpone the tag emission for later.
+  //
+  if (not Emitted.contains(*CurrentLocation)) {
+    if (true || EmissionCheckLog.isEnabled())
+      HasToBeEmittedLater[std::move(*CurrentLocation)] = dumpToString(I);
+    else
+      HasToBeEmittedLater[std::move(*CurrentLocation)] = "";
+  }
+
+  return std::nullopt;
 }
 
-static std::string addDebugInfo(const llvm::Instruction *I,
-                                std::string &&Str,
-                                const ptml::ModelCBuilder &B) {
-  if (shouldGenerateDebugInfoAsPTML(*I)) {
-    std::string Location = I->getDebugLoc()->getScope()->getName().str();
-    return B.getDebugInfoTag(std::move(Str), std::move(Location));
+std::string DebugInfoController::add(const llvm::Instruction &I,
+                                     std::string &&Str,
+                                     const ptml::ModelCBuilder &B) {
+  dbg << "- HERE: " << dumpToString(I) << "\n";
+
+  if (std::optional Location = shouldBeAdded(I)) {
+    dbg << "    - " << HasToBeEmittedLater.size() << '\n';
+    HasToBeEmittedLater.erase(*Location);
+    dbg << "    - " << HasToBeEmittedLater.size() << '\n';
+    Emitted.emplace(dumpToString(I));
+
+    return B.getDebugInfoTag(std::move(Str), std::move(*Location));
 
   } else {
     return std::move(Str);
@@ -1092,7 +1210,7 @@ static const std::string getCmpOpString(const llvm::CmpInst::Predicate &Pred,
 }
 
 RecursiveCoroutine<std::string>
-CCodeGenerator::getInstructionToken(const llvm::Instruction *I) const {
+CCodeGenerator::getInstructionToken(const llvm::Instruction *I) {
 
   if (isa<llvm::BinaryOperator>(I) or isa<llvm::ICmpInst>(I)) {
     const llvm::Value *Op0 = I->getOperand(0);
@@ -1144,16 +1262,16 @@ CCodeGenerator::getInstructionToken(const llvm::Instruction *I) const {
                                 getCmpOpString(Cmp->getPredicate(), B);
 
     // TODO: Integer promotion
-    rc_return addDebugInfo(I,
-                           addParentheses(Op0Token) + OperatorString
-                             + addParentheses(Op1Token),
-                           B);
+    rc_return DIController.add(*I,
+                               addParentheses(Op0Token) + OperatorString
+                                 + addParentheses(Op1Token),
+                               B);
   }
 
   if (isa<llvm::CastInst>(I) or isa<llvm::FreezeInst>(I)) {
     // Those are usually noops on the LLVM IR.
     const llvm::Value *Op = I->getOperand(0);
-    rc_return addDebugInfo(I, rc_recur getToken(Op), B);
+    rc_return DIController.add(*I, rc_recur getToken(Op), B);
   }
 
   switch (I->getOpcode()) {
@@ -1161,17 +1279,14 @@ CCodeGenerator::getInstructionToken(const llvm::Instruction *I) const {
   case llvm::Instruction::Call: {
     auto *Call = cast<llvm::CallInst>(I);
 
-    revng_assert(isCallToCustomOpcode(Call) or isCallToIsolatedFunction(Call)
-                 or isCallToNonIsolated(Call));
-
     if (isCallToCustomOpcode(Call))
-      rc_return addDebugInfo(I, rc_recur getCustomOpcodeToken(Call), B);
+      rc_return DIController.add(*I, rc_recur getCustomOpcodeToken(Call), B);
 
     if (isCallToIsolatedFunction(Call))
-      rc_return addDebugInfo(I, rc_recur getIsolatedCallToken(Call), B);
+      rc_return DIController.add(*I, rc_recur getIsolatedCallToken(Call), B);
 
     if (isCallToNonIsolated(Call))
-      rc_return addDebugInfo(I, rc_recur getNonIsolatedCallToken(Call), B);
+      rc_return DIController.add(*I, rc_recur getNonIsolatedCallToken(Call), B);
 
     std::string Error = "Cannot get token for CallInst: " + dumpToString(Call);
     revng_abort(Error.c_str());
@@ -1187,11 +1302,11 @@ CCodeGenerator::getInstructionToken(const llvm::Instruction *I) const {
         llvm::Value *ReturnedVal = Ret->getReturnValue())
       Result += " " + rc_recur getToken(ReturnedVal);
 
-    rc_return addDebugInfo(I, std::move(Result), B);
+    rc_return DIController.add(*I, std::move(Result), B);
   }
 
   case llvm::Instruction::Unreachable:
-    rc_return addDebugInfo(I, "__builtin_trap()", B);
+    rc_return DIController.add(*I, "__builtin_trap()", B);
 
   case llvm::Instruction::Select: {
 
@@ -1203,11 +1318,11 @@ CCodeGenerator::getInstructionToken(const llvm::Instruction *I) const {
     std::string Op1String = rc_recur getToken(Op1);
     std::string Op2String = rc_recur getToken(Op2);
 
-    rc_return addDebugInfo(I,
-                           addParentheses(Condition) + " ? "
-                             + addParentheses(Op1String) + " : "
-                             + addParentheses(Op2String),
-                           B);
+    rc_return DIController.add(*I,
+                               addParentheses(Condition) + " ? "
+                                 + addParentheses(Op1String) + " : "
+                                 + addParentheses(Op2String),
+                               B);
   }
 
   default: {
@@ -1224,8 +1339,7 @@ CCodeGenerator::getInstructionToken(const llvm::Instruction *I) const {
   rc_return "";
 }
 
-RecursiveCoroutine<std::string>
-CCodeGenerator::getToken(const llvm::Value *V) const {
+RecursiveCoroutine<std::string> CCodeGenerator::getToken(const llvm::Value *V) {
   revng_log(Log, "getToken(): " << dumpToString(V));
   LoggerIndent Indent{ Log };
   // If we already have a variable name for this, return it.
@@ -1261,7 +1375,7 @@ CCodeGenerator::getToken(const llvm::Value *V) const {
 RecursiveCoroutine<std::string>
 CCodeGenerator::getCallToken(const llvm::CallInst *Call,
                              const llvm::StringRef FuncName,
-                             const model::TypeDefinition *Prototype) const {
+                             const model::TypeDefinition *Prototype) {
   std::string Expression = FuncName.str();
   if (Call->arg_size() == 0) {
     Expression += "()";
@@ -1484,7 +1598,7 @@ CCodeGenerator::buildGHASTCondition(const ExprNode *E, bool EmitBB) {
           and cast<llvm::Constant>(Op1)->isZeroValue()) {
 
         const llvm::Value *Op0 = I->getOperand(0);
-        rc_return addDebugInfo(I, rc_recur getToken(Op0), B);
+        rc_return DIController.add(*I, rc_recur getToken(Op0), B);
       }
     }
     rc_return rc_recur getToken(Br->getCondition());
