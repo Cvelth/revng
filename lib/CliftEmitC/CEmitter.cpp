@@ -390,7 +390,7 @@ void CEmitter::emitFunctionPrototype(FunctionOp Op) {
                     .Identifier = Op.getName(),
                     .Location = Op.getHandle(),
                     .Attributes = getDeclarationOpAttributes(Op),
-                    .Kind = CTokenEmitter::EntityKind::Function,
+                    .Kind = ptml::CTokenEmitter::EntityKind::Function,
                     .Parameters = ParameterDeclarators,
                   });
 }

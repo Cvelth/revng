@@ -13,13 +13,13 @@ namespace mlir::clift {
 /// Base class with common utilities for emitters emitting C from Clift.
 class CEmitter {
 protected:
-  using CTE = CTokenEmitter;
+  using CTE = ptml::CTokenEmitter;
 
-  CTokenEmitter &C;
+  ptml::CTokenEmitter &C;
   const TargetCImplementation &Target;
 
 public:
-  CEmitter(CTokenEmitter &Emitter, const TargetCImplementation &Target) :
+  CEmitter(ptml::CTokenEmitter &Emitter, const TargetCImplementation &Target) :
     C(Emitter), Target(Target) {}
 
   //===------------------------------- Types ------------------------------===//
