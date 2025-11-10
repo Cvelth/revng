@@ -626,9 +626,9 @@ StructAttr StructAttr::get(MLIRContext *Context,
                            const ClassDefinition &Definition) {
   auto Attr = Base::get(Context, Handle);
   auto R = Attr.Base::mutate(Definition);
-  revng_assert(R.succeeded()
-               and "Attempted to mutate the definition of an already defined "
-                   "struct attribute.");
+  revng_assert(R.succeeded(),
+               "Attempted to mutate the definition of an already defined "
+               "struct attribute.");
   return Attr;
 }
 
@@ -721,9 +721,9 @@ UnionAttr UnionAttr::get(MLIRContext *Context,
                          const ClassDefinition &Definition) {
   auto Attr = Base::get(Context, Handle);
   auto R = Attr.Base::mutate(Definition);
-  revng_assert(R.succeeded()
-               and "Attempted to mutate the definition of an already defined "
-                   "union attribute.");
+  revng_assert(R.succeeded(),
+               "Attempted to mutate the definition of an already defined "
+               "union attribute.");
   return Attr;
 }
 
