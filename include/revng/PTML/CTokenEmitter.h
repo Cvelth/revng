@@ -111,6 +111,8 @@ public:
     GreaterEquals,
     GreaterGreater,
     GreaterGreaterEquals,
+    Hash,
+    HashHash,
     LeftBracket,
     LeftParenthesis,
     Less,
