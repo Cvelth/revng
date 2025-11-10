@@ -10,6 +10,8 @@
 #include "revng/PTML/Emitter.h"
 #include "revng/Support/CTarget.h"
 
+namespace ptml {
+
 class CTokenEmitter {
   ptml::Emitter PTML;
 
@@ -269,3 +271,5 @@ private:
                        RegionKind Kind,
                        llvm::StringRef Location);
 };
+
+} // namespace ptml
