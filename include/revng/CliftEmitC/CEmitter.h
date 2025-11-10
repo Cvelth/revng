@@ -67,6 +67,11 @@ public:
 
 private:
   class DeclarationEmitter;
+
+public:
+  //===---------------------------- Prototype -----------------------------===//
+
+  void emitFunctionPrototype(FunctionOp Function);
 };
 
 } // namespace mlir::clift
