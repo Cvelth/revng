@@ -357,7 +357,8 @@ VB::AssignType *VB::createAssignmentBefore(Value *LocationToAssign,
                                            Instruction *InsertBefore) {
   llvm::DebugLoc DebugLocation = InsertBefore->getDebugLoc();
   if (auto *Instruction = llvm::dyn_cast<llvm::Instruction>(ValueToAssign))
-    DebugLocation = Instruction->getDebugLoc();
+    if (Instruction->getDebugLoc())
+      DebugLocation = Instruction->getDebugLoc();
 
   // Create a copy from the assigned location at the proper insertion point.
   revng::IRBuilder B(InsertBefore, DebugLocation);

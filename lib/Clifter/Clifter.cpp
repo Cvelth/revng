@@ -82,7 +82,7 @@ public:
   // It is important only to query minimal properties about the model in the
   // importer constructor to avoid all imported functions depending on those
   // properties.
-  explicit ClifterImpl(mlir::ModuleOp Module, const model::Binary &Model) :
+  ClifterImpl(mlir::ModuleOp Module, const model::Binary &Model) :
     Context(Module.getContext()),
     CurrentModule(Module),
     Model(Model),
