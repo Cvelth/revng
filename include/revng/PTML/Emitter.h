@@ -139,6 +139,23 @@ public:
   TagEmitter(const TagEmitter &) = delete;
   TagEmitter &operator=(const TagEmitter &) = delete;
 
+  TagEmitter(TagEmitter &&Another) :
+    ParentEmitter(Another.ParentEmitter),
+    Tag(Another.Tag),
+    IsOpenTagFinalized(Another.IsOpenTagFinalized) {
+
+    Another.ParentEmitter = nullptr;
+  }
+  TagEmitter &operator=(TagEmitter &&Another) {
+    ParentEmitter = Another.ParentEmitter;
+    Tag = Another.Tag;
+    IsOpenTagFinalized = Another.IsOpenTagFinalized;
+
+    Another.ParentEmitter = nullptr;
+
+    return *this;
+  }
+
   ~TagEmitter() { closeImpl(); }
 
   TagEmitter &initializeOpenTag(Emitter &ParentEmitter, llvm::StringRef Tag) & {
