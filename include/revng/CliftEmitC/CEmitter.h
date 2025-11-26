@@ -72,6 +72,11 @@ public:
   //===---------------------------- Prototype -----------------------------===//
 
   void emitFunctionPrototype(FunctionOp Function);
+
+  //===--------------------------- Other Helpers --------------------------===//
+
+  static ptml::CTokenEmitter::EntityKind
+  chooseEntityKind(mlir::clift::DefinedType Type);
 };
 
 } // namespace mlir::clift
