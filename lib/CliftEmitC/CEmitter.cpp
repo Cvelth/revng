@@ -248,7 +248,7 @@ private:
             DeclaratorInfo ParameterDeclarator;
             DeclaratorInfo const *InnerDeclarator = nullptr;
 
-            if (F == OutermostFunctionType) {
+            if (F == OutermostFunctionType && !Declarator->Parameters.empty()) {
               ParameterDeclarator = DeclaratorInfo{
                 .Identifier = Declarator->Parameters[J].Identifier,
                 .Location = Declarator->Parameters[J].Location,
