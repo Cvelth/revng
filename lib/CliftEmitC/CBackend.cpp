@@ -76,10 +76,10 @@ public:
   }
 
   void emitCast(ValueType Type) {
-    C.emitOperator(CTE::Operator::LeftParenthesis);
+    PTML.emitOperator(CTE::Operator::LeftParenthesis);
     emitType(Type);
-    C.emitOperator(CTE::Operator::RightParenthesis);
-    C.emitSpace();
+    PTML.emitOperator(CTE::Operator::RightParenthesis);
+    PTML.emitSpace();
   }
 
   void emitIntegerImmediate(uint64_t Value, ValueType Type) {
@@ -95,15 +95,15 @@ public:
         Integer = CIntegerKind::Int;
       }
 
-      C.emitIntegerLiteral(makeIntegerValue(T, Value), *Integer, 10);
+      PTML.emitIntegerLiteral(makeIntegerValue(T, Value), *Integer, 10);
     } else {
       auto Enum = mlir::cast<EnumType>(Type);
       auto Enumerator = Enum.getFieldByValue(Value);
 
-      C.emitIdentifier(Enumerator.getName(),
-                       Enumerator.getHandle(),
-                       CTE::EntityKind::Enumerator,
-                       CTE::IdentifierKind::Reference);
+      PTML.emitIdentifier(Enumerator.getName(),
+                          Enumerator.getHandle(),
+                          CTE::EntityKind::Enumerator,
+                          CTE::IdentifierKind::Reference);
     }
   }
 
@@ -112,10 +112,10 @@ public:
   RecursiveCoroutine<void> emitUndefExpression(mlir::Value V) {
     revng_assert(isScalarType(V.getType()));
 
-    C.emitLiteralIdentifier("undef");
-    C.emitOperator(CTE::Operator::LeftParenthesis);
+    PTML.emitLiteralIdentifier("undef");
+    PTML.emitOperator(CTE::Operator::LeftParenthesis);
     emitType(V.getType());
-    C.emitOperator(CTE::Operator::RightParenthesis);
+    PTML.emitOperator(CTE::Operator::RightParenthesis);
 
     rc_return;
   }
@@ -128,7 +128,7 @@ public:
 
   RecursiveCoroutine<void> emitStringLiteralExpression(mlir::Value V) {
     auto E = V.getDefiningOp<StringOp>();
-    C.emitStringLiteral(E.getValue());
+    PTML.emitStringLiteral(E.getValue());
     rc_return;
   }
 
@@ -138,24 +138,24 @@ public:
     // initializers instead.
     CurrentPrecedence = OperatorPrecedence::Comma;
 
-    C.emitPunctuator(CTE::Punctuator::LeftBrace);
+    PTML.emitPunctuator(CTE::Punctuator::LeftBrace);
     for (auto [I, Initializer] : llvm::enumerate(E.getInitializers())) {
       if (I != 0) {
-        C.emitPunctuator(CTE::Punctuator::Comma);
-        C.emitSpace();
+        PTML.emitPunctuator(CTE::Punctuator::Comma);
+        PTML.emitSpace();
       }
 
       rc_recur emitExpression(Initializer);
     }
-    C.emitPunctuator(CTE::Punctuator::RightBrace);
+    PTML.emitPunctuator(CTE::Punctuator::RightBrace);
   }
 
   RecursiveCoroutine<void> emitAggregateExpression(mlir::Value V) {
     auto E = V.getDefiningOp<AggregateOp>();
 
-    C.emitOperator(CTE::Operator::LeftParenthesis);
+    PTML.emitOperator(CTE::Operator::LeftParenthesis);
     emitType(E.getResult().getType());
-    C.emitOperator(CTE::Operator::RightParenthesis);
+    PTML.emitOperator(CTE::Operator::RightParenthesis);
 
     rc_recur emitAggregateInitializer(E);
   }
@@ -170,10 +170,10 @@ public:
         return mlir::cast<mlir::StringAttr>(ArgAttrs.get(Name)).getValue();
       };
 
-      C.emitIdentifier(GetStringAttr("clift.name"),
-                       GetStringAttr("clift.handle"),
-                       CTE::EntityKind::FunctionParameter,
-                       CTE::IdentifierKind::Reference);
+      PTML.emitIdentifier(GetStringAttr("clift.name"),
+                          GetStringAttr("clift.handle"),
+                          CTE::EntityKind::FunctionParameter,
+                          CTE::IdentifierKind::Reference);
     } else if (auto For = mlir::dyn_cast<ForOp>(Op)) {
       auto Local = getOnlyOp<LocalVariableOp>(For.getInitializer());
       rc_recur emitLocalVariableExpression(Local.getResult());
@@ -183,10 +183,10 @@ public:
   RecursiveCoroutine<void> emitLocalVariableExpression(mlir::Value V) {
     auto E = V.getDefiningOp<LocalVariableOp>();
 
-    C.emitIdentifier(getNameAttr(E),
-                     E.getHandle(),
-                     CTE::EntityKind::LocalVariable,
-                     CTE::IdentifierKind::Reference);
+    PTML.emitIdentifier(getNameAttr(E),
+                        E.getHandle(),
+                        CTE::EntityKind::LocalVariable,
+                        CTE::IdentifierKind::Reference);
     rc_return;
   }
 
@@ -207,10 +207,10 @@ public:
       revng_abort("Unsupported global operation");
     };
 
-    C.emitIdentifier(Symbol.getName(),
-                     Symbol.getHandle(),
-                     GetEntityKind(Symbol),
-                     CTE::IdentifierKind::Reference);
+    PTML.emitIdentifier(Symbol.getName(),
+                        Symbol.getHandle(),
+                        GetEntityKind(Symbol),
+                        CTE::IdentifierKind::Reference);
 
     rc_return;
   }
@@ -223,14 +223,15 @@ public:
 
     rc_recur emitExpression(E.getValue());
 
-    C.emitOperator(E.isIndirect() ? CTE::Operator::Arrow : CTE::Operator::Dot);
+    PTML.emitOperator(E.isIndirect() ? CTE::Operator::Arrow :
+                                       CTE::Operator::Dot);
 
     auto Field = E.getClassType().getFields()[E.getMemberIndex()];
 
-    C.emitIdentifier(Field.getName(),
-                     Field.getHandle(),
-                     CTE::EntityKind::Field,
-                     CTE::IdentifierKind::Reference);
+    PTML.emitIdentifier(Field.getName(),
+                        Field.getHandle(),
+                        CTE::EntityKind::Field,
+                        CTE::IdentifierKind::Reference);
   }
 
   RecursiveCoroutine<void> emitSubscriptExpression(mlir::Value V) {
@@ -248,9 +249,9 @@ public:
     // lists. The output in this case is as: array[(i, j)]
     CurrentPrecedence = OperatorPrecedence::Comma;
 
-    C.emitOperator(CTE::Operator::LeftBracket);
+    PTML.emitOperator(CTE::Operator::LeftBracket);
     rc_recur emitExpression(E.getIndex());
-    C.emitOperator(CTE::Operator::RightBracket);
+    PTML.emitOperator(CTE::Operator::RightBracket);
   }
 
   RecursiveCoroutine<void> emitCallExpression(mlir::Value V) {
@@ -266,16 +267,16 @@ public:
     // arguments instead.
     CurrentPrecedence = OperatorPrecedence::Comma;
 
-    C.emitOperator(CTE::Operator::LeftParenthesis);
+    PTML.emitOperator(CTE::Operator::LeftParenthesis);
     for (auto [I, A] : llvm::enumerate(E.getArguments())) {
       if (I != 0) {
-        C.emitPunctuator(CTE::Punctuator::Comma);
-        C.emitSpace();
+        PTML.emitPunctuator(CTE::Punctuator::Comma);
+        PTML.emitSpace();
       }
 
       rc_recur emitExpression(A);
     }
-    C.emitOperator(CTE::Operator::RightParenthesis);
+    PTML.emitOperator(CTE::Operator::RightParenthesis);
   }
 
   static bool isHiddenCast(CastOp Cast) {
@@ -314,15 +315,15 @@ public:
 
     rc_recur emitExpression(E.getCondition());
 
-    C.emitSpace();
-    C.emitOperator(CTE::Operator::Question);
-    C.emitSpace();
+    PTML.emitSpace();
+    PTML.emitOperator(CTE::Operator::Question);
+    PTML.emitSpace();
 
     rc_recur emitExpression(E.getLhs());
 
-    C.emitSpace();
-    C.emitOperator(CTE::Operator::Colon);
-    C.emitSpace();
+    PTML.emitSpace();
+    PTML.emitOperator(CTE::Operator::Colon);
+    PTML.emitSpace();
 
     // The right hand expression does not need parentheses.
     CurrentPrecedence = decrementPrecedence(OperatorPrecedence::Ternary);
@@ -386,7 +387,7 @@ public:
     mlir::Operation *Op = V.getDefiningOp();
     mlir::Value Operand = Op->getOperand(0);
 
-    C.emitOperator(getOperator(Op));
+    PTML.emitOperator(getOperator(Op));
 
     auto StartsWithMinus = [](mlir::Value V) {
       if (mlir::isa<NegOp, DecrementOp>(V.getDefiningOp()))
@@ -408,7 +409,7 @@ public:
     // Negation after a decrement requires a space in between to avoid being
     // confused as decrement after negation. (- --x) vs (---x)
     if (V.getDefiningOp<NegOp>() and StartsWithMinus(Operand))
-      C.emitSpace();
+      PTML.emitSpace();
 
     // Parenthesizing a nested unary prefix expression is not necessary.
     CurrentPrecedence = decrementPrecedence(OperatorPrecedence::UnaryPrefix);
@@ -423,7 +424,7 @@ public:
     // Parenthesizing a nested unary postfix expression is not necessary.
     CurrentPrecedence = decrementPrecedence(OperatorPrecedence::UnaryPostfix);
 
-    C.emitOperator(getOperator(Op));
+    PTML.emitOperator(getOperator(Op));
   }
 
   RecursiveCoroutine<void> emitInfixExpression(mlir::Value V) {
@@ -440,10 +441,10 @@ public:
     rc_recur emitExpression(Op->getOperand(0));
 
     if (not mlir::isa<CommaOp>(Op))
-      C.emitSpace();
+      PTML.emitSpace();
 
-    C.emitOperator(getOperator(Op));
-    C.emitSpace();
+    PTML.emitOperator(getOperator(Op));
+    PTML.emitSpace();
 
     CurrentPrecedence = RhsPrecedence;
     rc_recur emitExpression(Op->getOperand(1));
@@ -673,7 +674,7 @@ public:
                             and Info.Precedence != OperatorPrecedence::Primary;
 
     if (PrintParentheses)
-      C.emitPunctuator(CTE::Punctuator::LeftParenthesis);
+      PTML.emitPunctuator(CTE::Punctuator::LeftParenthesis);
 
     // CurrentPrecedence is changed within this scope:
     {
@@ -689,7 +690,7 @@ public:
     }
 
     if (PrintParentheses)
-      C.emitPunctuator(CTE::Punctuator::RightParenthesis);
+      PTML.emitPunctuator(CTE::Punctuator::RightParenthesis);
   }
 
   RecursiveCoroutine<void> emitExpressionRegion(mlir::Region &R) {
@@ -711,9 +712,9 @@ public:
                     });
 
     if (not S.getInitializer().empty()) {
-      C.emitSpace();
-      C.emitOperator(CTE::Operator::Equals);
-      C.emitSpace();
+      PTML.emitSpace();
+      PTML.emitOperator(CTE::Operator::Equals);
+      PTML.emitSpace();
 
       // Comma expressions in a variable initialiser must be parenthesized.
       CurrentPrecedence = OperatorPrecedence::Comma;
@@ -726,10 +727,10 @@ public:
         rc_recur emitExpression(Expression);
     }
 
-    C.emitPunctuator(CTE::Punctuator::Semicolon);
+    PTML.emitPunctuator(CTE::Punctuator::Semicolon);
 
     if (EmitNewline)
-      C.emitNewline();
+      PTML.emitNewline();
   }
 
   bool labelRequiresEmptyExpression(LabelAssignmentOpInterface Op) {
@@ -745,23 +746,23 @@ public:
   }
 
   void emitLabelStatementImpl(MakeLabelOp Label, bool RequiresEmptyExpression) {
-    auto Scope = C.enterScope(CTE::ScopeKind::None,
-                              CTE::Delimiter::None,
-                              /*Indent=*/-1);
+    auto Scope = PTML.enterScope(CTE::ScopeKind::None,
+                                 CTE::Delimiter::None,
+                                 /*Indent=*/-1);
 
-    C.emitIdentifier(getNameAttr(Label),
-                     getLocationAttr(Label),
-                     CTE::EntityKind::Label,
-                     CTE::IdentifierKind::Definition);
+    PTML.emitIdentifier(getNameAttr(Label),
+                        getLocationAttr(Label),
+                        CTE::EntityKind::Label,
+                        CTE::IdentifierKind::Definition);
 
-    C.emitPunctuator(CTE::Punctuator::Colon);
+    PTML.emitPunctuator(CTE::Punctuator::Colon);
 
     if (RequiresEmptyExpression) {
-      C.emitSpace();
-      C.emitPunctuator(CTE::Punctuator::Semicolon);
+      PTML.emitSpace();
+      PTML.emitPunctuator(CTE::Punctuator::Semicolon);
     }
 
-    C.emitNewline();
+    PTML.emitNewline();
   }
 
   void emitLabelStatement(MakeLabelOp Label, LabelAssignmentOpInterface Op) {
@@ -775,8 +776,8 @@ public:
 
   RecursiveCoroutine<void> emitExpressionStatement(ExpressionStatementOp S) {
     rc_recur emitExpressionRegion(S.getExpression());
-    C.emitPunctuator(CTE::Punctuator::Semicolon);
-    C.emitNewline();
+    PTML.emitPunctuator(CTE::Punctuator::Semicolon);
+    PTML.emitNewline();
   }
 
   RecursiveCoroutine<void>
@@ -784,36 +785,36 @@ public:
     auto LabelOp = S.getLabel().getDefiningOp<MakeLabelOp>();
 
     if (mlir::isa<GotoOp>(S))
-      C.emitKeyword(CTE::Keyword::Goto);
+      PTML.emitKeyword(CTE::Keyword::Goto);
     else if (mlir::isa<BreakToOp>(S))
-      C.emitLiteralIdentifier("break_to");
+      PTML.emitLiteralIdentifier("break_to");
     else if (mlir::isa<ContinueToOp>(S))
-      C.emitLiteralIdentifier("continue_to");
+      PTML.emitLiteralIdentifier("continue_to");
     else
       revng_abort("Unsupported jump statement");
 
-    C.emitSpace();
-    C.emitIdentifier(getNameAttr(LabelOp),
-                     getLocationAttr(LabelOp),
-                     CTE::EntityKind::Label,
-                     CTE::IdentifierKind::Reference);
+    PTML.emitSpace();
+    PTML.emitIdentifier(getNameAttr(LabelOp),
+                        getLocationAttr(LabelOp),
+                        CTE::EntityKind::Label,
+                        CTE::IdentifierKind::Reference);
 
-    C.emitPunctuator(CTE::Punctuator::Semicolon);
-    C.emitNewline();
+    PTML.emitPunctuator(CTE::Punctuator::Semicolon);
+    PTML.emitNewline();
 
     rc_return;
   }
 
   RecursiveCoroutine<void> emitReturnStatement(ReturnOp S) {
-    C.emitKeyword(CTE::Keyword::Return);
+    PTML.emitKeyword(CTE::Keyword::Return);
 
     if (not S.getResult().empty()) {
-      C.emitSpace();
+      PTML.emitSpace();
       rc_recur emitExpressionRegion(S.getResult());
     }
 
-    C.emitPunctuator(CTE::Punctuator::Semicolon);
-    C.emitNewline();
+    PTML.emitPunctuator(CTE::Punctuator::Semicolon);
+    PTML.emitNewline();
   }
 
   static bool mayElideIfStatementBraces(IfOp If) {
@@ -840,11 +841,11 @@ public:
     bool EmitBlocks = not mayElideIfStatementBraces(S);
 
     while (true) {
-      C.emitKeyword(CTE::Keyword::If);
-      C.emitSpace();
-      C.emitPunctuator(CTE::Punctuator::LeftParenthesis);
+      PTML.emitKeyword(CTE::Keyword::If);
+      PTML.emitSpace();
+      PTML.emitPunctuator(CTE::Punctuator::LeftParenthesis);
       rc_recur emitExpressionRegion(S.getCondition());
-      C.emitPunctuator(CTE::Punctuator::RightParenthesis);
+      PTML.emitPunctuator(CTE::Punctuator::RightParenthesis);
 
       rc_recur emitImplicitBlockStatement(S.getThen(), EmitBlocks);
 
@@ -852,13 +853,13 @@ public:
         break;
 
       if (EmitBlocks)
-        C.emitSpace();
+        PTML.emitSpace();
 
-      C.emitKeyword(CTE::Keyword::Else);
+      PTML.emitKeyword(CTE::Keyword::Else);
 
       if (auto ElseIf = getOnlyOp<IfOp>(S.getElse())) {
         S = ElseIf;
-        C.emitSpace();
+        PTML.emitSpace();
       } else {
         rc_recur emitImplicitBlockStatement(S.getElse(), EmitBlocks);
         break;
@@ -866,7 +867,7 @@ public:
     }
 
     if (EmitBlocks)
-      C.emitNewline();
+      PTML.emitNewline();
   }
 
   RecursiveCoroutine<void> emitCaseRegion(mlir::Region &R) {
@@ -874,53 +875,53 @@ public:
 
     if (rc_recur emitImplicitBlockStatement(R)) {
       if (Break)
-        C.emitSpace();
+        PTML.emitSpace();
       else
-        C.emitNewline();
+        PTML.emitNewline();
     }
 
     if (Break) {
-      C.emitKeyword(CTE::Keyword::Break);
-      C.emitPunctuator(CTE::Punctuator::Semicolon);
-      C.emitNewline();
+      PTML.emitKeyword(CTE::Keyword::Break);
+      PTML.emitPunctuator(CTE::Punctuator::Semicolon);
+      PTML.emitNewline();
     }
   }
 
   RecursiveCoroutine<void> emitSwitchStatement(SwitchOp S) {
-    C.emitKeyword(CTE::Keyword::Switch);
-    C.emitSpace();
-    C.emitPunctuator(CTE::Punctuator::LeftParenthesis);
+    PTML.emitKeyword(CTE::Keyword::Switch);
+    PTML.emitSpace();
+    PTML.emitPunctuator(CTE::Punctuator::LeftParenthesis);
 
     rc_recur emitExpressionRegion(S.getCondition());
 
-    C.emitPunctuator(CTE::Punctuator::RightParenthesis);
-    C.emitSpace();
+    PTML.emitPunctuator(CTE::Punctuator::RightParenthesis);
+    PTML.emitSpace();
 
     // Scope tags are applied within this scope:
     {
-      auto Scope = C.enterScope(CTE::ScopeKind::BlockStatement,
-                                CTE::Delimiter::Braces,
-                                /*Indented=*/false);
+      auto Scope = PTML.enterScope(CTE::ScopeKind::BlockStatement,
+                                   CTE::Delimiter::Braces,
+                                   /*Indented=*/false);
 
-      C.emitNewline();
+      PTML.emitNewline();
 
       ValueType Type = S.getConditionType();
       for (unsigned I = 0, Count = S.getNumCases(); I < Count; ++I) {
-        C.emitKeyword(CTE::Keyword::Case);
-        C.emitSpace();
+        PTML.emitKeyword(CTE::Keyword::Case);
+        PTML.emitSpace();
         emitIntegerImmediate(S.getCaseValue(I), Type);
-        C.emitPunctuator(CTE::Punctuator::Colon);
+        PTML.emitPunctuator(CTE::Punctuator::Colon);
         rc_recur emitCaseRegion(S.getCaseRegion(I));
       }
 
       if (S.hasDefaultCase()) {
-        C.emitKeyword(CTE::Keyword::Default);
-        C.emitPunctuator(CTE::Punctuator::Colon);
+        PTML.emitKeyword(CTE::Keyword::Default);
+        PTML.emitPunctuator(CTE::Punctuator::Colon);
         rc_recur emitCaseRegion(S.getDefaultCaseRegion());
       }
     }
 
-    C.emitNewline();
+    PTML.emitNewline();
   }
 
   RecursiveCoroutine<bool> emitLoopBodyWithContinueLabel(mlir::Region &Region,
@@ -944,9 +945,9 @@ public:
   }
 
   RecursiveCoroutine<void> emitForStatement(ForOp S) {
-    C.emitKeyword(CTE::Keyword::For);
-    C.emitSpace();
-    C.emitPunctuator(CTE::Punctuator::LeftParenthesis);
+    PTML.emitKeyword(CTE::Keyword::For);
+    PTML.emitSpace();
+    PTML.emitPunctuator(CTE::Punctuator::LeftParenthesis);
 
     if (mlir::Region &R = S.getInitializer(); not R.empty()) {
       mlir::Operation *Op = getOnlyOp(R);
@@ -955,58 +956,58 @@ public:
       else
         rc_recur emitExpressionStatement(mlir::cast<ExpressionStatementOp>(Op));
     } else {
-      C.emitPunctuator(CTE::Punctuator::Semicolon);
+      PTML.emitPunctuator(CTE::Punctuator::Semicolon);
     }
 
     if (mlir::Region &R = S.getCondition(); not R.empty()) {
-      C.emitSpace();
+      PTML.emitSpace();
       rc_recur emitExpressionRegion(R);
     }
-    C.emitPunctuator(CTE::Punctuator::Semicolon);
+    PTML.emitPunctuator(CTE::Punctuator::Semicolon);
 
     if (mlir::Region &R = S.getExpression(); not R.empty()) {
-      C.emitSpace();
+      PTML.emitSpace();
       rc_recur emitExpressionRegion(R);
     }
-    C.emitPunctuator(CTE::Punctuator::RightParenthesis);
+    PTML.emitPunctuator(CTE::Punctuator::RightParenthesis);
 
     if (rc_recur emitLoopBody(S, S.getBody()))
-      C.emitNewline();
+      PTML.emitNewline();
 
     if (auto Break = S.getBreakLabel())
       emitLabelStatement(Break.getDefiningOp<MakeLabelOp>(), S);
   }
 
   RecursiveCoroutine<void> emitWhileStatement(WhileOp S) {
-    C.emitKeyword(CTE::Keyword::While);
-    C.emitSpace();
-    C.emitPunctuator(CTE::Punctuator::LeftParenthesis);
+    PTML.emitKeyword(CTE::Keyword::While);
+    PTML.emitSpace();
+    PTML.emitPunctuator(CTE::Punctuator::LeftParenthesis);
 
     rc_recur emitExpressionRegion(S.getCondition());
-    C.emitPunctuator(CTE::Punctuator::RightParenthesis);
+    PTML.emitPunctuator(CTE::Punctuator::RightParenthesis);
 
     if (rc_recur emitLoopBody(S, S.getBody()))
-      C.emitNewline();
+      PTML.emitNewline();
 
     if (auto Break = S.getBreakLabel())
       emitLabelStatement(Break.getDefiningOp<MakeLabelOp>(), S);
   }
 
   RecursiveCoroutine<void> emitDoWhileStatement(DoWhileOp S) {
-    C.emitKeyword(CTE::Keyword::Do);
+    PTML.emitKeyword(CTE::Keyword::Do);
 
     if (rc_recur emitLoopBody(S, S.getBody()))
-      C.emitSpace();
+      PTML.emitSpace();
 
-    C.emitKeyword(CTE::Keyword::While);
-    C.emitSpace();
-    C.emitPunctuator(CTE::Punctuator::LeftParenthesis);
+    PTML.emitKeyword(CTE::Keyword::While);
+    PTML.emitSpace();
+    PTML.emitPunctuator(CTE::Punctuator::LeftParenthesis);
 
     rc_recur emitExpressionRegion(S.getCondition());
 
-    C.emitPunctuator(CTE::Punctuator::RightParenthesis);
-    C.emitPunctuator(CTE::Punctuator::Semicolon);
-    C.emitNewline();
+    PTML.emitPunctuator(CTE::Punctuator::RightParenthesis);
+    PTML.emitPunctuator(CTE::Punctuator::Semicolon);
+    PTML.emitNewline();
 
     if (auto Break = S.getBreakLabel())
       emitLabelStatement(Break.getDefiningOp<MakeLabelOp>(), S);
@@ -1075,13 +1076,13 @@ public:
     auto Delimiter = CTE::Delimiter::None;
 
     if (EmitBlock) {
-      C.emitSpace();
+      PTML.emitSpace();
       ScopeKind = CTE::ScopeKind::BlockStatement;
       Delimiter = CTE::Delimiter::Braces;
     }
 
-    auto Scope = C.enterScope(ScopeKind, Delimiter);
-    C.emitNewline();
+    auto Scope = PTML.enterScope(ScopeKind, Delimiter);
+    PTML.emitNewline();
 
     rc_recur EmitRegion(R);
     rc_return EmitBlock;
@@ -1103,18 +1104,18 @@ public:
   RecursiveCoroutine<void> emitFunction(FunctionOp Op) {
     // Scope tags are applied within this scope:
     {
-      auto OuterScope = C.enterScope(CTE::ScopeKind::FunctionDeclaration,
-                                     CTE::Delimiter::None,
-                                     /*Indented=*/false);
+      auto OuterScope = PTML.enterScope(CTE::ScopeKind::FunctionDeclaration,
+                                        CTE::Delimiter::None,
+                                        /*Indented=*/false);
 
       emitFunctionPrototype(Op);
 
-      C.emitSpace();
+      PTML.emitSpace();
 
-      auto InnerScope = C.enterScope(CTE::ScopeKind::FunctionDefinition,
-                                     CTE::Delimiter::Braces);
+      auto InnerScope = PTML.enterScope(CTE::ScopeKind::FunctionDefinition,
+                                        CTE::Delimiter::Braces);
 
-      C.emitNewline();
+      PTML.emitNewline();
 
       // TODO: Re-enable stack frame inlining.
 
@@ -1124,7 +1125,7 @@ public:
       //       See how old backend does it for reference.
     }
 
-    C.emitNewline();
+    PTML.emitNewline();
   }
 };
 
