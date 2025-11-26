@@ -27,6 +27,12 @@ CEmitter::chooseEntityKind(mlir::clift::DefinedType Type) {
     revng_abort("Unsupported defined type");
 }
 
+bool CEmitter::isDeclarationTheSameAsDefinition(mlir::clift::DefinedType Type) {
+  return not mlir::isa<mlir::clift::StructType>(Type)
+         and not mlir::isa<mlir::clift::UnionType>(Type)
+         and not mlir::isa<mlir::clift::EnumType>(Type);
+}
+
 class CEmitter::DeclarationEmitter {
   enum class StackItemKind {
     Terminal,

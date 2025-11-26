@@ -77,6 +77,8 @@ public:
 
   static ptml::CTokenEmitter::EntityKind
   chooseEntityKind(mlir::clift::DefinedType Type);
+
+  static bool isDeclarationTheSameAsDefinition(mlir::clift::DefinedType Type);
 };
 
 } // namespace mlir::clift
