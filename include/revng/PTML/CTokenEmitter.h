@@ -221,12 +221,29 @@ public:
     emitStringLiteralImpl(Content, "\"");
   }
 
-  enum class CommentKind : bool {
+  enum class CommentKind : uint8_t {
+    // // Looks like this
     Line,
+
+    // /* Looks like this */
     Block,
+
+    // //
+    // // Looks like this
+    // //
+    Category, // WIP: better name?
+
+    // ///
+    // /// \defgroup Looks like this
+    // /// \{
+    DoxygenCategoryOpener,
+
+    // /// \}
+    DoxygenCategoryCloser,
   };
 
-  void emitComment(llvm::StringRef Content, CommentKind Kind);
+  void emitComment(llvm::StringRef Content,
+                   CommentKind Kind = CommentKind::Line);
 
   enum class IncludeMode : bool {
     Quote,

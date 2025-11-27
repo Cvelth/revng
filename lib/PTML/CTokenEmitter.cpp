@@ -563,19 +563,71 @@ void ptml::CTokenEmitter::emitComment(llvm::StringRef Content,
   Tag.emitAttribute(ptml::attributes::Token, ptml::tokens::Comment);
   Tag.finalizeOpenTag();
 
-  if (Kind == CommentKind::Line) {
+  switch (Kind) {
+  case CommentKind::Block:
+    PTML.emitLiteralContent("/* ");
+
+    // TODO: use more advanced comment logic to introduce new-lines.
+    PTML.emitContent(Content);
+
+    PTML.emitLiteralContent(" */");
+    break;
+
+  case CommentKind::Line:
+  case CommentKind::Category:
+  case CommentKind::DoxygenCategoryOpener:
     while (not Content.empty() and Content.back() == '\n')
       Content = Content.substr(0, Content.size() - 1);
 
-    for (const auto &R : std::views::split(Content, '\n')) {
+    if (Kind != CommentKind::Line) {
       PTML.emitLiteralContent("//");
-      PTML.emitContent(std::string_view(R.begin(), R.end()));
       PTML.emitContentNewline();
     }
-  } else {
-    PTML.emitLiteralContent("/*");
-    PTML.emitContent(Content);
-    PTML.emitLiteralContent("*/");
+
+    for (bool FirstIteration = true;
+         const auto &R : std::views::split(Content, '\n')) {
+      PTML.emitLiteralContent("// ");
+
+      if (FirstIteration) {
+        FirstIteration = false;
+
+        // TODO: add syntax highlighting for this token.
+        if (Kind == CommentKind::DoxygenCategoryOpener)
+          PTML.emitLiteralContent("\\defgroup ");
+      }
+
+      // TODO: use existing comment logic to introduce more new-lines.
+      PTML.emitContent(std::string_view(R.begin(), R.end()));
+
+      PTML.emitContentNewline();
+    }
+
+    if (Kind != CommentKind::Line) {
+      PTML.emitLiteralContent("//");
+
+      // TODO: add syntax highlighting for this token.
+      if (Kind == CommentKind::DoxygenCategoryOpener) {
+        PTML.emitLiteralContent("\\{");
+        PTML.emitContentNewline();
+      }
+
+      PTML.emitContentNewline();
+    }
+    break;
+
+  case CommentKind::DoxygenCategoryCloser:
+    if (!Content.empty())
+      emitComment(Content, CommentKind::Line);
+
+    PTML.emitLiteralContent("// ");
+    // TODO: add syntax highlighting for this token.
+    PTML.emitLiteralContent("\\}");
+    PTML.emitContentNewline();
+    PTML.emitContentNewline();
+    break;
+
+  default:
+    revng_abort("Unsupported comment kind.");
   }
 }
 
