@@ -25,6 +25,12 @@ public:
 
   void emitNewline() { PTML.emitContentNewline(); }
 
+  // TODO: group this with something else! Punctuators maybe?
+  void emitBackslash() {
+    // TODO: does this need escaping in ptml?
+    PTML.emitLiteralContent("\\");
+  }
+
   enum class Keyword {
     Auto,
     Bool,
