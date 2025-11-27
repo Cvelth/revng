@@ -6,6 +6,7 @@
 
 #include "revng/Clift/Clift.h"
 #include "revng/PTML/CTokenEmitter.h"
+#include "revng/Support/Annotations.h"
 #include "revng/Support/CTarget.h"
 
 namespace mlir::clift {
@@ -72,6 +73,57 @@ public:
 
 private:
   class DeclarationEmitter;
+
+public:
+  //===---------------------------- Attributes ----------------------------===//
+  template<ConstexprString Macro>
+  void emitAttribute() {
+    constexpr std::optional Attribute = ptml::Attributes.getAttribute<Macro>();
+    if constexpr (Attribute) {
+      Tokens.emitMacro(Attribute->Macro);
+    } else {
+      static_assert(value_always_false_v<Macro>, "Unknown attribute.");
+    }
+  }
+
+  template<ConstexprString Macro>
+  void emitAnnotation(std::string_view Value) {
+    constexpr std::optional // formatting
+      Annotation = ptml::Attributes.getAnnotation<Macro>();
+    if constexpr (Annotation) {
+      Tokens.emitMacro(Annotation->Macro);
+      Tokens.emitPunctuator(ptml::CTokenEmitter::Punctuator::LeftParenthesis);
+      Tokens.emitUnquotedStringLiteral(Value);
+      Tokens.emitPunctuator(ptml::CTokenEmitter::Punctuator::RightParenthesis);
+    } else {
+      static_assert(value_always_false_v<Macro>, "Unknown annotation.");
+    }
+  }
+
+  template<ConstexprString Macro>
+  void emitAnnotation(uint64_t Value) {
+    emitAnnotation<Macro>(std::to_string(Value));
+  }
+
+  struct ComplexAnnotationGuard {
+    ptml::CTokenEmitter &PTML;
+
+    ~ComplexAnnotationGuard() {
+      PTML.emitPunctuator(ptml::CTokenEmitter::Punctuator::RightParenthesis);
+    }
+  };
+  template<ConstexprString Macro>
+  ComplexAnnotationGuard emitComplexAnnotation() {
+    constexpr std::optional // formatting
+      Annotation = ptml::Attributes.getAnnotation<Macro>();
+    if constexpr (Annotation) {
+      Tokens.emitMacro(Annotation->Macro);
+      Tokens.emitPunctuator(ptml::CTokenEmitter::Punctuator::LeftParenthesis);
+      return ComplexAnnotationGuard{ Tokens };
+    } else {
+      static_assert(value_always_false_v<Macro>, "Unknown annotation.");
+    }
+  }
 
 public:
   //===--------------------------- Other Helpers --------------------------===//
