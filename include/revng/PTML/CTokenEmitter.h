@@ -180,6 +180,26 @@ public:
                    IsDefinition);
   }
 
+  void emitMacro(llvm::StringRef Name,
+                 IdentifierKind IsDefinition = IdentifierKind::Reference) {
+    emitIdentifier(Name,
+                   pipeline::locationString(revng::ranks::Macro, Name.str()),
+                   EntityKind::Macro,
+                   IsDefinition);
+  }
+
+  void
+  emitMacroArgument(llvm::StringRef MacroName,
+                    llvm::StringRef ArgumentName,
+                    IdentifierKind IsDefinition = IdentifierKind::Reference) {
+    emitIdentifier(ArgumentName,
+                   pipeline::locationString(revng::ranks::MacroArgument,
+                                            MacroName.str(),
+                                            ArgumentName.str()),
+                   EntityKind::FunctionParameter,
+                   IsDefinition);
+  }
+
   /// \pre \param Identifier matches `[_a-zA-Z][_a-zA-Z0-9]*`.
   void emitLiteralIdentifier(llvm::StringRef Identifier);
 
