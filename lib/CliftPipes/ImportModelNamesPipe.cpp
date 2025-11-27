@@ -2,12 +2,17 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include "llvm/ADT/StringRef.h"
+
+#include "revng/Clift/CliftAttributes.h"
 #include "revng/Clift/Helpers.h"
 #include "revng/Clift/ModuleVisitor.h"
 #include "revng/CliftPipes/CliftContainer.h"
 #include "revng/Model/NameBuilder.h"
 #include "revng/Pipeline/Location.h"
 #include "revng/Pipeline/RegisterPipe.h"
+#include "revng/Pipes/Ranks.h"
+#include "revng/Support/Annotations.h"
 #include "revng/Support/Identifier.h"
 
 namespace clift = mlir::clift;
@@ -76,6 +81,40 @@ public:
     Map.clear();
   }
 };
+
+template<ConstexprString Macro, bool IsOurs = true>
+mlir::clift::AttributeAttr makeAttribute(mlir::MLIRContext *Context) {
+  if constexpr (IsOurs)
+    ptml::Attributes.assertAttributeName<Macro>();
+
+  auto MacroLocation = pipeline::location(rr::Macro,
+                                          llvm::StringRef(Macro).str());
+
+  using CompAttr = mlir::clift::AttributeComponentAttr;
+  auto MacroAttribute = CompAttr::get(Context, Macro, MacroLocation.toString());
+  return mlir::clift::AttributeAttr::get(Context, MacroAttribute, std::nullopt);
+}
+
+template<ConstexprString Macro, bool IsOurs = true>
+mlir::clift::AttributeAttr
+makeAttribute(mlir::MLIRContext *Context, llvm::StringRef Argument) {
+  if constexpr (IsOurs)
+    ptml::Attributes.assertAnnotationName<Macro>();
+
+  auto MacroLocation = pipeline::location(rr::Macro,
+                                          llvm::StringRef(Macro).str());
+  auto ArgumentLocation = MacroLocation.extend(rr::MacroArgument, Argument);
+
+  using CompAttr = mlir::clift::AttributeComponentAttr;
+  auto MacroAttribute = CompAttr::get(Context, Macro, MacroLocation.toString());
+  auto ArgumentAttribute = CompAttr::get(Context,
+                                         Argument,
+                                         ArgumentLocation.toString());
+
+  return mlir::clift::AttributeAttr::get(Context,
+                                         MacroAttribute,
+                                         { ArgumentAttribute });
+}
 
 // Visitor used for applying names to operations, types and their members found
 // by visiting a given operation and all nested operations. Any module-level
@@ -406,10 +445,38 @@ private:
 
       ArgumentAttributeMutator Attrs(Op);
 
+      llvm::SmallVector<mlir::Attribute, 4> FunctionAttributes;
+      if (auto CustomAttrs = Op->getAttr("clift.attributes"))
+        for (auto SubAttribute : mlir::cast<mlir::ArrayAttr>(CustomAttrs))
+          FunctionAttributes.emplace_back(SubAttribute);
+
+      for (model::FunctionAttribute::Values Attribute : MF.Attributes()) {
+        // TODO: we might want to express some of these through existing clift
+        //       attributes.
+        switch (Attribute) {
+        case model::FunctionAttribute::NoReturn:
+          FunctionAttributes
+            .emplace_back(makeAttribute<"_Noreturn", false>(Op->getContext()));
+          break;
+
+        case model::FunctionAttribute::Inline:
+          FunctionAttributes
+            .emplace_back(makeAttribute<"inline", false>(Op->getContext()));
+          break;
+
+        default:
+          revng_abort("Unsupported model::FunctionAttribute");
+        }
+      }
+
       using CF = model::CABIFunctionDefinition;
       using RF = model::RawFunctionDefinition;
 
       if (const auto *T = llvm::dyn_cast<CF>(Type)) {
+        FunctionAttributes
+          .emplace_back(makeAttribute<"_ABI">(Op.getContext(),
+                                              toString(T->ABI())));
+
         revng_assert(Op.getArgCount() == T->Arguments().size());
         auto TL = pipeline::location(rr::TypeDefinition, T->key());
 
@@ -418,7 +485,12 @@ private:
           Attrs.setString(I, "clift.handle", AL.toString());
           Attrs.setString(I, "clift.name", NameBuilder.name(*T, A));
         }
+
       } else if (const auto *T = llvm::dyn_cast<RF>(Type)) {
+        std::string RawABI = "raw_" + toString(T->Architecture());
+        FunctionAttributes.emplace_back(makeAttribute<"_ABI">(Op.getContext(),
+                                                              RawABI));
+
         bool HasStackArgument = static_cast<bool>(T->StackArgumentsType());
 
         size_t ArgumentCount = T->Arguments().size() + HasStackArgument;
@@ -429,6 +501,13 @@ private:
           auto AL = TL.extend(rr::RawArgument, A.Location());
           Attrs.setString(I, "clift.handle", AL.toString());
           Attrs.setString(I, "clift.name", NameBuilder.name(*T, A));
+
+          // Is there a reason to do a smarter merge here?
+          auto RegAttribute = makeAttribute<"_REG">(Op.getContext(),
+                                                    toString(A.Location()));
+          Attrs.set(I,
+                    "clift.attributes",
+                    mlir::ArrayAttr::get(Op.getContext(), { RegAttribute }));
         }
 
         if (HasStackArgument) {
@@ -439,10 +518,19 @@ private:
 
           Attrs.setString(I, "clift.handle", AL.toString());
           Attrs.setString(I, "clift.name", Name);
+
+          // Is there a reason to do a smarter merge here?
+          auto StackAttribute = makeAttribute<"_STACK">(Op.getContext());
+          Attrs.set(I,
+                    "clift.attributes",
+                    mlir::ArrayAttr::get(Op.getContext(), { StackAttribute }));
         }
       } else {
         revng_abort("Invalid function prototype");
       }
+
+      Op->setAttr("clift.attributes",
+                  mlir::ArrayAttr::get(Op.getContext(), FunctionAttributes));
 
       Attrs.commit();
 
