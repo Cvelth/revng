@@ -30,8 +30,6 @@ void TypeDefinitionEmitter::emitTypeKeyword(mlir::clift::DefinedType Type) {
 
 void TypeDefinitionEmitter::emitDeclarationTypedef(mlir::clift::DefinedType
                                                      Type) {
-  revng_assert(mlir::clift::isSeparateDeclarationAllowed(Type));
-
   Tokens.emitKeyword(ptml::CTokenEmitter::Keyword::Typedef);
   Tokens.emitSpace();
 
@@ -273,7 +271,7 @@ void TypeDefinitionEmitter::emitEnumDefinition(mlir::clift::EnumType Enum) {
 
         Tokens.emitUntypedHexLiteral(Value);
 
-        Tokens.emitPunctuator(ptml::CTokenEmitter::Punctuator::Semicolon);
+        Tokens.emitPunctuator(ptml::CTokenEmitter::Punctuator::Comma);
         Tokens.emitNewline();
       };
 

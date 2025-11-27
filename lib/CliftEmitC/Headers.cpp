@@ -167,6 +167,16 @@ void mlir::clift::emitModelSegments(ptml::CTokenEmitter &Tokens,
   });
 }
 
+void mlir::clift::emitSingleTypeDefinition(ptml::CTokenEmitter &Tokens,
+                                           const TargetCImplementation &Target,
+                                           mlir::clift::DefinedType Type,
+                                           TypeEmitterConfiguration Config) {
+  TypeDefinitionEmitter Emitter(Tokens, Target, Config);
+
+  Emitter.emitTypeDefinition(Type);
+  Tokens.emitNewline();
+}
+
 void mlir::clift::emitHelpers(ptml::CTokenEmitter &Tokens,
                               const TargetCImplementation &Target,
                               const std::vector<mlir::ModuleOp> &Modules) {
