@@ -179,4 +179,41 @@ public:
 
 static pipeline::RegisterPipe<AttributeHeaderPipe> AttributeHeader;
 
+// TODO: this are not strictly clift related,
+//       there's probably a better home for it!
+class PrimitiveHeaderPipe {
+public:
+  static constexpr auto Name = "emit-primitive-header";
+
+  std::array<pipeline::ContractGroup, 1> getContract() const {
+    using namespace pipeline;
+    using namespace revng::kinds;
+
+    return { ContractGroup({ Contract(Binary,
+                                      0,
+                                      PrimitiveHeader,
+                                      1,
+                                      InputPreservation::Preserve) }) };
+  }
+
+  // TODO: BinaryFile here is a placeholder. In principle this pipe has no real
+  // input container. But at the moment revng-pipeline does not support pipes
+  // with no inputs, so we had to resort to this trick. Whenever pipes with no
+  // inputs are supported BinaryFile can be dropped.
+  void run(pipeline::ExecutionContext &EC,
+           const revng::pipes::BinaryFileContainer &BinaryFile,
+           PrimitiveHeaderContainer &HeaderFile) {
+    llvm::raw_string_ostream Out = HeaderFile.asStream();
+
+    ptml::CTokenEmitter Emitter(Out, ptml::Tagging::Enabled);
+    mlir::clift::emitPrimitiveHeader(Emitter);
+
+    Out.flush();
+
+    EC.commitUniqueTarget(HeaderFile);
+  }
+};
+
+static pipeline::RegisterPipe<PrimitiveHeaderPipe> PrimitiveHeader;
+
 } // namespace

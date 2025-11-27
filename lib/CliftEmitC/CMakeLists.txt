@@ -13,6 +13,7 @@ revng_add_library_internal(
   CSemanticsPass.cpp
   HelperHeader.cpp
   ModelHeader.cpp
+  PrimitiveHeader.cpp
   TypeDependencyGraph.cpp)
 
 target_link_libraries(revngCliftEmitC MLIRPass revngClift revngPTML)

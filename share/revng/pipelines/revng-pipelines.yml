@@ -59,6 +59,8 @@ Containers:
     Type: new-type-definitions
   - Name: attribute-header.h.ptml
     Type: attribute-header
+  - Name: primitive-header.h.ptml
+    Type: primitive-header
 Branches:
   - Steps:
       - Name: initial
@@ -802,6 +804,19 @@ Branches:
           Docs: |-
             This artifact contains all the declarations of attributes used by
             other headers and the decompiled code.
+  - From: initial
+    Steps:
+      - Name: emit-primitive-header
+        Pipes:
+          - Type: emit-primitive-header
+            UsedContainers: [input, primitive-header.h.ptml]
+        Artifacts:
+          Container: primitive-header.h.ptml
+          Kind: primitive-header
+          SingleTargetFilename: primitive-types.h
+          Docs: |-
+            This artifact contains all the declarations of primitive types used
+            by other headers and the decompiled code.
 AnalysesLists:
   - Name: revng-initial-auto-analysis
     Analyses:

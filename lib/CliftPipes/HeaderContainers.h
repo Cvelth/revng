@@ -48,6 +48,14 @@ inline pipeline::SingleElementKind
                       /* TODO: add location ranks */),
                   {});
 
+inline pipeline::SingleElementKind
+  PrimitiveHeader("primitive-header",
+                  Binary,
+                  ranks::Binary,
+                  fat(revng::ranks::PrimitiveType
+                      /* TODO: add others */),
+                  {});
+
 } // namespace revng::kinds
 
 namespace detail {
@@ -55,6 +63,7 @@ namespace detail {
 inline constexpr char ModelHeaderName[] = "new-model-header";
 inline constexpr char HelperHeaderName[] = "new-helper-header";
 inline constexpr char AttributeHeaderName[] = "attribute-header";
+inline constexpr char PrimitiveHeaderName[] = "primitive-header";
 
 inline constexpr char HeaderMIMEType[] = "text/x.h+ptml";
 inline constexpr char HeaderSuffix[] = ".h";
@@ -99,3 +108,9 @@ using AttributeHeaderContainer = detail::SBF<&revng::kinds::AttributeHeader,
                                              detail::HeaderMIMEType,
                                              detail::HeaderSuffix>;
 inline detail::RegisterDCC<AttributeHeaderContainer> RegisteredAHC;
+
+using PrimitiveHeaderContainer = detail::SBF<&revng::kinds::PrimitiveHeader,
+                                             detail::PrimitiveHeaderName,
+                                             detail::HeaderMIMEType,
+                                             detail::HeaderSuffix>;
+inline detail::RegisterDCC<PrimitiveHeaderContainer> RegisteredPHC;
