@@ -212,7 +212,14 @@ public:
   void
   emitIntegerLiteral(llvm::APSInt Value, CIntegerKind Type, unsigned Radix);
 
-  void emitStringLiteral(llvm::StringRef Content);
+  void emitSimpleIntegerLiteral(int64_t Value);
+  void emitSimpleHexLiteral(int64_t Value);
+
+  void emitStringLiteralImpl(llvm::StringRef Content,
+                             llvm::StringRef Delimiter);
+  void emitStringLiteral(llvm::StringRef Content) {
+    emitStringLiteralImpl(Content, "\"");
+  }
 
   enum class CommentKind : bool {
     Line,

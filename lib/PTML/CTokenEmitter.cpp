@@ -521,12 +521,22 @@ void ptml::CTokenEmitter::emitIntegerLiteral(llvm::APSInt Value,
   PTML.emitLiteralContent(String);
 }
 
-void ptml::CTokenEmitter::emitStringLiteral(llvm::StringRef String) {
+void ptml::CTokenEmitter::emitSimpleIntegerLiteral(int64_t Value) {
+  revng_assert(int(Value) == Value);
+  return emitIntegerLiteral(llvm::APSInt(Value), CIntegerKind::Int, 10);
+}
+void ptml::CTokenEmitter::emitSimpleHexLiteral(int64_t Value) {
+  revng_assert(int(Value) == Value);
+  return emitIntegerLiteral(llvm::APSInt(Value), CIntegerKind::Int, 16);
+}
+
+void ptml::CTokenEmitter::emitStringLiteralImpl(llvm::StringRef String,
+                                                llvm::StringRef Delimiter) {
   auto Tag = PTML.initializeOpenTag(ptml::tags::Span);
   Tag.emitAttribute(ptml::attributes::Token, ptml::c::tokens::StringLiteral);
   Tag.finalizeOpenTag();
 
-  PTML.emitLiteralContent("\"");
+  PTML.emitLiteralContent(Delimiter);
 
   auto Begin = String.data();
   auto End = Begin + String.size();
@@ -544,7 +554,7 @@ void ptml::CTokenEmitter::emitStringLiteral(llvm::StringRef String) {
     Begin = Pos;
   }
 
-  PTML.emitLiteralContent("\"");
+  PTML.emitLiteralContent(Delimiter);
 }
 
 void ptml::CTokenEmitter::emitComment(llvm::StringRef Content,
