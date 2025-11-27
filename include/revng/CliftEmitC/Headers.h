@@ -84,6 +84,13 @@ inline void emitHelperHeader(ptml::CTokenEmitter &PTML,
   emitHelpers(PTML, Target, Module);
 }
 
+void emitAttributes(ptml::CTokenEmitter &PTML);
+inline void emitAttributeHeader(ptml::CTokenEmitter &PTML) {
+  auto Scope = emitHeaderPrologue(PTML);
+
+  emitAttributes(PTML);
+}
+
 class DefinedType;
 void emitSingleTypeDefinition(ptml::CTokenEmitter &PTML,
                               const TargetCImplementation &Target,

@@ -57,6 +57,8 @@ Containers:
     Type: new-helper-header
   - Name: new-type-definitions.tar.gz
     Type: new-type-definitions
+  - Name: attribute-header.h.ptml
+    Type: attribute-header
 Branches:
   - Steps:
       - Name: initial
@@ -787,6 +789,19 @@ Branches:
             `import-from-c` analysis. In fact, this artifact is designed to be
             easily editable by the end-user; it's not designed to represent
             valid C code, unlike the `emit-new-model-header` artifact.
+  - From: initial
+    Steps:
+      - Name: emit-attribute-header
+        Pipes:
+          - Type: emit-attribute-header
+            UsedContainers: [input, attribute-header.h.ptml]
+        Artifacts:
+          Container: attribute-header.h.ptml
+          Kind: attribute-header
+          SingleTargetFilename: attributes.h
+          Docs: |-
+            This artifact contains all the declarations of attributes used by
+            other headers and the decompiled code.
 AnalysesLists:
   - Name: revng-initial-auto-analysis
     Analyses:

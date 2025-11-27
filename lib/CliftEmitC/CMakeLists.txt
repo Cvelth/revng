@@ -5,6 +5,7 @@
 revng_add_library_internal(
   revngCliftEmitC
   SHARED
+  AttributeHeader.cpp
   CBackend.cpp
   CBackendPass.cpp
   CEmitter.cpp

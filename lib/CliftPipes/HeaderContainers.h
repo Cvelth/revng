@@ -40,12 +40,21 @@ inline TypeKind NewTypeDefinition("new-type-definitions",
                                   {},
                                   {});
 
+inline pipeline::SingleElementKind
+  AttributeHeader("attribute-header",
+                  Binary,
+                  revng::ranks::Binary,
+                  fat(revng::ranks::PrimitiveType
+                      /* TODO: add location ranks */),
+                  {});
+
 } // namespace revng::kinds
 
 namespace detail {
 
 inline constexpr char ModelHeaderName[] = "new-model-header";
 inline constexpr char HelperHeaderName[] = "new-helper-header";
+inline constexpr char AttributeHeaderName[] = "attribute-header";
 
 inline constexpr char HeaderMIMEType[] = "text/x.h+ptml";
 inline constexpr char HeaderSuffix[] = ".h";
@@ -84,3 +93,9 @@ using TypeDefinitionContainer = detail::TSM<&revng::kinds::ModelTypeDefinition,
                                             detail::TypeDefinitionMime,
                                             detail::TypeDefinitionExtension>;
 inline detail::RegisterDCC<TypeDefinitionContainer> RegisteredTDC;
+
+using AttributeHeaderContainer = detail::SBF<&revng::kinds::AttributeHeader,
+                                             detail::AttributeHeaderName,
+                                             detail::HeaderMIMEType,
+                                             detail::HeaderSuffix>;
+inline detail::RegisterDCC<AttributeHeaderContainer> RegisteredAHC;
