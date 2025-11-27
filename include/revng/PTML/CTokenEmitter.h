@@ -305,58 +305,153 @@ public:
 
 public:
   enum class ScopeKind : uint8_t {
-    None,
+    /// Doesn't emit anything. Is provided as a handy way of controlling
+    /// indentation without showing up in the output.
+    IndentOnly,
+
+    /// Doesn't emit anything beyond the basic `<div>...</div>` pair.
+    Basic,
+
+    /// These are the same as \ref Basic except they also set
+    /// `ptml::attributes::Scope` to an appropriate value
+    FunctionDeclaration,
+
+    /// The same as \ref Basic but it also emits the PTML attribute allowing
+    /// this region to be folded.
+    Foldable,
+
+    /// The same as \ref Foldable except a brace pair ({}) is also emitted.
+    BlockStatement,
+
+    /// These are the same as \ref BlockStatement except they also set
+    /// `ptml::attributes::Scope` to an appropriate value
     EnumDefinition,
+    FunctionDefinition,
     StructDefinition,
     UnionDefinition,
-    FunctionDeclaration,
-    FunctionDefinition,
-    BlockStatement,
+
+    /// The following are the same as \ref Foldable, except they emit additional
+    /// custom tokens before and after the scope.
+    DoxygenCategoryComment,
   };
 
-  enum class Delimiter : uint8_t {
-    None,
-    Braces,
-  };
+  void emitScopeOpener(ScopeKind Kind) {
+    switch (Kind) {
+    case ScopeKind::IndentOnly:
+    case ScopeKind::Basic:
+    case ScopeKind::Foldable:
+    case ScopeKind::FunctionDeclaration:
+      return;
+
+    case ScopeKind::BlockStatement:
+    case ScopeKind::EnumDefinition:
+    case ScopeKind::FunctionDefinition:
+    case ScopeKind::StructDefinition:
+    case ScopeKind::UnionDefinition:
+      emitPunctuator(Punctuator::LeftBrace);
+      return;
+
+    case ScopeKind::DoxygenCategoryComment:
+      // TODO: consider wrapping the opening comment under here instead of
+      //       the dedicated helper.
+      return;
+
+    default:
+      revng_abort("Unknown scope kind");
+    }
+  }
+
+  void emitScopeCloser(ScopeKind Kind) {
+    switch (Kind) {
+    case ScopeKind::IndentOnly:
+    case ScopeKind::Basic:
+    case ScopeKind::Foldable:
+    case ScopeKind::FunctionDeclaration:
+      return;
+
+    case ScopeKind::BlockStatement:
+    case ScopeKind::EnumDefinition:
+    case ScopeKind::FunctionDefinition:
+    case ScopeKind::StructDefinition:
+    case ScopeKind::UnionDefinition:
+      emitPunctuator(Punctuator::RightBrace);
+      return;
+
+    case ScopeKind::DoxygenCategoryComment:
+      emitComment("", CommentKind::DoxygenCategoryCloser);
+      return;
+
+    default:
+      revng_abort("Unknown scope kind");
+    }
+  }
+
+  void indent(int64_t LevelDifference) { PTML.indent(LevelDifference); }
 
   class Scope {
   public:
-    explicit Scope(CTokenEmitter &Emitter,
-                   ScopeKind Kind,
-                   Delimiter Delimiter,
-                   int Indent) :
-      Emitter(Emitter), Delimiter(Delimiter), Indent(Indent), Tag() {
-      Emitter.enterScopeImpl(Tag, Delimiter, Indent, Kind);
+    explicit Scope(CTokenEmitter &Emitter, ScopeKind Kind, int Indent) :
+      Emitter(Emitter), Kind(Kind), Indent(Indent), Tag() {
+
+      Emitter.enterScopeImpl(Tag, Indent, Kind);
     }
 
     Scope(const Scope &) = delete;
     Scope &operator=(const Scope &) = delete;
 
-    ~Scope() { Emitter.leaveScopeImpl(Tag, Delimiter, Indent); }
+    Scope(Scope &&Another) :
+      Emitter(Another.Emitter),
+      Kind(Another.Kind),
+      Indent(Another.Indent),
+      Tag(std::move(Another.Tag)) {
+
+      Another.Tag = {};
+    }
+
+    Scope &operator=(Scope &&Another) {
+      revng_assert(&Emitter == &Another.Emitter);
+
+      Kind = Another.Kind;
+      Indent = Another.Indent;
+      Tag = std::move(Another.Tag);
+
+      Another.Tag = {};
+
+      return *this;
+    }
+
+    ~Scope() {
+      if (Tag.isOpen())
+        Emitter.leaveScopeImpl(Tag, Indent, Kind);
+    }
 
   private:
     CTokenEmitter &Emitter;
 
-    Delimiter Delimiter;
+    ScopeKind Kind;
     int Indent;
 
     ptml::Emitter::TagEmitter Tag;
   };
 
-  [[nodiscard]] Scope
-  enterScope(ScopeKind Kind, Delimiter Delimiter, int Indent = 1) {
-    return Scope(*this, Kind, Delimiter, Indent);
+  [[nodiscard]] Scope enterScope(ScopeKind Kind, int Indent = 1) {
+    return Scope(*this, Kind, Indent);
   }
 
 private:
-  void enterScopeImpl(ptml::Emitter::TagEmitter &Tag,
-                      Delimiter Delimiter,
-                      int Indent,
-                      ScopeKind Kind);
+  void
+  enterScopeImpl(ptml::Emitter::TagEmitter &Tag, int Indent, ScopeKind Kind);
 
-  void leaveScopeImpl(ptml::Emitter::TagEmitter &Tag,
-                      Delimiter Delimiter,
-                      int Indent);
+  void
+  leaveScopeImpl(ptml::Emitter::TagEmitter &Tag, int Indent, ScopeKind Kind);
+
+public:
+  Scope enterDoxygenCategoryScope(llvm::StringRef Content) {
+    emitComment(Content,
+                ptml::CTokenEmitter::CommentKind::DoxygenCategoryOpener);
+
+    return enterScope(ScopeKind::DoxygenCategoryComment, 0);
+  }
 };
 
 } // namespace ptml

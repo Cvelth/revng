@@ -746,8 +746,7 @@ public:
   }
 
   void emitLabelStatementImpl(MakeLabelOp Label, bool RequiresEmptyExpression) {
-    auto Scope = PTML.enterScope(CTE::ScopeKind::None,
-                                 CTE::Delimiter::None,
+    auto Scope = PTML.enterScope(CTE::ScopeKind::IndentOnly,
                                  /*Indent=*/-1);
 
     PTML.emitIdentifier(getNameAttr(Label),
@@ -900,7 +899,6 @@ public:
     // Scope tags are applied within this scope:
     {
       auto Scope = PTML.enterScope(CTE::ScopeKind::BlockStatement,
-                                   CTE::Delimiter::Braces,
                                    /*Indented=*/false);
 
       PTML.emitNewline();
@@ -1072,16 +1070,14 @@ public:
 
   RecursiveCoroutine<bool>
   emitImplicitBlockStatement(mlir::Region &R, bool EmitBlock, auto EmitRegion) {
-    auto ScopeKind = CTE::ScopeKind::None;
-    auto Delimiter = CTE::Delimiter::None;
+    auto ScopeKind = CTE::ScopeKind::IndentOnly;
 
     if (EmitBlock) {
       PTML.emitSpace();
       ScopeKind = CTE::ScopeKind::BlockStatement;
-      Delimiter = CTE::Delimiter::Braces;
     }
 
-    auto Scope = PTML.enterScope(ScopeKind, Delimiter);
+    auto Scope = PTML.enterScope(ScopeKind);
     PTML.emitNewline();
 
     rc_recur EmitRegion(R);
@@ -1105,15 +1101,13 @@ public:
     // Scope tags are applied within this scope:
     {
       auto OuterScope = PTML.enterScope(CTE::ScopeKind::FunctionDeclaration,
-                                        CTE::Delimiter::None,
                                         /*Indented=*/false);
 
       emitFunctionPrototype(Op);
 
       PTML.emitSpace();
 
-      auto InnerScope = PTML.enterScope(CTE::ScopeKind::FunctionDefinition,
-                                        CTE::Delimiter::Braces);
+      auto InnerScope = PTML.enterScope(CTE::ScopeKind::FunctionDefinition);
 
       PTML.emitNewline();
 

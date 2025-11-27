@@ -75,22 +75,32 @@ static llvm::StringRef getCIntegerLiteralSuffix(const CIntegerKind Type,
 
 static std::optional<llvm::StringRef> getScopeKindAttribute(ScopeKind Kind) {
   switch (Kind) {
-  case ScopeKind::None:
-    break;
+  case ScopeKind::IndentOnly:
+  case ScopeKind::Basic:
+    return std::nullopt;
+
+  case ScopeKind::FunctionDeclaration:
+    return ptml::c::scopes::Function;
+
+  case ScopeKind::Foldable:
+  case ScopeKind::BlockStatement:
+    return ptml::c::scopes::Scope;
+
   case ScopeKind::EnumDefinition:
     return ptml::c::scopes::EnumBody;
+  case ScopeKind::FunctionDefinition:
+    return ptml::c::scopes::FunctionBody;
   case ScopeKind::StructDefinition:
     return ptml::c::scopes::StructBody;
   case ScopeKind::UnionDefinition:
     return ptml::c::scopes::UnionBody;
-  case ScopeKind::FunctionDeclaration:
-    return ptml::c::scopes::Function;
-  case ScopeKind::FunctionDefinition:
-    return ptml::c::scopes::FunctionBody;
-  case ScopeKind::BlockStatement:
+
+  case ScopeKind::DoxygenCategoryComment:
     return ptml::c::scopes::Scope;
+
+  default:
+    revng_abort("Unknown `ScopeKind`");
   }
-  return std::nullopt;
 }
 
 static llvm::SmallVector<llvm::StringRef, 2>
@@ -151,18 +161,6 @@ static std::string getActionContextLocation(llvm::StringRef Location) {
     return L->transmute(rr::TypeDefinition).toString();
 
   return Location.str();
-}
-
-static std::optional<std::pair<Punctuator, Punctuator>>
-getDelimiterPunctuators(ptml::CTokenEmitter::Delimiter Delimiter) {
-  switch (Delimiter) {
-  case ptml::CTokenEmitter::Delimiter::None:
-    break;
-  case ptml::CTokenEmitter::Delimiter::Braces:
-    return std::pair<Punctuator, Punctuator>(Punctuator::LeftBrace,
-                                             Punctuator::RightBrace);
-  }
-  return std::nullopt;
 }
 
 static bool requiresStringEscaping(char Character) {
@@ -660,11 +658,9 @@ void ptml::CTokenEmitter::emitIncludeDirective(llvm::StringRef Content,
 }
 
 void ptml::CTokenEmitter::enterScopeImpl(ptml::Emitter::TagEmitter &Tag,
-                                         Delimiter Delimiter,
                                          int Indent,
                                          ScopeKind Kind) {
-  if (auto Symbols = getDelimiterPunctuators(Delimiter))
-    emitPunctuator(Symbols->first);
+  emitScopeOpener(Kind);
 
   Tag.initializeOpenTag(PTML, ptml::tags::Div);
   if (auto Attribute = getScopeKindAttribute(Kind))
@@ -675,12 +671,11 @@ void ptml::CTokenEmitter::enterScopeImpl(ptml::Emitter::TagEmitter &Tag,
 }
 
 void ptml::CTokenEmitter::leaveScopeImpl(ptml::Emitter::TagEmitter &Tag,
-                                         Delimiter Delimiter,
-                                         int Indent) {
+                                         int Indent,
+                                         ScopeKind Kind) {
   PTML.indent(-Indent);
 
   Tag.close();
 
-  if (auto Symbols = getDelimiterPunctuators(Delimiter))
-    emitPunctuator(Symbols->second);
+  emitScopeCloser(Kind);
 }
