@@ -22,6 +22,10 @@ public:
   explicit CTokenEmitter(llvm::raw_ostream &OS, ptml::Tagging Tags) :
     PTML(OS, Tags) {}
 
+  [[nodiscard]] TagEmitter initializeOpenTag(llvm::StringRef Tag) {
+    return PTML.initializeOpenTag(Tag);
+  }
+
   void emitSpace() { PTML.emitLiteralContent(" "); }
 
   void emitNewline() { PTML.emitContentNewline(); }
