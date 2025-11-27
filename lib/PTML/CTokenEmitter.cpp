@@ -485,6 +485,15 @@ void ptml::CTokenEmitter::emitIdentifier(llvm::StringRef Identifier,
   PTML.emitLiteralContent(Identifier);
 }
 
+void ptml::CTokenEmitter::emitPrimitive(llvm::StringRef Name,
+                                        IdentifierKind IsDefinition) {
+  emitIdentifier(Name,
+                 pipeline::locationString(revng::ranks::PrimitiveType,
+                                          Name.str()),
+                 EntityKind::Primitive,
+                 IsDefinition);
+}
+
 void ptml::CTokenEmitter::emitLiteralIdentifier(llvm::StringRef Identifier) {
   revng_assert(validateIdentifier(Identifier),
                "The specified identifier is not a valid C identifier.");
