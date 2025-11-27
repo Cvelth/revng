@@ -84,5 +84,12 @@ inline void emitHelperHeader(ptml::CTokenEmitter &PTML,
   emitHelpers(PTML, Target, Module);
 }
 
+class DefinedType;
+void emitSingleTypeDefinition(ptml::CTokenEmitter &PTML,
+                              const TargetCImplementation &Target,
+                              const mlir::clift::DefinedType &Type,
+                              TypeSystemEmitterConfiguration
+                                Configuration = {});
+
 } // namespace clift
 } // namespace mlir

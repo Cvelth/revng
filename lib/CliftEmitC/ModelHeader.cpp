@@ -142,3 +142,14 @@ void mlir::clift::emitModelSegments(ptml::CTokenEmitter &PTML,
     PTML.emitNewline();
   });
 }
+
+void mlir::clift::emitSingleTypeDefinition(ptml::CTokenEmitter &PTML,
+                                           const TargetCImplementation &Target,
+                                           const mlir::clift::DefinedType &Type,
+                                           TypeSystemEmitterConfiguration
+                                             Configuration) {
+  TypeDefinitionEmitter Emitter(PTML, Target, Configuration);
+
+  Emitter.emitTypeDefinition(Type);
+  PTML.emitNewline();
+}
