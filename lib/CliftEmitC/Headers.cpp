@@ -166,3 +166,64 @@ void mlir::clift::emitModelSegments(ptml::CTokenEmitter &Tokens,
     Tokens.emitNewline();
   });
 }
+
+void mlir::clift::emitHelpers(ptml::CTokenEmitter &Tokens,
+                              const TargetCImplementation &Target,
+                              const std::vector<mlir::ModuleOp> &Modules) {
+  // TODO: emit `#include`s
+
+  auto Graph = TypeDependencyGraph::makeHelperGraph(Modules);
+
+  if (not Graph.empty()) {
+    // TODO: load from configuration when it's available.
+    constexpr static uint64_t WrapCommentsAt = 80;
+
+    auto Comments = Tokens.comments(WrapCommentsAt);
+    Comments.emitCategoryComment("Types");
+
+    emitTypeGraph(Graph,
+                  Tokens,
+                  Target,
+                  TypeEmitterConfiguration{
+                    .TypeToOmit = {},
+                    .PrintMaximumEnumValue = false,
+                    .ExplicitPadding = true,
+                  });
+  }
+
+  CEmitter Emitter(Tokens, Target);
+
+  bool CommentEmitted = false;
+  std::unordered_set<std::string_view> EmittedFunctions;
+  for (mlir::ModuleOp Module : Modules) {
+    Module->walk([&Tokens,
+                  &Emitter,
+                  &CommentEmitted,
+                  &EmittedFunctions](mlir::clift::FunctionOp Function) {
+      if (EmittedFunctions.contains(Function.getHandle()))
+        return;
+
+      if (pipeline::locationFromString(revng::ranks::HelperFunction,
+                                       Function.getHandle())) {
+        if (not CommentEmitted) {
+          // TODO: load from configuration when it's available.
+          constexpr static uint64_t WrapCommentsAt = 80;
+
+          auto Comments = Tokens.comments(WrapCommentsAt);
+          Comments.emitCategoryComment("Functions");
+          CommentEmitted = true;
+        }
+
+        Emitter.emitFunctionPrototype(Function);
+        Tokens.emitPunctuator(ptml::CTokenEmitter::Punctuator::Semicolon);
+        Tokens.emitNewline();
+        Tokens.emitNewline();
+
+        auto [_, Success] = EmittedFunctions.emplace(Function.getHandle());
+        revng_assert(Success);
+      }
+    });
+  }
+
+  Tokens.emitNewline();
+}
