@@ -470,6 +470,35 @@ void ptml::CTokenEmitter::emitIdentifier(llvm::StringRef Identifier,
                   .c_str());
   }
 
+  {
+    llvm::StringRef IdentifierToValidate = Identifier;
+
+    if (Kind == EntityKind::Primitive) {
+      // Some c primitive identifiers are valid despite being multi-word.
+      // Account for that here.
+      static constexpr std::array<llvm::StringRef, 3> AllowedPrefixes = {
+        "unsigned ", "signed ", "long "
+      };
+
+      bool ChangedInLastIteration = false;
+      do {
+        ChangedInLastIteration = false;
+        for (llvm::StringRef Prefix : AllowedPrefixes) {
+          if (IdentifierToValidate.consume_front(Prefix)) {
+            ChangedInLastIteration = true;
+            break;
+          }
+        }
+      } while (ChangedInLastIteration);
+    }
+
+    if (!validateIdentifier(IdentifierToValidate)) {
+      std::string Error = "`" + IdentifierToValidate.str()
+                          + "` is not a valid C identifier.";
+      revng_abort(Error.c_str());
+    }
+  }
+
   auto Tag = PTML.initializeOpenTag(ptml::tags::Span);
   if (auto Attribute = getEntityKindAttribute(Kind))
     Tag.emitAttribute(ptml::attributes::Token, *Attribute);
