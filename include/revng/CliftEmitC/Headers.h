@@ -50,6 +50,12 @@ inline void emitModelHeader(ptml::CTokenEmitter &Tokens,
   emitModelSegments(Tokens, Target, Module);
 }
 
+class DefinedType;
+void emitSingleTypeDefinition(ptml::CTokenEmitter &Tokens,
+                              const TargetCImplementation &Target,
+                              mlir::clift::DefinedType Type,
+                              TypeEmitterConfiguration Configuration = {});
+
 void emitHelpers(ptml::CTokenEmitter &Tokens,
                  const TargetCImplementation &Target,
                  const std::vector<mlir::ModuleOp> &Modules);
