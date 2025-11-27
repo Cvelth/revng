@@ -8,6 +8,8 @@
 #include "llvm/ADT/StringRef.h"
 
 #include "revng/PTML/Emitter.h"
+#include "revng/Pipeline/Location.h"
+#include "revng/Pipes/Ranks.h"
 #include "revng/Support/CTarget.h"
 
 namespace ptml {
@@ -162,6 +164,15 @@ public:
                       llvm::StringRef Location,
                       EntityKind Kind,
                       IdentifierKind IsDefinition);
+
+  void emitPrimitive(llvm::StringRef Name,
+                     IdentifierKind IsDefinition = IdentifierKind::Reference) {
+    emitIdentifier(Name,
+                   pipeline::locationString(revng::ranks::PrimitiveType,
+                                            Name.str()),
+                   EntityKind::Primitive,
+                   IsDefinition);
+  }
 
   /// \pre \param Identifier matches `[_a-zA-Z][_a-zA-Z0-9]*`.
   void emitLiteralIdentifier(llvm::StringRef Identifier);

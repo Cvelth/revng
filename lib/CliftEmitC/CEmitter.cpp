@@ -299,16 +299,12 @@ static std::string getPrimitiveTypeCName(PrimitiveKind Kind, uint64_t Size) {
 
 void CEmitter::emitPrimitiveType(clift::PrimitiveKind Kind, uint64_t Size) {
   if (Kind == PrimitiveKind::VoidKind) {
+    revng_assert(Size == 0);
     PTML.emitKeyword(CTE::Keyword::Void);
-  } else {
-    auto TypeName = getPrimitiveTypeCName(Kind, Size);
-    auto Location = pipeline::locationString(revng::ranks::PrimitiveType,
-                                             TypeName);
 
-    PTML.emitIdentifier(TypeName,
-                        Location,
-                        CTE::EntityKind::Primitive,
-                        CTE::IdentifierKind::Reference);
+  } else {
+    PTML.emitPrimitive(getPrimitiveTypeCName(Kind, Size),
+                       CTE::IdentifierKind::Reference);
   }
 }
 
