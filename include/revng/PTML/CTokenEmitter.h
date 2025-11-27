@@ -236,7 +236,8 @@ public:
     // //
     // // Looks like this
     // //
-    Category, // WIP: better name?
+    Category,
+    // FUTURE-WIP: better name?
 
     // ///
     // /// \defgroup Looks like this
