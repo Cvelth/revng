@@ -47,6 +47,12 @@ Containers:
     Type: clift-module
   - Name: model-type-definitions.tar.gz
     Type: model-type-definitions
+  - Name: new-types-and-globals.h
+    Type: new-model-header
+  - Name: new-helpers.h
+    Type: new-helper-header
+  - Name: new-type-definitions.tar.gz
+    Type: new-type-definitions
 Branches:
   - Steps:
       - Name: initial
@@ -719,6 +725,50 @@ Branches:
             This artifact is a single PTML file representing the decompiled C
             code of the whole program, including the body of all of program's
             functions. (Clift backend)
+  - From: emit-c
+    Steps:
+      - Name: emit-new-model-header
+        Pipes:
+          - Type: emit-new-model-header
+            UsedContainers: [functions.mlir, new-types-and-globals.h]
+        Artifacts:
+          Container: new-types-and-globals.h
+          Kind: new-model-header
+          SingleTargetFilename: new-types-and-globals.h
+          Docs: |-
+            This artifact contains all the declarations of non-primitive types,
+            functions and segment globals.
+  - From: emit-c
+    Steps:
+      - Name: emit-new-helper-header
+        Pipes:
+          - Type: emit-new-helper-header
+            UsedContainers: [functions.mlir, new-helpers.h]
+        Artifacts:
+          Container: new-helpers.h
+          Kind: new-helper-header
+          SingleTargetFilename: new-helpers.h
+          Docs: |-
+            This artifact contains all the declarations of llvm and qemu helpers
+            that survived until the decompiled code.
+  - From: emit-c
+    Steps:
+      - Name: emit-new-type-definitions
+        Pipes:
+          - Type: generate-new-type-definitions
+            UsedContainers: [input, new-type-definitions.tar.gz]
+        Artifacts:
+          Container: new-type-definitions.tar.gz
+          Kind: new-type-definitions
+          SingleTargetFilename: new-type.h
+          Docs: |-
+            This artifact is an archive of plain C headers.
+            Each file contains the declaration of a type defined for this
+            binary.
+            This artifact is designed to be used as the initial input of the
+            `import-from-c` analysis. In fact, this artifact is designed to be
+            easily editable by the end-user; it's not designed to represent
+            valid C code, unlike the `emit-new-model-header` artifact.
 AnalysesLists:
   - Name: revng-initial-auto-analysis
     Analyses:
