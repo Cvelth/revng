@@ -73,5 +73,16 @@ inline void emitModelHeader(ptml::CTokenEmitter &PTML,
   emitModelSegments(PTML, Target, Module);
 }
 
+void emitHelpers(ptml::CTokenEmitter &PTML,
+                 const TargetCImplementation &Target,
+                 const mlir::ModuleOp &Module);
+inline void emitHelperHeader(ptml::CTokenEmitter &PTML,
+                             const TargetCImplementation &Target,
+                             const mlir::ModuleOp &Module) {
+  auto Scope = emitHeaderPrologue(PTML);
+
+  emitHelpers(PTML, Target, Module);
+}
+
 } // namespace clift
 } // namespace mlir
