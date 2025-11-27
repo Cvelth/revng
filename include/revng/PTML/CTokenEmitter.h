@@ -10,6 +10,7 @@
 #include "revng/PTML/Emitter.h"
 #include "revng/Pipeline/Location.h"
 #include "revng/Pipes/Ranks.h"
+#include "revng/Support/Annotations.h"
 #include "revng/Support/CTarget.h"
 
 namespace ptml {
@@ -254,6 +255,55 @@ public:
                             llvm::StringRef Location,
                             IncludeMode Mode);
 
+public:
+  template<ConstexprString Macro>
+  void emitAttribute() {
+    constexpr std::optional Attribute = Attributes.getAttribute<Macro>();
+    if constexpr (Attribute) {
+      emitMacro(Attribute->Macro);
+    } else {
+      static_assert(value_always_false_v<Macro>, "Unknown attribute.");
+    }
+  }
+
+  template<ConstexprString Macro>
+  void emitAnnotation(std::string_view Value) {
+    constexpr std::optional Annotation = Attributes.getAnnotation<Macro>();
+    if constexpr (Annotation) {
+      emitMacro(Annotation->Macro);
+      emitPunctuator(ptml::CTokenEmitter::Punctuator::LeftParenthesis);
+      emitStringLiteralImpl(Value, ""); // TODO: we can do better here
+      emitPunctuator(ptml::CTokenEmitter::Punctuator::RightParenthesis);
+    } else {
+      static_assert(value_always_false_v<Macro>, "Unknown annotation.");
+    }
+  }
+
+  template<ConstexprString Macro>
+  void emitAnnotation(uint64_t Value) {
+    emitAnnotation<Macro>(std::to_string(Value));
+  }
+
+  struct ComplexAnnotationGuard {
+    CTokenEmitter &PTML;
+
+    ~ComplexAnnotationGuard() {
+      PTML.emitPunctuator(ptml::CTokenEmitter::Punctuator::RightParenthesis);
+    }
+  };
+  template<ConstexprString Macro>
+  ComplexAnnotationGuard emitComplexAnnotation() {
+    constexpr std::optional Annotation = Attributes.getAnnotation<Macro>();
+    if constexpr (Annotation) {
+      emitMacro(Annotation->Macro);
+      emitPunctuator(ptml::CTokenEmitter::Punctuator::LeftParenthesis);
+      return ComplexAnnotationGuard{ *this };
+    } else {
+      static_assert(value_always_false_v<Macro>, "Unknown annotation.");
+    }
+  }
+
+public:
   enum class ScopeKind : uint8_t {
     None,
     EnumDefinition,
