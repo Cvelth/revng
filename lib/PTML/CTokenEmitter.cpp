@@ -653,6 +653,20 @@ void ptml::CTokenEmitter::emitDirective(PreprocessorDirective Directive) {
     return PTML.emitLiteralContent("#include");
   case PreprocessorDirective::Pragma:
     return PTML.emitLiteralContent("#pragma");
+  case PreprocessorDirective::Define:
+    return PTML.emitLiteralContent("#define");
+  case PreprocessorDirective::Undef:
+    return PTML.emitLiteralContent("#undef");
+  case PreprocessorDirective::If:
+    return PTML.emitLiteralContent("#if");
+  case PreprocessorDirective::Ifdef:
+    return PTML.emitLiteralContent("#ifdef");
+  case PreprocessorDirective::Else:
+    return PTML.emitLiteralContent("#else");
+  case PreprocessorDirective::Endif:
+    return PTML.emitLiteralContent("#endif");
+  case PreprocessorDirective::Defined:
+    return PTML.emitLiteralContent("defined");
   default:
     revng_abort("Unknown preprocessor directive.");
   }

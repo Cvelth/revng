@@ -256,6 +256,16 @@ public:
   enum class PreprocessorDirective : uint8_t {
     Include,
     Pragma,
+    Define,
+    Undef,
+    If,
+    Ifdef,
+    Else,
+    Endif,
+
+    // This one doesn't really belong in here BUT we want to syntax-highlight
+    // it as one (that's what vscode does by default).
+    Defined,
   };
 
   void emitDirective(PreprocessorDirective Directive);
@@ -271,6 +281,18 @@ public:
 
   void emitPragmaDirective(llvm::StringRef Content);
   void emitPragmaOnceDirective() { return emitPragmaDirective("once"); }
+
+  void emitDefineDirective(llvm::StringRef DefinedName,
+                           IdentifierKind IsDef = IdentifierKind::Definition) {
+    emitDirective(PreprocessorDirective::Define);
+    PTML.emitLiteralContent(" ");
+    emitMacro(DefinedName, IsDef);
+  }
+  void emitUndefDirective(llvm::StringRef DefinedName) {
+    emitDirective(PreprocessorDirective::Undef);
+    PTML.emitLiteralContent(" ");
+    emitMacro(DefinedName);
+  }
 
 public:
   template<ConstexprString Macro>
