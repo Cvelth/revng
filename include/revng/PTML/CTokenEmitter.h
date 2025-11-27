@@ -185,7 +185,20 @@ public:
   void
   emitIntegerLiteral(llvm::APSInt Value, CIntegerKind Type, unsigned Radix);
 
-  void emitStringLiteral(llvm::StringRef Content);
+  void emitUntypedIntegerLiteral(uint64_t Value);
+  void emitUntypedHexLiteral(uint64_t Value);
+
+private:
+  void emitStringLiteralImpl(llvm::StringRef Content,
+                             bool ShouldEmitQuotationMarks);
+
+public:
+  void emitStringLiteral(llvm::StringRef Content) {
+    emitStringLiteralImpl(Content, true);
+  }
+  void emitUnquotedStringLiteral(llvm::StringRef Content) {
+    emitStringLiteralImpl(Content, false);
+  }
 
   enum class CommentKind : bool {
     Line,

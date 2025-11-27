@@ -553,20 +553,39 @@ void ptml::CTokenEmitter::emitIntegerLiteral(llvm::APSInt Value,
   PTML.emitLiteralContent(String);
 }
 
-void ptml::CTokenEmitter::emitStringLiteral(llvm::StringRef String) {
+void ptml::CTokenEmitter::emitUntypedIntegerLiteral(uint64_t Value) {
+  revng_assert(Value == uint32_t(Value));
+  return emitIntegerLiteral(llvm::APSInt(llvm::APInt(32, Value)),
+                            CIntegerKind::Int,
+                            10);
+}
+void ptml::CTokenEmitter::emitUntypedHexLiteral(uint64_t Value) {
+  revng_assert(Value == uint32_t(Value));
+  return emitIntegerLiteral(llvm::APSInt(llvm::APInt(32, Value)),
+                            CIntegerKind::Int,
+                            16);
+}
+
+void ptml::CTokenEmitter::emitStringLiteralImpl(llvm::StringRef Content,
+                                                bool ShouldEmitQuotationMarks) {
   auto Tag = PTML.initializeOpenTag(ptml::tags::Span);
   Tag.emitAttribute(ptml::attributes::Token, ptml::c::tokens::StringLiteral);
   Tag.finalizeOpenTag();
 
-  PTML.emitLiteralContent("\"");
+  if (ShouldEmitQuotationMarks)
+    PTML.emitLiteralContent("\"");
 
-  auto Begin = String.data();
-  auto End = Begin + String.size();
+  auto Begin = Content.data();
+  auto End = Begin + Content.size();
 
   while (Begin != End) {
-    auto Pos = std::find_if(Begin, End, [](char Character) {
-      return requiresStringEscaping(Character);
-    });
+    auto Predicate = [ShouldEmitQuotationMarks](char Character) {
+      if (Character == '\"')
+        return ShouldEmitQuotationMarks;
+      else
+        return requiresStringEscaping(Character);
+    };
+    auto Pos = std::find_if(Begin, End, Predicate);
 
     PTML.emitContent(std::string_view(Begin, Pos));
 
@@ -576,7 +595,8 @@ void ptml::CTokenEmitter::emitStringLiteral(llvm::StringRef String) {
     Begin = Pos;
   }
 
-  PTML.emitLiteralContent("\"");
+  if (ShouldEmitQuotationMarks)
+    PTML.emitLiteralContent("\"");
 }
 
 void ptml::CTokenEmitter::emitComment(llvm::StringRef Content,
