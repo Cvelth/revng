@@ -494,6 +494,25 @@ void ptml::CTokenEmitter::emitPrimitive(llvm::StringRef Name,
                  IsDefinition);
 }
 
+void ptml::CTokenEmitter::emitMacro(llvm::StringRef Name,
+                                    IdentifierKind IsDefinition) {
+  emitIdentifier(Name,
+                 pipeline::locationString(revng::ranks::Macro, Name.str()),
+                 EntityKind::Macro,
+                 IsDefinition);
+}
+
+void ptml::CTokenEmitter::emitMacroArgument(llvm::StringRef MacroName,
+                                            llvm::StringRef ArgumentName,
+                                            IdentifierKind IsDefinition) {
+  emitIdentifier(ArgumentName,
+                 pipeline::locationString(revng::ranks::MacroArgument,
+                                          MacroName.str(),
+                                          ArgumentName.str()),
+                 EntityKind::FunctionParameter,
+                 IsDefinition);
+}
+
 void ptml::CTokenEmitter::emitLiteralIdentifier(llvm::StringRef Identifier) {
   revng_assert(validateIdentifier(Identifier),
                "The specified identifier is not a valid C identifier.");
