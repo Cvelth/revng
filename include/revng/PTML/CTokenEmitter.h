@@ -21,6 +21,15 @@ public:
     return PTML.initializeOpenTag(Tag);
   }
 
+  // Emit the specified content literally. The string shall not contain newlines
+  // or characters requiring HTML escape sequences (<, >, &), unless they are
+  // intended to fit in.
+  //
+  // IMPORTANT: This does *no* escaping of any kind.
+  void emitLiteralContent(llvm::StringRef String) {
+    PTML.emitLiteralContent(String);
+  }
+
   void emitSpace() { PTML.emitLiteralContent(" "); }
 
   void emitNewline() { PTML.emitContentNewline(); }

@@ -52,7 +52,10 @@ public:
   [[nodiscard]] bool isTagged() const { return EmitTags; }
 
   // Emit the specified content literally. The string shall not contain newlines
-  // or characters requiring HTML escape sequences (<, >, &).
+  // or characters requiring HTML escape sequences (<, >, &), unless they are
+  // intended to fit in.
+  //
+  // IMPORTANT: This does *no* escaping of any kind.
   void emitLiteralContent(llvm::StringRef String);
 
   void emitContentNewline() {
