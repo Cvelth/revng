@@ -251,6 +251,13 @@ public:
   void emitComment(llvm::StringRef Content,
                    CommentKind Kind = CommentKind::Line);
 
+  enum class PreprocessorDirective : uint8_t {
+    Include,
+    Pragma,
+  };
+
+  void emitDirective(PreprocessorDirective Directive);
+
   enum class IncludeMode : bool {
     Quote,
     Angle,
@@ -259,6 +266,9 @@ public:
   void emitIncludeDirective(llvm::StringRef Content,
                             llvm::StringRef Location,
                             IncludeMode Mode);
+
+  void emitPragmaDirective(llvm::StringRef Content);
+  void emitPragmaOnceDirective() { return emitPragmaDirective("once"); }
 
 public:
   template<ConstexprString Macro>

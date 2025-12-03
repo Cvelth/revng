@@ -629,18 +629,25 @@ void ptml::CTokenEmitter::emitComment(llvm::StringRef Content,
   }
 }
 
+void ptml::CTokenEmitter::emitDirective(PreprocessorDirective Directive) {
+  auto Tag = PTML.initializeOpenTag(ptml::tags::Span);
+  Tag.emitAttribute(ptml::attributes::Token, ptml::c::tokens::Directive);
+  Tag.finalizeOpenTag();
+
+  switch (Directive) {
+  case PreprocessorDirective::Include:
+    return PTML.emitLiteralContent("#include");
+  case PreprocessorDirective::Pragma:
+    return PTML.emitLiteralContent("#pragma");
+  default:
+    revng_abort("Unknown preprocessor directive.");
+  }
+}
+
 void ptml::CTokenEmitter::emitIncludeDirective(llvm::StringRef Content,
                                                llvm::StringRef Location,
                                                IncludeMode Mode) {
-  // Emit include directive token:
-  {
-    auto Tag = PTML.initializeOpenTag(ptml::tags::Span);
-    Tag.emitAttribute(ptml::attributes::Token, ptml::c::tokens::Directive);
-    Tag.finalizeOpenTag();
-
-    PTML.emitLiteralContent("#include");
-  }
-
+  emitDirective(PreprocessorDirective::Include);
   PTML.emitLiteralContent(" ");
 
   // Emit include path:
@@ -652,6 +659,27 @@ void ptml::CTokenEmitter::emitIncludeDirective(llvm::StringRef Content,
     PTML.emitContent(Mode == IncludeMode::Quote ? "\"" : "<");
     PTML.emitContent(Content);
     PTML.emitContent(Mode == IncludeMode::Quote ? "\"" : ">");
+  }
+
+  PTML.emitContentNewline();
+}
+
+void ptml::CTokenEmitter::emitPragmaDirective(llvm::StringRef Content) {
+  emitDirective(PreprocessorDirective::Pragma);
+  PTML.emitLiteralContent(" ");
+
+  // Emit its value:
+  {
+    auto Tag = PTML.initializeOpenTag(ptml::tags::Span);
+    Tag.emitAttribute(ptml::attributes::Token, ptml::c::tokens::Constant);
+    Tag.finalizeOpenTag();
+
+    revng_assert(!Content.contains('\n'));
+    for (const auto &Word : std::views::split(Content, ' '))
+      revng_assert(validateIdentifier(llvm::StringRef{ Word.begin(),
+                                                       Word.size() }));
+
+    PTML.emitContent(Content);
   }
 
   PTML.emitContentNewline();
