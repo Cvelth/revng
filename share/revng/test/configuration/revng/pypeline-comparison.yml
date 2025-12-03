@@ -28,6 +28,8 @@ commands:
       cd "$INPUT";
       "${SOURCES_ROOT}/share/revng/test/tests/pypeline-comparison/compare.sh" model.yml input disassemble;
 
+  # WIP: don't forget to update this AFTER adopting the new pypeline.
+
   # Run emit-model-header comparison
   - type: revng.test-pypeline-comparison-emit-model-header
     from:
