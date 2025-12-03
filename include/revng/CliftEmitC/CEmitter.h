@@ -73,6 +73,13 @@ public:
 
   void emitFunctionPrototype(FunctionOp Function);
 
+  //===------------------------ Exposed interfaces ------------------------===//
+
+  void emitComment(llvm::StringRef Content,
+                   CTE::CommentKind Kind = CTE::CommentKind::Line) {
+    return PTML.emitComment(Content, Kind);
+  }
+
   //===--------------------------- Other Helpers --------------------------===//
 
   static ptml::CTokenEmitter::EntityKind
