@@ -160,6 +160,7 @@ public:
         revng_assert(MT != nullptr);
 
         T.getMutableName().setValue(sanitizeIdentifier(NameBuilder.name(*MT)));
+        T.getMutableComment().setValue(MT->Comment());
       }
     }
 
@@ -262,6 +263,7 @@ private:
     for (auto F : ST.getFields()) {
       const auto &Field = SMT.Fields().at(F.getOffset());
       F.getMutableName().setValue(NameBuilder.name(SMT, Field));
+      F.getMutableComment().setValue(SMT.Comment());
     }
 
     return mlir::success();
@@ -270,6 +272,7 @@ private:
   mlir::LogicalResult visitTypeDefinition(clift::TypeDefinitionAttr T,
                                           const model::TypeDefinition &MT) {
     T.getMutableName().setValue(NameBuilder.name(MT));
+    T.getMutableComment().setValue(MT.Comment());
 
     if (auto ST = mlir::dyn_cast<clift::StructAttr>(T))
       return importStructNames(ST, llvm::cast<model::StructDefinition>(MT));
@@ -280,6 +283,7 @@ private:
       for (auto [I, F] : llvm::enumerate(UT.getFields())) {
         const auto &Field = UMT.Fields().at(static_cast<uint64_t>(I));
         F.getMutableName().setValue(NameBuilder.name(UMT, Field));
+        F.getMutableComment().setValue(Field.Comment());
       }
 
       return mlir::success();
@@ -291,6 +295,7 @@ private:
       for (auto E : ET.getFields()) {
         const auto &Entry = EMT.Entries().at(E.getRawValue());
         E.getMutableName().setValue(NameBuilder.name(EMT, Entry));
+        E.getMutableComment().setValue(Entry.Comment());
       }
 
       return mlir::success();
@@ -312,9 +317,12 @@ private:
               + NameBuilder.name(FMT));
 
     ST.getMutableName().setValue(Name);
+    ST.getMutableComment().setValue(FMT.ReturnValueComment());
 
-    for (auto [F, R] : llvm::zip(ST.getFields(), FMT.ReturnValues()))
+    for (auto [F, R] : llvm::zip(ST.getFields(), FMT.ReturnValues())) {
       F.getMutableName().setValue(NameBuilder.name(FMT, R));
+      F.getMutableComment().setValue(R.Comment());
+    }
 
     return mlir::success();
   }
@@ -327,6 +335,7 @@ private:
     revng_assert(SMT != nullptr);
 
     ST.getMutableName().setValue(NameBuilder.name(FMT));
+    ST.getMutableComment().setValue(SMT->Comment());
 
     return importStructNames(ST, *SMT);
   }
@@ -416,6 +425,7 @@ private:
     auto R = CurrentFunction->GotoLabels.name(AddressSet);
     auto L = CurrentFunction->Location.extend(rr::GotoLabel, R.Index);
 
+    // TODO: label comments.
     setStringAttr(Op, "clift.handle", L.toString());
     setStringAttr(Op, "clift.name", sanitizeIdentifier(R.Name));
 
@@ -428,6 +438,7 @@ private:
     auto R = CurrentFunction->Variables.name(AddressSet);
     auto L = CurrentFunction->Location.extend(rr::LocalVariable, R.Index);
 
+    // TODO: variable comments.
     setStringAttr(Op, "clift.handle", L.toString());
     setStringAttr(Op, "clift.name", sanitizeIdentifier(R.Name));
 
@@ -486,6 +497,7 @@ private:
           auto AL = TL.extend(rr::CABIArgument, static_cast<uint64_t>(I));
           Attrs.setString(I, "clift.handle", AL.toString());
           Attrs.setString(I, "clift.name", NameBuilder.name(*T, A));
+          Attrs.setString(I, "clift.comment", A.Comment());
         }
 
       } else if (const auto *T = llvm::dyn_cast<RF>(Type)) {
@@ -503,6 +515,7 @@ private:
           auto AL = TL.extend(rr::RawArgument, A.Location());
           Attrs.setString(I, "clift.handle", AL.toString());
           Attrs.setString(I, "clift.name", NameBuilder.name(*T, A));
+          Attrs.setString(I, "clift.comment", A.Comment());
 
           // Is there a reason to do a smarter merge here?
           auto RegAttribute = makeAttribute<"_REG">(Op.getContext(),
