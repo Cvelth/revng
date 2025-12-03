@@ -151,6 +151,11 @@ getAllowedActions(llvm::StringRef Location, bool IsDefinition) {
   if (auto L = pipeline::locationFromString(rr::MacroArgument, Location))
     return {};
 
+  if (auto L = pipeline::locationFromString(rr::GotoLabel, Location))
+    return { pa::Rename };
+  if (auto L = pipeline::locationFromString(rr::LocalVariable, Location))
+    return { pa::Rename };
+
   revng_abort(("Unknown Location: " + Location.str()).c_str());
 }
 
