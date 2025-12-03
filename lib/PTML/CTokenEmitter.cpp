@@ -654,6 +654,10 @@ void ptml::CTokenEmitter::emitIncludeDirective(llvm::StringRef Content,
   {
     auto Tag = PTML.initializeOpenTag(ptml::tags::Span);
     Tag.emitAttribute(ptml::attributes::Token, ptml::c::tokens::StringLiteral);
+
+    // TODO: attach the location once we have header locations.
+    revng_assert(Location.empty());
+
     Tag.finalizeOpenTag();
 
     PTML.emitContent(Mode == IncludeMode::Quote ? "\"" : "<");
