@@ -619,18 +619,18 @@ void ptml::CTokenEmitter::emitComment(llvm::StringRef Content,
   }
 }
 
+static void emitDirective(ptml::Emitter PTML, llvm::StringRef Name) {
+  auto Tag = PTML.initializeOpenTag(ptml::tags::Span);
+  Tag.emitAttribute(ptml::attributes::Token, ptml::c::tokens::Directive);
+  Tag.finalizeOpenTag();
+
+  PTML.emitContent("#" + Name.str());
+}
+
 void ptml::CTokenEmitter::emitIncludeDirective(llvm::StringRef Content,
                                                llvm::StringRef Location,
                                                IncludeMode Mode) {
-  // Emit include directive token:
-  {
-    auto Tag = PTML.initializeOpenTag(ptml::tags::Span);
-    Tag.emitAttribute(ptml::attributes::Token, ptml::c::tokens::Directive);
-    Tag.finalizeOpenTag();
-
-    PTML.emitLiteralContent("#include");
-  }
-
+  emitDirective(PTML, "include");
   PTML.emitLiteralContent(" ");
 
   // Emit include path:
@@ -642,6 +642,21 @@ void ptml::CTokenEmitter::emitIncludeDirective(llvm::StringRef Content,
     PTML.emitContent(Mode == IncludeMode::Quote ? "\"" : "<");
     PTML.emitContent(Content);
     PTML.emitContent(Mode == IncludeMode::Quote ? "\"" : ">");
+  }
+
+  PTML.emitContentNewline();
+}
+
+void ptml::CTokenEmitter::emitPragmaOnceDirective() {
+  emitDirective(PTML, "pragma");
+  PTML.emitLiteralContent(" ");
+
+  {
+    auto Tag = PTML.initializeOpenTag(ptml::tags::Span);
+    Tag.emitAttribute(ptml::attributes::Token, ptml::c::tokens::Constant);
+    Tag.finalizeOpenTag();
+
+    PTML.emitLiteralContent("once");
   }
 
   PTML.emitContentNewline();
