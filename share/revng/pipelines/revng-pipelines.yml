@@ -45,6 +45,10 @@ Containers:
     Type: recompilable-archive
   - Name: functions.mlir
     Type: clift-module
+  - Name: types-and-globals.mlir
+    # Note for the new pypeline: this is intended to use binary rank,
+    # think, model represented in clift.
+    Type: clift-module
   - Name: model-type-definitions.tar.gz
     Type: model-type-definitions
   - Name: new-types-and-globals.h
@@ -725,12 +729,24 @@ Branches:
             This artifact is a single PTML file representing the decompiled C
             code of the whole program, including the body of all of program's
             functions. (Clift backend)
-  - From: emit-c
+  - From: initial
     Steps:
+      - Name: gather-types-in-clift
+        Pipes:
+          - Type: import-clift-types
+            # This `input` is not needed in the new pipeline.
+            # This pipe only needs the model to produce its output.
+            UsedContainers: [input, types-and-globals.mlir]
       - Name: emit-new-model-header
         Pipes:
+          - Type: import-clift-functions-without-bodies
+            UsedContainers: [types-and-globals.mlir]
+          - Type: import-clift-globals-without-initializers
+            UsedContainers: [types-and-globals.mlir]
+          - Type: import-model-names
+            UsedContainers: [types-and-globals.mlir]
           - Type: emit-new-model-header
-            UsedContainers: [functions.mlir, new-types-and-globals.h]
+            UsedContainers: [types-and-globals.mlir, new-types-and-globals.h]
         Artifacts:
           Container: new-types-and-globals.h
           Kind: new-model-header
@@ -751,12 +767,14 @@ Branches:
           Docs: |-
             This artifact contains all the declarations of llvm and qemu helpers
             that survived until the decompiled code.
-  - From: emit-c
+  - From: gather-types-in-clift
     Steps:
       - Name: emit-new-type-definitions
         Pipes:
+          - Type: import-model-names
+            UsedContainers: [types-and-globals.mlir]
           - Type: generate-new-type-definitions
-            UsedContainers: [input, new-type-definitions.tar.gz]
+            UsedContainers: [types-and-globals.mlir, new-type-definitions.tar.gz]
         Artifacts:
           Container: new-type-definitions.tar.gz
           Kind: new-type-definitions
