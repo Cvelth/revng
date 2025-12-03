@@ -168,14 +168,14 @@ commands:
         revng artifact \
           --model "$MODEL" \
           --resume "$RESUME" \
-          emit-helpers-header \
+          emit-new-helper-header \
           "$BINARY" \
         | revng ptml > "$OUTDIR/helpers.h"
 
         revng artifact \
           --model "$MODEL" \
           --resume "$RESUME" \
-          emit-model-header \
+          emit-new-model-header \
           "$BINARY" \
         | revng ptml > "$OUTDIR/types-and-globals.h"
 
