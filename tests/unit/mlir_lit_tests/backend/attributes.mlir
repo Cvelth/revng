@@ -27,7 +27,7 @@ module attributes {clift.module} {
       handle = "/local-variable/0x40001001:Code_x86_64/0",
       clift.name = "y",
       clift.attributes = [
-        #clift.attribute<"A3" : "/support-library/A3"("argument")>
+        #clift.attribute<"A3" : "/macro/A3"("argument")>
       ]
     }
   }
