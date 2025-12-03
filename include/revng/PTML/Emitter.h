@@ -51,6 +51,11 @@ public:
 
   [[nodiscard]] bool isTagged() const { return EmitTags; }
 
+  // Emit the specified content as is.
+  //
+  // IMPORTANT: This does *no* escaping of any kind.
+  void emitRawContent(llvm::StringRef String);
+
   // Emit the specified content literally. The string shall not contain newlines
   // or characters requiring HTML escape sequences (<, >, &).
   void emitLiteralContent(llvm::StringRef String);
@@ -76,8 +81,6 @@ public:
   [[nodiscard]] TagEmitter initializeOpenTag(llvm::StringRef Tag);
 
 private:
-  void emitLiteralContentImpl(llvm::StringRef String);
-
   void emitIndentedContent(llvm::StringRef String);
 
   template<bool EscapeQuotes = false>

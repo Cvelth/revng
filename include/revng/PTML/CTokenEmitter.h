@@ -20,6 +20,11 @@ public:
   explicit CTokenEmitter(llvm::raw_ostream &OS, ptml::Tagging Tags) :
     PTML(OS, Tags) {}
 
+  // Emit the specified content as is.
+  //
+  // IMPORTANT: This does *no* escaping of any kind.
+  void emitRawContent(llvm::StringRef String) { PTML.emitRawContent(String); }
+
   void emitSpace() { PTML.emitLiteralContent(" "); }
 
   void emitNewline() { PTML.emitContentNewline(); }

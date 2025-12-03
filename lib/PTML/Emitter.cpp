@@ -59,7 +59,7 @@ void Emitter::emitLiteralContent(llvm::StringRef String) {
   };
   revng_assert(std::ranges::none_of(String, IsNewlineOrRequiresEscaping));
 
-  emitLiteralContentImpl(String);
+  emitRawContent(String);
 }
 
 void Emitter::emitContent(llvm::StringRef String) {
@@ -73,7 +73,7 @@ void Emitter::emitContent(llvm::StringRef String) {
     emitIndentedContent(String);
 }
 
-void Emitter::emitLiteralContentImpl(llvm::StringRef String) {
+void Emitter::emitRawContent(llvm::StringRef String) {
   if (not String.empty()) {
     if (IsAtBeginningOfLine)
       emitIndentation();
@@ -90,12 +90,11 @@ void Emitter::emitIndentedContent(llvm::StringRef String) {
     auto End = View.end();
     revng_assert(Begin != End);
 
-    emitLiteralContentImpl(std::string_view((*Begin).begin(), (*Begin).end()));
+    emitRawContent(std::string_view((*Begin).begin(), (*Begin).end()));
 
     while (++Begin != End) {
       emitContentNewline();
-      emitLiteralContentImpl(std::string_view((*Begin).begin(),
-                                              (*Begin).end()));
+      emitRawContent(std::string_view((*Begin).begin(), (*Begin).end()));
     }
 
     IsAtBeginningOfLine = String.back() == '\n';
