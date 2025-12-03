@@ -509,10 +509,8 @@ mlir::Type TypedefType::parse(mlir::AsmParser &Parser) {
     return {};
 
   std::string Name;
-  if (Parser.parseOptionalKeyword("as").succeeded()) {
-    if (Parser.parseString(&Name).failed())
-      return {};
-  }
+  if (mlir::parseCliftDebugName(Parser, Name).failed())
+    return {};
 
   std::string Comment;
   if (mlir::parseCliftComment(Parser, Comment).failed())
