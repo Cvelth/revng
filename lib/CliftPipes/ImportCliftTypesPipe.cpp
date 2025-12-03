@@ -6,6 +6,7 @@
 #include "revng/Clift/Helpers.h"
 #include "revng/CliftImportModel/ImportModel.h"
 #include "revng/CliftPipes/CliftContainer.h"
+#include "revng/Model/Segment.h"
 #include "revng/Pipeline/Location.h"
 #include "revng/Pipeline/RegisterPipe.h"
 #include "revng/Pipes/FileContainer.h"
@@ -45,7 +46,7 @@ public:
 
   std::array<pipeline::ContractGroup, 1> getContract() const {
     return { pipeline::ContractGroup(revng::kinds::Binary,
-                                      0,
+                                     0,
                                      revng::kinds::CliftModule,
                                      1) };
   }
@@ -146,3 +147,46 @@ public:
 };
 
 static pipeline::RegisterPipe<ImportCliftFunctionsWithoutBodiesPipe> Z;
+
+class ImportCliftGlobalsWithoutInitializersPipe {
+public:
+  static constexpr auto Name = "import-clift-globals-without-initializers";
+
+  std::array<pipeline::ContractGroup, 1> getContract() const {
+    return { pipeline::ContractGroup(revng::kinds::CliftModule,
+                                     0,
+                                     pipeline::InputPreservation::Preserve) };
+  }
+
+  void run(pipeline::ExecutionContext &EC,
+           revng::pipes::CliftContainer &CliftContainer) {
+    const model::Binary &Model = *revng::getModelFromContext(EC);
+    mlir::ModuleOp Module = CliftContainer.getModule();
+
+    mlir::OpBuilder Builder(Module->getContext());
+
+    for (const auto &[Index, Segment] : llvm::enumerate(Model.Segments())) {
+      mlir::OpBuilder::InsertionGuard Guard(Builder);
+      Builder.setInsertionPointToEnd(Module.getBody());
+
+      // TODO: consider building a map instead of looking each type up
+      //       separately.
+      auto Type = mlir::clift::lookupCliftType(Module, *Segment.type());
+      revng_check(Type.has_value());
+      auto CliftType = mlir::cast<mlir::clift::StructType>(*Type);
+
+      // NOTE: neither debug information nor name matter for the users of this.
+      auto UnknownLocation = mlir::UnknownLoc::get(Module->getContext());
+      auto ArbitraryName = "segment_" + std::to_string(Index);
+      auto Result = Builder.create<clift::GlobalVariableOp>(UnknownLocation,
+                                                            ArbitraryName,
+                                                            CliftType);
+      Result.setHandle(pipeline::locationString(revng::ranks::Segment,
+                                                Segment.key()));
+    }
+
+    EC.commitUniqueTarget(CliftContainer);
+  }
+};
+
+static pipeline::RegisterPipe<ImportCliftGlobalsWithoutInitializersPipe> A;
