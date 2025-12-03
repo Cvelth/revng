@@ -183,6 +183,7 @@ public:
         revng_assert(MT != nullptr);
 
         T.getMutableName().setValue(NameBuilder.name(*MT));
+        T.getMutableComment().setValue(MT->Comment());
       }
     }
 
@@ -289,6 +290,7 @@ private:
     for (auto F : ST.getFields()) {
       const auto &Field = SMT.Fields().at(F.getOffset());
       F.getMutableName().setValue(NameBuilder.name(SMT, Field));
+      F.getMutableComment().setValue(Field.Comment());
     }
 
     return mlir::success();
@@ -297,6 +299,7 @@ private:
   mlir::LogicalResult visitTypeDefinition(clift::TypeDefinitionAttr T,
                                           const model::TypeDefinition &MT) {
     T.getMutableName().setValue(NameBuilder.name(MT));
+    T.getMutableComment().setValue(MT.Comment());
 
     if (auto ST = mlir::dyn_cast<clift::StructAttr>(T))
       return importStructNames(ST, llvm::cast<model::StructDefinition>(MT));
@@ -307,6 +310,7 @@ private:
       for (auto [I, F] : llvm::enumerate(UT.getFields())) {
         const auto &Field = UMT.Fields().at(static_cast<uint64_t>(I));
         F.getMutableName().setValue(NameBuilder.name(UMT, Field));
+        F.getMutableComment().setValue(Field.Comment());
       }
 
       return mlir::success();
@@ -318,6 +322,7 @@ private:
       for (auto E : ET.getFields()) {
         const auto &Entry = EMT.Entries().at(E.getRawValue());
         E.getMutableName().setValue(NameBuilder.name(EMT, Entry));
+        E.getMutableComment().setValue(Entry.Comment());
       }
 
       return mlir::success();
@@ -354,6 +359,7 @@ private:
     revng_assert(SMT != nullptr);
 
     ST.getMutableName().setValue(NameBuilder.name(FMT));
+    ST.getMutableComment().setValue(SMT->Comment());
 
     return importStructNames(ST, *SMT);
   }
@@ -444,6 +450,8 @@ private:
       Op.setName(CurrentFunction->GotoLabels.automaticName().Name);
     }
 
+    // TODO: label comments.
+
     return mlir::success();
   }
 
@@ -457,6 +465,8 @@ private:
     } else {
       Op.setName(CurrentFunction->Variables.automaticName().Name);
     }
+
+    // TODO: variable comments.
 
     return mlir::success();
   }
@@ -474,6 +484,11 @@ private:
 
       Symbols.record(Op, NameBuilder.name(MF));
 
+      // No need to use symbol renamer for comments, as they don't affect any
+      // users.
+      Op->setAttr("clift.comment",
+                  mlir::StringAttr::get(Op->getContext(), MF.Comment()));
+
       ArgumentAttributeMutator Attrs(Op);
 
       using CF = model::CABIFunctionDefinition;
@@ -487,6 +502,7 @@ private:
           auto AL = TL.extend(rr::CABIArgument, static_cast<uint64_t>(I));
           Attrs.setString(I, "clift.handle", AL.toString());
           Attrs.setString(I, "clift.name", NameBuilder.name(*T, A));
+          Attrs.setString(I, "clift.comment", A.Comment());
         }
       } else if (const auto *T = llvm::dyn_cast<RF>(Type)) {
         bool HasStackArgument = static_cast<bool>(T->StackArgumentsType());
@@ -499,6 +515,7 @@ private:
           auto AL = TL.extend(rr::RawArgument, A.Location());
           Attrs.setString(I, "clift.handle", AL.toString());
           Attrs.setString(I, "clift.name", NameBuilder.name(*T, A));
+          Attrs.setString(I, "clift.comment", A.Comment());
 
           std::string RegisterName = toString(A.Location());
 
@@ -564,6 +581,12 @@ private:
   mlir::LogicalResult visitGlobalVariableOp(clift::GlobalVariableOp Op) {
     if (const model::Segment *Segment = getModelSegment(Op)) {
       Symbols.record(Op, NameBuilder.name(Model, *Segment));
+
+      // No need to use symbol renamer for comments, as they don't affect any
+      // users.
+      Op->setAttr("clift.comment",
+                  mlir::StringAttr::get(Op->getContext(), Segment->Comment()));
+
       return mlir::success();
     }
 
