@@ -85,7 +85,8 @@ public:
   void emitTypedefDefinition(mlir::clift::TypedefType Typedef) {
     auto Guard = markAsCommentable(Typedef.getHandle());
 
-    // TODO: emit model comment.
+    // TODO: improve comment formatting
+    emitComment(Typedef.getComment());
 
     emitTypeKeyword(Typedef);
     PTML.emitSpace();
@@ -115,7 +116,8 @@ public:
 
     auto Guard = markAsCommentable(Function.getHandle());
 
-    // TODO: emit model comment.
+    // TODO: improve comment formatting
+    emitComment(Function.getComment());
 
     emitTypeKeyword(Function);
     PTML.emitSpace();
@@ -185,7 +187,8 @@ public:
     {
       auto Guard = markAsCommentable(Struct.getHandle());
 
-      // TODO: emit model comment.
+      // TODO: improve comment formatting
+      emitComment(Struct.getComment());
 
       emitTypeKeyword(Struct);
       PTML.emitSpace();
@@ -216,7 +219,8 @@ public:
 
         auto Guard = markAsCommentable(Field.getHandle());
 
-        // TODO: emit model comment.
+        // TODO: improve comment formatting
+        emitComment(Field.getComment());
 
         emitDeclaration(Field.getType(),
                         mlir::clift::CEmitter::DeclaratorInfo{
@@ -250,7 +254,8 @@ public:
     {
       auto Guard = markAsCommentable(Union.getHandle());
 
-      // TODO: emit model comment.
+      // TODO: improve comment formatting
+      emitComment(Union.getComment());
 
       emitTypeKeyword(Union);
       PTML.emitSpace();
@@ -272,7 +277,8 @@ public:
       for (const auto &Field : Union.getFields()) {
         auto Guard = markAsCommentable(Field.getHandle());
 
-        // TODO: emit model comment.
+        // TODO: improve comment formatting
+        emitComment(Field.getComment());
 
         emitDeclaration(Field.getType(),
                         mlir::clift::CEmitter::DeclaratorInfo{
@@ -298,7 +304,8 @@ public:
     {
       auto Guard = markAsCommentable(Enum.getHandle());
 
-      // TODO: emit model comment.
+      // TODO: improve comment formatting
+      emitComment(Enum.getComment());
 
       emitTypeKeyword(Enum);
       PTML.emitSpace();
@@ -325,7 +332,8 @@ public:
       for (const auto &Entry : Enum.getFields()) {
         auto Guard = markAsCommentable(Entry.getHandle());
 
-        // TODO: emit model comment.
+        // TODO: improve comment formatting
+        emitComment(Entry.getComment());
 
         PTML.emitIdentifier(Entry.getName(),
                             Entry.getHandle(),
