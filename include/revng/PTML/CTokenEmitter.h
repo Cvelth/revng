@@ -372,6 +372,8 @@ public:
     /// The following are the same as \ref Foldable, except they emit additional
     /// custom tokens before and after the scope.
     DoxygenCategoryComment,
+    MacroIf,
+    MacroIfDef,
   };
 
   void emitScopeOpener(ScopeKind Kind) {
@@ -393,6 +395,16 @@ public:
     case ScopeKind::DoxygenCategoryComment:
       // TODO: consider wrapping the opening comment under here instead of
       //       the dedicated helper.
+      return;
+
+    case ScopeKind::MacroIf:
+      emitDirective(PreprocessorDirective::If);
+      emitSpace();
+      return;
+
+    case ScopeKind::MacroIfDef:
+      emitDirective(PreprocessorDirective::Ifdef);
+      emitSpace();
       return;
 
     default:
@@ -419,6 +431,13 @@ public:
     case ScopeKind::DoxygenCategoryComment:
       emitComment("", CommentKind::DoxygenCategoryCloser);
       return;
+
+    case ScopeKind::MacroIf:
+    case ScopeKind::MacroIfDef:
+      emitDirective(PreprocessorDirective::Endif);
+      emitNewline();
+      return;
+
 
     default:
       revng_abort("Unknown scope kind");
