@@ -32,7 +32,7 @@ static void importModelTypes(const model::Binary &Model,
     TypeAttrs.push_back(mlir::TypeAttr::get(CliftType));
   }
 
-  Module->setAttr("clift.test", mlir::ArrayAttr::get(Context, TypeAttrs));
+  Module->setAttr("clift.types", mlir::ArrayAttr::get(Context, TypeAttrs));
 }
 
 class ImportCliftTypesPipe {
