@@ -210,7 +210,7 @@ public:
                    ScopeKind Kind,
                    Delimiter Delimiter,
                    int Indent) :
-      Emitter(Emitter), Delimiter(Delimiter), Indent(Indent), Tag() {
+      Emitter(Emitter), Delimiter(Delimiter), Indent(Indent) {
       Emitter.enterScopeImpl(Tag, Delimiter, Indent, Kind);
     }
 
@@ -233,6 +233,28 @@ public:
     return Scope(*this, Kind, Delimiter, Indent);
   }
 
+  enum class RegionKind : uint8_t {
+    Expression,
+  };
+
+  class Region {
+    ptml::Emitter::TagEmitter Tag;
+
+  public:
+    explicit Region(CTokenEmitter &Emitter,
+                    RegionKind Kind,
+                    llvm::StringRef Location) {
+      Emitter.enterRegionImpl(Tag, Kind, Location);
+    }
+
+    Region(const Region &) = delete;
+    Region &operator=(const Region &) = delete;
+  };
+
+  [[nodiscard]] Region enterRegion(RegionKind Kind, llvm::StringRef Location) {
+    return Region(*this, Kind, Location);
+  }
+
 private:
   void enterScopeImpl(ptml::Emitter::TagEmitter &Tag,
                       Delimiter Delimiter,
@@ -242,4 +264,8 @@ private:
   void leaveScopeImpl(ptml::Emitter::TagEmitter &Tag,
                       Delimiter Delimiter,
                       int Indent);
+
+  void enterRegionImpl(ptml::Emitter::TagEmitter &Tag,
+                       RegionKind Kind,
+                       llvm::StringRef Location);
 };

@@ -699,6 +699,14 @@ public:
     revng_abort("This operation is not supported.");
   }
 
+  static std::optional<llvm::StringRef> getExpressionLocation(mlir::Value V) {
+    if (auto E = V.getDefiningOp<ExpressionOpInterface>()) {
+      if (auto NameLoc = mlir::dyn_cast_or_null<mlir::NameLoc>(E->getLoc()))
+        return NameLoc.getName();
+    }
+    return std::nullopt;
+  }
+
   RecursiveCoroutine<void> emitExpression(mlir::Value V) {
     const ExpressionEmitInfo Info = getExpressionEmitInfo(V);
 
@@ -715,6 +723,10 @@ public:
         CurrentPrecedence = PreviousPrecedence;
       });
       CurrentPrecedence = Info.Precedence;
+
+      std::optional<CTE::Region> Region;
+      if (auto Location = getExpressionLocation(V))
+        Region.emplace(C, CTE::RegionKind::Expression, *Location);
 
       // Emit the expression using the member function returned by
       // getExpressionEmitInfo.
