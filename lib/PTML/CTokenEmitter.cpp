@@ -23,6 +23,7 @@ using EntityKind = CTokenEmitter::EntityKind;
 using ScopeKind = CTokenEmitter::ScopeKind;
 using Punctuator = CTokenEmitter::Punctuator;
 using Operator = CTokenEmitter::Operator;
+using RegionKind = CTokenEmitter::RegionKind;
 
 static std::optional<llvm::StringRef> getEntityKindAttribute(EntityKind Kind) {
   switch (Kind) {
@@ -125,6 +126,9 @@ getAllowedActions(llvm::StringRef Location) {
 
   if (auto L = pipeline::locationFromString(rr::HelperStructField, Location))
     return {};
+
+  if (auto L = pipeline::locationFromString(rr::Instruction, Location))
+    return { pa::CodeSwitch, pa::Comment };
 
   return { pa::Rename, pa::EditType };
 }
@@ -452,12 +456,13 @@ void CTokenEmitter::emitIdentifier(llvm::StringRef Identifier,
     Tag.emitAttribute(ptml::attributes::Token, *Attribute);
   if (not Location.empty()) {
     Tag.emitAttribute(LocationAttribute, Location);
-    Tag.emitAttribute(ptml::attributes::ActionContextLocation,
-                      getActionContextLocation(Location));
 
     auto Actions = getAllowedActions(Location);
-    if (not Actions.empty())
+    if (not Actions.empty()) {
+      Tag.emitAttribute(ptml::attributes::ActionContextLocation,
+                        getActionContextLocation(Location));
       Tag.emitListAttribute(ptml::attributes::AllowedActions, Actions);
+    }
   }
   Tag.finalizeOpenTag();
 
@@ -603,4 +608,21 @@ void CTokenEmitter::leaveScopeImpl(ptml::Emitter::TagEmitter &Tag,
 
   if (auto Symbols = getDelimiterPunctuators(Delimiter))
     emitPunctuator(Symbols->second);
+}
+
+void CTokenEmitter::enterRegionImpl(ptml::Emitter::TagEmitter &Tag,
+                                    RegionKind Kind,
+                                    llvm::StringRef Location) {
+  if (Location.empty())
+    return;
+
+  auto Actions = getAllowedActions(Location);
+  if (Actions.empty())
+    return;
+
+  Tag.initializeOpenTag(PTML, ptml::tags::Span);
+  Tag.emitAttribute(ptml::attributes::ActionContextLocation,
+                    getActionContextLocation(Location));
+  Tag.emitListAttribute(ptml::attributes::AllowedActions, Actions);
+  Tag.finalizeOpenTag();
 }
