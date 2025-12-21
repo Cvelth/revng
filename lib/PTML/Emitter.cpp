@@ -121,6 +121,10 @@ void Emitter::emitEscapedContent(llvm::StringRef String) {
   }
 }
 
+uint64_t Emitter::getCurrentIndentation() const {
+  return Indentation * IndentString.size();
+}
+
 void Emitter::emitIndentation() {
   IsAtBeginningOfLine = false;
 
