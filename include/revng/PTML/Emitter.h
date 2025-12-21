@@ -71,6 +71,7 @@ public:
 
     Indentation += static_cast<unsigned>(Offset);
   }
+  uint64_t getCurrentIndentation() const;
 
   [[nodiscard]] TagEmitter initializeOpenTag(llvm::StringRef Tag);
 
