@@ -5,6 +5,7 @@
 //
 
 #include "limits.h"
+#include "stdbool.h"
 #include "stdint.h"
 
 #define static_assert_size(TYPE, EXPECTED_SIZE) \
