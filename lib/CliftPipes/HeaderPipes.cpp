@@ -3,18 +3,20 @@
 //
 
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/IR/MLIRContext.h"
 #include "mlir/Support/LogicalResult.h"
 
 #include "revng/Clift/CliftTypeInterfaces.h"
 #include "revng/CliftEmitC/CEmitter.h"
 #include "revng/CliftEmitC/CSemantics.h"
 #include "revng/CliftEmitC/Headers.h"
+#include "revng/CliftImportModel/ImportModel.h"
 #include "revng/CliftPipes/CliftContainer.h"
 #include "revng/CliftPipes/HeaderPipes.h"
+#include "revng/Model/Binary.h"
 #include "revng/PTML/CTokenEmitter.h"
 #include "revng/Pipeline/RegisterPipe.h"
 
-#include "CliftTypeLookupHelper.h"
 #include "HeaderContainers.h"
 
 //
@@ -44,6 +46,35 @@ static void emitHelperHeaderImpl(llvm::raw_ostream &Out,
   // TODO: select target properly
   const auto &Target = TargetCImplementation::Default;
   mlir::clift::emitHelperHeader(Tokens, Target, Modules);
+
+  Out.flush();
+}
+
+static void emitTypeDefinitionImpl(llvm::raw_ostream &Out,
+                                   mlir::MLIRContext &Context,
+                                   const model::TypeDefinition &Type,
+                                   const model::Binary &Binary) {
+  ptml::CTokenEmitter Tokens(Out, ptml::Tagging::Enabled);
+
+  auto EmitError = [&Context]() -> mlir::InFlightDiagnostic {
+    return Context.getDiagEngine().emit(mlir::UnknownLoc::get(&Context),
+                                        mlir::DiagnosticSeverity::Error);
+  };
+  auto CliftType = mlir::clift::importModelType(EmitError,
+                                                Context,
+                                                Type,
+                                                Binary);
+  revng_check(CliftType != nullptr);
+
+  mlir::clift::TypeEmitterConfiguration Configuration = {
+    .TypeToOmit = {},
+    .PrintMaximumEnumValue = true,
+    .ExplicitPadding = false,
+  };
+
+  // TODO: select target properly
+  const auto &Target = TargetCImplementation::Default;
+  emitSingleTypeDefinition(Tokens, Target, CliftType, Configuration);
 
   Out.flush();
 }
@@ -106,6 +137,37 @@ public:
 
 static pipeline::RegisterPipe<HelperHeaderPipe> HelperHeader;
 
+class EmitTypeDefinition {
+public:
+  static constexpr auto Name = "emit-type-definition";
+
+  std::array<pipeline::ContractGroup, 1> getContract() const {
+    using namespace pipeline;
+    using namespace revng::kinds;
+
+    return { ContractGroup({ Contract(CliftModule,
+                                      0,
+                                      ModelTypeDefinition,
+                                      1,
+                                      InputPreservation::Preserve) }) };
+  }
+
+  void run(pipeline::ExecutionContext &EC,
+           const revng::pipes::CliftContainer &CliftContainer,
+           TypeDefinitionContainer &ModelTypesContainer) {
+    const model::Binary &Binary = *revng::getModelFromContext(EC);
+
+    for (const model::TypeDefinition &Type :
+         revng::getTypeDefinitionsAndCommit(EC, ModelTypesContainer.name())) {
+      std::string &Result = ModelTypesContainer[Type.key()];
+      llvm::raw_string_ostream Out(Result);
+      emitTypeDefinitionImpl(Out, *CliftContainer.getContext(), Type, Binary);
+    }
+  }
+};
+
+static pipeline::RegisterPipe<EmitTypeDefinition> TypeDefinition;
+
 } // namespace
 
 //
@@ -127,6 +189,19 @@ void EmitHelperHeader::run() {
     FunctionModules.emplace_back(Input.getModule(Object));
 
   emitHelperHeaderImpl(*Out, FunctionModules);
+}
+
+using ETD = EmitTypeDefinition;
+void ETD::runOnTypeDefinition(const model::UpcastableTypeDefinition &Type) {
+  revng_assert(Type);
+  auto Stream = Output.getOStream(ObjectID(Type->key()));
+  emitTypeDefinitionImpl(*Stream,
+
+                         // FUTURE-WIP: this is what we get for trying to mutate
+                         // an input container! cc: @fez
+                         const_cast<mlir::MLIRContext &>(Input.getContext()),
+                         *Type,
+                         Binary);
 }
 
 } // namespace revng::pypeline::piperuns

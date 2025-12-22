@@ -68,4 +68,32 @@ public:
   void run();
 };
 
+class EmitTypeDefinition {
+private:
+  const model::Binary &Binary;
+  const CliftModuleContainer &Input;
+  PTMLCTypeBytesContainer &Output;
+
+public:
+  static constexpr llvm::StringRef Name = "emit-type-definition";
+  using Arguments = TypeList<PipeRunArgument<CliftModuleContainer,
+                                             "Input",
+                                             "MLIR container containing "
+                                             "the type system",
+                                             Access::Read>,
+                             PipeRunArgument<PTMLCTypeBytesContainer,
+                                             "Output",
+                                             "A single C Type",
+                                             Access::Write>>;
+
+  EmitTypeDefinition(const class Model &Model,
+                     llvm::StringRef Config,
+                     llvm::StringRef DynamicConfig,
+                     const CliftModuleContainer &Input,
+                     PTMLCTypeBytesContainer &Output) :
+    Binary(*Model.get().get()), Input(Input), Output(Output){};
+
+  void runOnTypeDefinition(const model::UpcastableTypeDefinition &Type);
+};
+
 } // namespace revng::pypeline::piperuns
