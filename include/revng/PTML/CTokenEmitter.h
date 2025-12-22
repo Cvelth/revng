@@ -201,10 +201,16 @@ public:
   }
 
   enum class CommentKind : bool {
+    // // Looks like this
     Line,
-    Block,
+
+    // /* Looks like this */
+    Block
   };
 
+  // The following function should *never* be called directly.
+  //
+  // When you need to emit a comment, use `CCommentEmitter` built on top of it.
   void emitComment(llvm::StringRef Content, CommentKind Kind);
 
   enum class IncludeMode : bool {
