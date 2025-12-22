@@ -610,10 +610,17 @@ void ptml::CTokenEmitter::emitComment(llvm::StringRef Content,
       PTML.emitContent(std::string_view(R.begin(), R.end()));
       PTML.emitContentNewline();
     }
-  } else {
+
+  } else if (Kind == CommentKind::Block) {
     PTML.emitLiteralContent("/*");
+
+    // TODO: escape `*/`
     PTML.emitContent(Content);
+
     PTML.emitLiteralContent("*/");
+
+  } else {
+    revng_abort("Unknown comment kind");
   }
 }
 
