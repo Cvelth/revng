@@ -7,6 +7,7 @@
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/StringRef.h"
 
+#include "revng/PTML/CommentEmitter.h"
 #include "revng/PTML/Emitter.h"
 #include "revng/Support/CTarget.h"
 
@@ -23,6 +24,18 @@ public:
 
   void emitNewline() { PTML.emitContentNewline(); }
 
+  CommentEmitter comments(uint64_t WrapAt) {
+    return CommentEmitter(PTML,
+                          CommentIndicators{
+                            .Line = "//",
+                            .Doxygen = "///",
+                            .Block = CommentIndicatorPair{ .Opening = "/*",
+                                                           .Closing = "*/" },
+                          },
+                          WrapAt);
+  }
+
+public:
   enum class Keyword {
     Auto,
     Bool,
