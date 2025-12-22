@@ -32,6 +32,8 @@ private:
                         uint64_t CurrentOffset,
                         uint64_t NextOffset);
 
+  void emitComment(llvm::StringRef Content);
+
 public:
   void emitForwardDeclaration(mlir::clift::DefinedType Type) {
     revng_assert(mlir::clift::isSeparateDeclarationAllowed(Type));
