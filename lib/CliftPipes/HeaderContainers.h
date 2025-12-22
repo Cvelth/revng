@@ -26,11 +26,19 @@ inline pipeline::SingleElementKind
                   revng::ranks::ArtificialStruct),
               { &Decompiled });
 
+inline pipeline::SingleElementKind
+  HelperHeader("helper-header",
+               Binary,
+               revng::ranks::Binary,
+               fat(/* TODO: add location ranks */),
+               {});
+
 } // namespace revng::kinds
 
 namespace detail {
 
-inline constexpr char ModelHeaderName[] = "new-model-header";
+inline constexpr char ModelHeaderName[] = "model-header";
+inline constexpr char HelperHeaderName[] = "helper-header";
 
 inline constexpr char HeaderMIMEType[] = "text/x.h+ptml";
 inline constexpr char HeaderSuffix[] = ".h";
@@ -53,3 +61,9 @@ using ModelHeaderContainer = detail::SBF<&revng::kinds::ModelHeader,
                                          detail::HeaderMIMEType,
                                          detail::HeaderSuffix>;
 inline detail::RegisterDCC<ModelHeaderContainer> RegisteredMHC;
+
+using HelperHeaderContainer = detail::SBF<&revng::kinds::HelperHeader,
+                                          detail::HelperHeaderName,
+                                          detail::HeaderMIMEType,
+                                          detail::HeaderSuffix>;
+inline detail::RegisterDCC<HelperHeaderContainer> RegisteredHHC;
