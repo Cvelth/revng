@@ -2,6 +2,7 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/Support/LogicalResult.h"
 
 #include "revng/Clift/CliftTypeInterfaces.h"
@@ -32,6 +33,17 @@ static void emitModelHeaderImpl(llvm::raw_ostream &Out, mlir::ModuleOp Module) {
   // TODO: select target properly
   const auto &Target = TargetCImplementation::Default;
   mlir::clift::emitModelHeader(Tokens, Target, Module, Configuration);
+
+  Out.flush();
+}
+
+static void emitHelperHeaderImpl(llvm::raw_ostream &Out,
+                                 const std::vector<mlir::ModuleOp> &Modules) {
+  ptml::CTokenEmitter Tokens(Out, ptml::Tagging::Enabled);
+
+  // TODO: select target properly
+  const auto &Target = TargetCImplementation::Default;
+  mlir::clift::emitHelperHeader(Tokens, Target, Modules);
 
   Out.flush();
 }
@@ -68,6 +80,32 @@ public:
 
 static pipeline::RegisterPipe<ModelHeaderPipe> ModelHeader;
 
+class HelperHeaderPipe {
+public:
+  static constexpr auto Name = "emit-helper-header";
+
+  std::array<pipeline::ContractGroup, 1> getContract() const {
+    using namespace pipeline;
+    using namespace revng::kinds;
+
+    return { ContractGroup({ Contract(CliftFunction,
+                                      0,
+                                      NewHelperHeader,
+                                      1,
+                                      InputPreservation::Preserve) }) };
+  }
+
+  void run(pipeline::ExecutionContext &EC,
+           const revng::pipes::CliftContainer &CliftContainer,
+           HelperHeaderContainer &HeaderFile) {
+    llvm::raw_string_ostream Stream = HeaderFile.asStream();
+    emitHelperHeaderImpl(Stream, { CliftContainer.getModule() });
+    EC.commitUniqueTarget(HeaderFile);
+  }
+};
+
+static pipeline::RegisterPipe<HelperHeaderPipe> HelperHeader;
+
 } // namespace
 
 //
@@ -79,6 +117,16 @@ namespace revng::pypeline::piperuns {
 void EmitModelHeader::run() {
   std::unique_ptr<llvm::raw_ostream> Out = Output.getOStream(ObjectID());
   emitModelHeaderImpl(*Out, Input.getModule());
+}
+
+void EmitHelperHeader::run() {
+  std::unique_ptr<llvm::raw_ostream> Out = Output.getOStream(ObjectID());
+
+  std::vector<mlir::ModuleOp> FunctionModules;
+  for (const auto &Object : Input.objects())
+    FunctionModules.emplace_back(Input.getModule(Object));
+
+  emitHelperHeaderImpl(*Out, FunctionModules);
 }
 
 } // namespace revng::pypeline::piperuns
