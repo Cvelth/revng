@@ -38,6 +38,13 @@ public:
   void emitDoxygenComment(llvm::StringRef Content);
   void emitBlockComment(llvm::StringRef Content);
 
+  void emitCategoryComment(llvm::StringRef Content) {
+    emitLineComment("");
+    emitLineComment(Content);
+    emitLineComment("");
+    PTML.emitContentNewline();
+  }
+
 protected:
   struct Identifier {
     llvm::StringRef Name;
