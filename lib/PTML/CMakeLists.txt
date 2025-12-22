@@ -9,6 +9,7 @@ revng_add_library_internal(
   IndentedOstream.cpp
   Tag.cpp
   Emitter.cpp
+  CommentEmitter.cpp
   CTokenEmitter.cpp)
 
 llvm_map_components_to_libnames(LLVM_LIBRARIES Support Core)
