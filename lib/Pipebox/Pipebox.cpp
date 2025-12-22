@@ -122,6 +122,8 @@ static RegisterSingleOutputPipeRun<ProcessCallGraph> P35;
 static RegisterSingleOutputPipeRun<YieldCallGraph> P36;
 static RegisterFunctionPipeRun<YieldCallGraphSlice> P37;
 static RegisterFunctionPipeRun<YieldCFG> P38;
+static RegisterSingleOutputPipeRun<ImportCliftTypes> P39;
+static RegisterSingleOutputPipeRun<ImportCliftFunctionDeclarations> P40;
 
 //
 // Analyses
