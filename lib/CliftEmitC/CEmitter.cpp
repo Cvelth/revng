@@ -4,6 +4,7 @@
 
 #include <optional>
 
+#include "revng/CliftEmitC/CCommentEmitter.h"
 #include "revng/CliftEmitC/CEmitter.h"
 #include "revng/Pipeline/Location.h"
 #include "revng/Pipes/Ranks.h"
@@ -398,6 +399,11 @@ void CEmitter::emitDeclaration(ValueType Type,
 }
 
 void CEmitter::emitFunctionPrototype(FunctionOp Op) {
+  // TODO: grab this from configuration.
+  static constexpr uint64_t WrapAt = 80;
+  CCommentEmitter Comments(Tokens, WrapAt);
+  Comments.emitFunctionComment(Op);
+
   llvm::SmallVector<ParameterDeclaratorInfo> ParameterDeclarators;
   for (unsigned I = 0; I < Op.getArgCount(); ++I) {
     auto Attrs = Op.getArgAttrs(I);
