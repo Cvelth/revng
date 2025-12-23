@@ -323,6 +323,7 @@ public:
 
   enum class RegionKind : uint8_t {
     Expression,
+    Commentable,
   };
 
   class Region {
