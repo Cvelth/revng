@@ -680,7 +680,20 @@ void ptml::CTokenEmitter::enterRegionImpl(ptml::Emitter::TagEmitter &Tag,
   if (Location.empty())
     return;
 
-  auto Actions = getAllowedActions(Location, false);
+  llvm::SmallVector<llvm::StringRef, 2> Actions = {};
+  switch (Kind) {
+  case RegionKind::Expression:
+    Actions = getAllowedActions(Location, false);
+    break;
+
+  case RegionKind::Commentable:
+    Actions = { ptml::actions::Comment };
+    break;
+
+  default:
+    revng_abort("Unknown region kind");
+  };
+
   if (Actions.empty())
     return;
 
