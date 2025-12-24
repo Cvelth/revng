@@ -7,6 +7,7 @@
 #include "revng/CliftImportModel/AttributeHelpers.h"
 #include "revng/CliftPipes/CliftContainer.h"
 #include "revng/CliftPipes/ImportModelNamesPipe.h"
+#include "revng/Model/CABIFunctionDefinition.h"
 #include "revng/Model/NameBuilder.h"
 #include "revng/Pipeline/Location.h"
 #include "revng/Pipeline/RegisterPipe.h"
@@ -126,6 +127,10 @@ public:
 
         T.getMutableName().setValue(sanitizeIdentifier(NameBuilder.name(*MT)));
         T.getMutableComment().setValue(MT->Comment());
+        if (auto *CFT = llvm::dyn_cast<model::CABIFunctionDefinition>(MT))
+          T.getMutableReturnValueComment().setValue(CFT->ReturnValueComment());
+        else if (auto *RFT = llvm::dyn_cast<model::CABIFunctionDefinition>(MT))
+          T.getMutableReturnValueComment().setValue(RFT->ReturnValueComment());
       }
     }
 
