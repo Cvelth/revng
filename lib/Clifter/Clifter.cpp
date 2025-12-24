@@ -346,6 +346,7 @@ private:
                              Handle,
                              makeNameAttr<FunctionType>(Context, Handle),
                              makeCommentAttr<FunctionType>(Context, Handle),
+                             makeRVCommentAttr<FunctionType>(Context, Handle),
                              ReturnType,
                              ParameterTypes,
                              mlir::ArrayAttr::get(Context, {}));
@@ -589,10 +590,13 @@ private:
 
     auto NameAttr = makeNameAttr<clift::FunctionType>(Context, Handle);
     auto CommentAttr = makeCommentAttr<clift::FunctionType>(Context, Handle);
+    auto RVCommentAttr = makeRVCommentAttr<clift::FunctionType>(Context,
+                                                                Handle);
     auto FunctionType = clift::FunctionType::get(Context,
                                                  Handle,
                                                  NameAttr,
                                                  CommentAttr,
+                                                 RVCommentAttr,
                                                  ReturnType,
                                                  ParameterTypes,
                                                  mlir::ArrayAttr::get(Context,
