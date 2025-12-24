@@ -162,13 +162,16 @@ private:
     if (not ReturnType)
       rc_return nullptr;
 
+    auto ABI = mlir::clift::setAttribute<"_ABI">(Context,
+                                                 toString(ModelType.ABI()));
+
     auto Handle = getHandle(ModelType);
     auto NameAttr = makeNameAttr<clift::FunctionType>(Handle);
     rc_return make<clift::FunctionType>(llvm::StringRef(Handle),
                                         NameAttr,
                                         ReturnType,
                                         llvm::ArrayRef(ArgumentTypes),
-                                        mlir::ArrayAttr::get(Context, {}));
+                                        ABI);
   }
 
   RecursiveCoroutine<clift::DefinedType>
@@ -318,13 +321,16 @@ private:
     if (not ReturnType)
       rc_return nullptr;
 
+    std::string RawABI = "raw_" + toString(ModelType.Architecture());
+    auto ABI = mlir::clift::setAttribute<"_ABI">(Context, RawABI);
+
     auto Handle = getHandle(ModelType);
     auto NameAttr = makeNameAttr<clift::FunctionType>(Handle);
     rc_return make<clift::FunctionType>(llvm::StringRef(Handle),
                                         NameAttr,
                                         mlir::Type(ReturnType),
                                         llvm::ArrayRef(ArgumentTypes),
-                                        mlir::ArrayAttr::get(Context, {}));
+                                        ABI);
   }
 
   RecursiveCoroutine<clift::DefinedType>
