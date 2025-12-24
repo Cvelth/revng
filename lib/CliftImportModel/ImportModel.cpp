@@ -370,13 +370,17 @@ private:
       Fields.push_back(Attr);
     }
 
+    mlir::ArrayAttr Attributes = mlir::ArrayAttr::get(Context, {});
+    if (ModelType.CanContainCode())
+      Attributes = mlir::clift::setAttribute<"_CAN_CONTAIN_CODE">(Context);
+
     auto Handle = Location.toString();
     auto NameAttr = makeNameAttr<clift::StructAttr>(Handle);
     auto Attr = make<clift::StructAttr>(llvm::StringRef(Handle),
                                         NameAttr,
                                         ModelType.Size(),
                                         llvm::ArrayRef(Fields),
-                                        mlir::ArrayAttr::get(Context, {}));
+                                        Attributes);
 
     if (not Attr)
       rc_return nullptr;
