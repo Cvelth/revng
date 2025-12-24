@@ -166,7 +166,8 @@ private:
     rc_return make<clift::FunctionType>(llvm::StringRef(Handle),
                                         NameAttr,
                                         ReturnType,
-                                        llvm::ArrayRef(ArgumentTypes));
+                                        llvm::ArrayRef(ArgumentTypes),
+                                        mlir::ArrayAttr::get(Context, {}));
   }
 
   RecursiveCoroutine<clift::DefinedType>
@@ -320,7 +321,8 @@ private:
     rc_return make<clift::FunctionType>(llvm::StringRef(Handle),
                                         NameAttr,
                                         mlir::Type(ReturnType),
-                                        llvm::ArrayRef(ArgumentTypes));
+                                        llvm::ArrayRef(ArgumentTypes),
+                                        mlir::ArrayAttr::get(Context, {}));
   }
 
   RecursiveCoroutine<clift::DefinedType>
