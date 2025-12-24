@@ -63,14 +63,20 @@ def Clift_FieldAttr
 
   let parameters = (ins StringRefParameter<>:$handle,
                         "mlir::clift::MutableStringAttr":$mutable_name,
+                        "mlir::clift::MutableStringAttr":$mutable_comment,
                         "uint64_t":$offset,
                         "mlir::clift::ValueType":$type);
 
   let extraClassDeclaration = [{
-    static constexpr llvm::StringRef NameAttrKey = "Field";
+    static constexpr llvm::StringRef NameAttrKey = "field-name";
+    static constexpr llvm::StringRef CommentAttrKey = "field-comment";
 
     llvm::StringRef getName() const {
       return getMutableName().getValue();
+    }
+
+    llvm::StringRef getComment() const {
+      return getMutableComment().getValue();
     }
   }];
 
@@ -89,13 +95,19 @@ def Clift_EnumFieldAttr
 
   let parameters = (ins StringRefParameter<>:$handle,
                         "mlir::clift::MutableStringAttr":$mutable_name,
+                        "mlir::clift::MutableStringAttr":$mutable_comment,
                         "uint64_t":$raw_value);
 
   let extraClassDeclaration = [{
-    static constexpr llvm::StringRef NameAttrKey = "EnumField";
+    static constexpr llvm::StringRef NameAttrKey = "enum-field-name";
+    static constexpr llvm::StringRef CommentAttrKey = "enum-field-comment";
 
     llvm::StringRef getName() const {
       return getMutableName().getValue();
+    }
+
+    llvm::StringRef getComment() const {
+      return getMutableComment().getValue();
     }
   }];
 
@@ -110,14 +122,20 @@ def Clift_EnumAttr
 
   let parameters = (ins StringRefParameter<>:$handle,
                         "mlir::clift::MutableStringAttr":$mutable_name,
+                        "mlir::clift::MutableStringAttr":$mutable_comment,
                         "mlir::clift::ValueType":$underlying_type,
                         ArrayRefParameter<"mlir::clift::EnumFieldAttr">:$fields);
 
   let extraClassDeclaration = [{
-    static constexpr llvm::StringRef NameAttrKey = "Enum";
+    static constexpr llvm::StringRef NameAttrKey = "enum-name";
+    static constexpr llvm::StringRef CommentAttrKey = "enum-comment";
 
     llvm::StringRef getName() const {
       return getMutableName().getValue();
+    }
+
+    llvm::StringRef getComment() const {
+      return getMutableComment().getValue();
     }
   }];
 
@@ -132,13 +150,19 @@ def Clift_TypedefAttr
 
   let parameters = (ins StringRefParameter<>:$handle,
                         "mlir::clift::MutableStringAttr":$mutable_name,
+                        "mlir::clift::MutableStringAttr":$mutable_comment,
                         "mlir::clift::ValueType":$underlying_type);
 
   let extraClassDeclaration = [{
-    static constexpr llvm::StringRef NameAttrKey = "Typedef";
+    static constexpr llvm::StringRef NameAttrKey = "typedef-name";
+    static constexpr llvm::StringRef CommentAttrKey = "typedef-comment";
 
     llvm::StringRef getName() const {
       return getMutableName().getValue();
+    }
+
+    llvm::StringRef getComment() const {
+      return getMutableComment().getValue();
     }
   }];
 
