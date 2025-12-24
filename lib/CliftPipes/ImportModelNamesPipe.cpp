@@ -4,6 +4,7 @@
 
 #include "revng/Clift/Helpers.h"
 #include "revng/Clift/ModuleVisitor.h"
+#include "revng/CliftImportModel/AttributeHelpers.h"
 #include "revng/CliftPipes/CliftContainer.h"
 #include "revng/CliftPipes/ImportModelNamesPipe.h"
 #include "revng/Model/NameBuilder.h"
@@ -31,6 +32,10 @@ public:
     for (unsigned I = 0; I < Op.getArgCount(); ++I) {
       AttrLists.emplace_back(Op.getArgAttrs(I));
     }
+  }
+
+  mlir::Attribute get(unsigned Index, llvm::StringRef Name) const {
+    return AttrLists[Index].get(Name);
   }
 
   void set(unsigned Index, llvm::StringRef Name, mlir::Attribute Attr) {
@@ -430,6 +435,14 @@ private:
           auto AL = TL.extend(rr::RawArgument, A.Location());
           Attrs.setString(I, "clift.handle", AL.toString());
           Attrs.setString(I, "clift.name", NameBuilder.name(*T, A));
+
+          mlir::ArrayAttr CurrentAttributes;
+          if (auto Attributes = Attrs.get(I, "clift.attributes"))
+            CurrentAttributes = mlir::cast<mlir::ArrayAttr>(Attributes);
+          auto New = mlir::clift::setAttribute<"_REG">(Op.getContext(),
+                                                       toString(A.Location()),
+                                                       CurrentAttributes);
+          Attrs.set(I, "clift.attributes", New);
         }
 
         if (HasStackArgument) {
@@ -440,6 +453,13 @@ private:
 
           Attrs.setString(I, "clift.handle", AL.toString());
           Attrs.setString(I, "clift.name", Name);
+
+          mlir::ArrayAttr CurrentAttributes;
+          if (auto Attributes = Attrs.get(I, "clift.attributes"))
+            CurrentAttributes = mlir::cast<mlir::ArrayAttr>(Attributes);
+          auto New = mlir::clift::setAttribute<"_STACK">(Op.getContext(),
+                                                         CurrentAttributes);
+          Attrs.set(I, "clift.attributes", New);
         }
       } else {
         revng_abort("Invalid function prototype");
