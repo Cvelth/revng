@@ -14,30 +14,30 @@
 namespace revng::kinds {
 
 inline pipeline::SingleElementKind
-  NewModelHeader("model-header",
-                 Binary,
-                 revng::ranks::Binary,
-                 fat(revng::ranks::TypeDefinition,
-                     revng::ranks::StructField,
-                     revng::ranks::UnionField,
-                     revng::ranks::EnumEntry,
-                     revng::ranks::DynamicFunction,
-                     revng::ranks::Segment,
-                     revng::ranks::ArtificialStruct),
-                 { &Decompiled });
+  ModelHeader("model-header",
+              Binary,
+              revng::ranks::Binary,
+              fat(revng::ranks::TypeDefinition,
+                  revng::ranks::StructField,
+                  revng::ranks::UnionField,
+                  revng::ranks::EnumEntry,
+                  revng::ranks::DynamicFunction,
+                  revng::ranks::Segment,
+                  revng::ranks::ArtificialStruct),
+              { &Decompiled });
 
 inline pipeline::SingleElementKind
-  NewHelperHeader("helper-header",
-                  Binary,
-                  revng::ranks::Binary,
-                  fat(/* TODO: add location ranks */),
-                  {});
+  HelperHeader("helper-header",
+               Binary,
+               revng::ranks::Binary,
+               fat(/* TODO: add location ranks */),
+               {});
 
-inline TypeKind NewTypeDefinition("new-type-definitions",
-                                  NewModelHeader,
-                                  ranks::TypeDefinition,
-                                  {},
-                                  {});
+inline TypeKind ModelTypeDefinition("type-definitions",
+                                    ModelHeader,
+                                    ranks::TypeDefinition,
+                                    {},
+                                    {});
 
 } // namespace revng::kinds
 
@@ -49,7 +49,7 @@ inline constexpr char HelperHeaderName[] = "helper-header";
 inline constexpr char HeaderMIMEType[] = "text/x.h+ptml";
 inline constexpr char HeaderSuffix[] = ".h";
 
-inline constexpr char TypeDefinitionName[] = "new-type-definitions";
+inline constexpr char TypeDefinitionName[] = "type-definitions";
 inline constexpr char TypeDefinitionMime[] = "text/x.c+tar+gz";
 inline constexpr char TypeDefinitionExtension[] = ".c";
 
@@ -66,13 +66,13 @@ using RegisterDCC = pipeline::RegisterDefaultConstructibleContainer<T>;
 
 } // namespace detail
 
-using ModelHeaderContainer = detail::SBF<&revng::kinds::NewModelHeader,
+using ModelHeaderContainer = detail::SBF<&revng::kinds::ModelHeader,
                                          detail::ModelHeaderName,
                                          detail::HeaderMIMEType,
                                          detail::HeaderSuffix>;
 inline detail::RegisterDCC<ModelHeaderContainer> RegisteredMHC;
 
-using HelperHeaderContainer = detail::SBF<&revng::kinds::NewHelperHeader,
+using HelperHeaderContainer = detail::SBF<&revng::kinds::HelperHeader,
                                           detail::HelperHeaderName,
                                           detail::HeaderMIMEType,
                                           detail::HeaderSuffix>;

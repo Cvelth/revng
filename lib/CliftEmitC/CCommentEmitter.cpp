@@ -15,6 +15,7 @@ void CCE::emitFunctionComment(mlir::clift::FunctionOp Function) {
                                   Function.getHandle());
 
   // Function comment
+  dbg << Function.getFunctionType().getComment().str();
   emitDoxygenComment(Function.getFunctionType().getComment());
 
   // `\param` comments

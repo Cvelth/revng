@@ -13,7 +13,7 @@ namespace revng::pipes {
 
 inline constexpr char HelpersHeaderFactoryMIMEType[] = "text/x.c+ptml";
 inline constexpr char HelpersHeaderFactorySuffix[] = ".h";
-inline constexpr char HelpersHeaderFactoryName[] = "helpers-header";
+inline constexpr char HelpersHeaderFactoryName[] = "legacy-helpers-header";
 using HelpersHeaderFileContainer = FileContainer<&kinds::HelpersHeader,
                                                  HelpersHeaderFactoryName,
                                                  HelpersHeaderFactoryMIMEType,
