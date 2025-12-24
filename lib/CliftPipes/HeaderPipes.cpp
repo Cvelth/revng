@@ -95,7 +95,7 @@ public:
 
     return { ContractGroup({ Contract(CliftModule,
                                       0,
-                                      NewModelHeader,
+                                      ModelHeader,
                                       1,
                                       InputPreservation::Preserve) }) };
   }
@@ -121,7 +121,7 @@ public:
 
     return { ContractGroup({ Contract(CliftFunction,
                                       0,
-                                      NewHelperHeader,
+                                      HelperHeader,
                                       1,
                                       InputPreservation::Preserve) }) };
   }

@@ -24,6 +24,8 @@ static constexpr auto Keyword = "doxygen.keyword";
 
 } // namespace ptml::tokens
 
+namespace ptml {
+
 struct Attribute {
   std::string Name;
   std::string Value;
@@ -98,30 +100,27 @@ struct CommentEmitterImpl {
   size_t WrapAt;
 
 public:
-  void emit(llvm::SmallVector<DoxygenLine, 16> &&Lines) {
-    for (DoxygenLine &&Line : as_rvalue(Lines)) {
-      auto &&[ResultLine, CurrentSize] = line();
+  void emit(DoxygenLine &&Line) {
+    auto &&[ResultLine, CurrentSize] = line();
 
-      if (Line.Tags.empty())
-        emitLine(std::move(ResultLine));
+    if (Line.Tags.empty())
+      emitLine(std::move(ResultLine));
 
-      bool WereTagsEmittedSinceLastBreak = false;
-      for (auto Iterator = Line->begin(); Iterator != Line->end(); ++Iterator) {
-        emitToken(*Iterator,
-                  Line.InternalIndentation,
-                  ResultLine,
-                  CurrentSize,
-                  WereTagsEmittedSinceLastBreak);
-      }
-
-      if (WereTagsEmittedSinceLastBreak)
-        emitLine(std::move(ResultLine));
+    bool WereTagsEmittedSinceLastBreak = false;
+    for (auto Iterator = Line->begin(); Iterator != Line->end(); ++Iterator) {
+      emitToken(*Iterator,
+                Line.InternalIndentation,
+                ResultLine,
+                CurrentSize,
+                WereTagsEmittedSinceLastBreak);
     }
+
+    if (WereTagsEmittedSinceLastBreak)
+      emitLine(std::move(ResultLine));
   }
 
   void emit(DoxygenToken Token) {
-    DoxygenLine Line{ .Tags = { std::move(Token) }, .InternalIndentation = 0 };
-    emit({ std::move(Line) });
+    emit(DoxygenLine{ .Tags = { std::move(Token) }, .InternalIndentation = 0 });
   }
 
   void emit(const llvm::Twine &Text) {
@@ -338,3 +337,5 @@ void CCE::emitDoxygenLineImpl(llvm::StringRef Keyword,
 
   Line->emplace_back(DoxygenToken::Types::Untagged, Content.str());
 }
+
+} // namespace ptml
