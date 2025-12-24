@@ -218,6 +218,7 @@ def Clift_TypedefType
 
   let extraClassDeclaration = [{
     static constexpr llvm::StringRef NameAttrKey = TypedefAttr::NameAttrKey;
+    static constexpr llvm::StringRef CommentAttrKey = TypedefAttr::CommentAttrKey;
 
     // AliasableType
     bool getAlias(llvm::raw_ostream &OS) const;
@@ -257,6 +258,7 @@ def Clift_FunctionType
 
   let parameters = (ins StringRefParameter<>:$handle,
                         "mlir::clift::MutableStringAttr":$mutable_name,
+                        "mlir::clift::MutableStringAttr":$mutable_comment,
                         "mlir::Type":$return_type,
                         OptionalArrayRefParameter<"mlir::Type">:$argument_types,
                         OptionalParameter<"mlir::ArrayAttr">:$attributes);
@@ -264,12 +266,14 @@ def Clift_FunctionType
   let builders = [
     TypeBuilder<(ins "llvm::StringRef":$Handle,
                      "mlir::clift::MutableStringAttr":$Name,
+                     "mlir::clift::MutableStringAttr":$Comment,
                      "mlir::clift::ValueType":$ReturnType,
                      "llvm::ArrayRef<mlir::clift::ValueType>":$ArgumentTypes,
                      "mlir::ArrayAttr":$Attributes), [{
       return $_get($_ctxt,
                    Handle,
                    Name,
+                   Comment,
                    ReturnType,
                    llvm::SmallVector<mlir::Type, 16>(ArgumentTypes),
                    Attributes);
@@ -277,10 +281,15 @@ def Clift_FunctionType
   ];
 
   let extraClassDeclaration = [{
-    static constexpr llvm::StringRef NameAttrKey = "Function";
+    static constexpr llvm::StringRef NameAttrKey = "function-name";
+    static constexpr llvm::StringRef CommentAttrKey = "function-comment";
 
     llvm::StringRef getName() const {
       return getMutableName().getValue();
+    }
+
+    llvm::StringRef getComment() const {
+      return getMutableComment().getValue();
     }
 
     // AliasableType
@@ -325,6 +334,7 @@ class Clift_ClassTypeBase<string name, string mnemonic>
     using DefinitionAttrType = }] # name # [{Attr;
 
     static constexpr llvm::StringRef NameAttrKey = DefinitionAttrType::NameAttrKey;
+    static constexpr llvm::StringRef CommentAttrKey = DefinitionAttrType::CommentAttrKey;
 
     bool isComplete() const {
       return getDefinition().hasDefinition();
