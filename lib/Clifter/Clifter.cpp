@@ -341,7 +341,8 @@ private:
                              Handle,
                              makeNameAttr<FunctionType>(Context, Handle),
                              ReturnType,
-                             ParameterTypes);
+                             ParameterTypes,
+                             mlir::ArrayAttr::get(Context, {}));
   }
 
   // Import a Clift function type from an LLVM function, using the name of the
@@ -585,7 +586,9 @@ private:
                                                  Handle,
                                                  NameAttr,
                                                  ReturnType,
-                                                 ParameterTypes);
+                                                 ParameterTypes,
+                                                 mlir::ArrayAttr::get(Context,
+                                                                      {}));
 
     return emitHelperCall(Loc,
                           getHelperFunction(HelperName, FunctionType),
