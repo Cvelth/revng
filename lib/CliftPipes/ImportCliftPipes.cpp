@@ -53,16 +53,13 @@ clift::FunctionOp emitModelFunctionDeclaration(const FunctionT &MF,
     return Context->getDiagEngine().emit(mlir::UnknownLoc::get(Context),
                                          mlir::DiagnosticSeverity::Error);
   };
-  auto GetModelPrototype = [&MF, &Binary] {
-    if (auto *Result = MF.prototype())
-      return *Result;
 
-    revng_check(Binary.defaultPrototype());
-    return *Binary.defaultPrototype();
-  };
+  auto ModelPrototype = Binary.prototypeOrDefault(MF.prototype());
+  revng_check(ModelPrototype);
+
   auto CliftType = mlir::clift::importModelType(EmitError,
                                                 *Module.getContext(),
-                                                GetModelPrototype());
+                                                *ModelPrototype);
   auto Prototype = mlir::cast<mlir::clift::FunctionType>(CliftType);
 
   // NOTE: neither debug information nor name matter for the users of this.
