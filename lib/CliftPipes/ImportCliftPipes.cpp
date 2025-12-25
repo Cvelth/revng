@@ -82,10 +82,20 @@ importSegmentDeclaration(const model::Segment &Segment,
     return Context->getDiagEngine().emit(mlir::UnknownLoc::get(Context),
                                          mlir::DiagnosticSeverity::Error);
   };
-  auto Type = mlir::clift::importModelType(EmitError,
-                                           *Module.getContext(),
-                                           *Segment.type());
-  auto StructType = mlir::cast<mlir::clift::StructType>(Type);
+
+  mlir::clift::ValueType SegmentType;
+  if (const model::StructDefinition *SegmentStruct = Segment.type()) {
+    SegmentType = mlir::clift::importModelType(EmitError,
+                                               *Module.getContext(),
+                                               *SegmentStruct);
+
+  } else {
+    static constexpr auto Unsigned = mlir::clift::PrimitiveKind::UnsignedKind;
+    auto Char = mlir::clift::PrimitiveType::get(Module.getContext(),
+                                                Unsigned,
+                                                1);
+    SegmentType = mlir::clift::ArrayType::get(Char, Segment.VirtualSize());
+  }
 
   // NOTE: neither debug information nor name matter for the users of this.
   std::string Handle = pipeline::locationString(revng::ranks::Segment,
@@ -95,7 +105,7 @@ importSegmentDeclaration(const model::Segment &Segment,
                                                UnknownLocation,
                                                toString(Segment.key()),
                                                Handle,
-                                               StructType);
+                                               SegmentType);
 }
 
 //
