@@ -126,6 +126,8 @@ public:
   void run(pipeline::ExecutionContext &EC,
            const revng::pipes::BinaryFileContainer &,
            revng::pipes::CliftContainer &CliftContainer) {
+    CliftContainer.getContext()->loadDialect<clift::CliftDialect>();
+
     importModelTypes(*revng::getModelFromContext(EC),
                      CliftContainer.getModule());
 
@@ -147,6 +149,8 @@ public:
 
   void run(pipeline::ExecutionContext &EC,
            revng::pipes::CliftContainer &CliftContainer) {
+    CliftContainer.getContext()->loadDialect<clift::CliftDialect>();
+
     const model::Binary &Binary = *revng::getModelFromContext(EC);
     for (const auto &ModelFunction : Binary.Functions()) {
       emitModelFunctionDeclaration(ModelFunction,
@@ -180,6 +184,8 @@ public:
 
   void run(pipeline::ExecutionContext &EC,
            revng::pipes::CliftContainer &CliftContainer) {
+    CliftContainer.getContext()->loadDialect<clift::CliftDialect>();
+
     const model::Binary &Model = *revng::getModelFromContext(EC);
     mlir::ModuleOp Module = CliftContainer.getModule();
 
@@ -199,10 +205,14 @@ static pipeline::RegisterPipe<ImportSegmentDeclarations> A;
 namespace revng::pypeline::piperuns {
 
 void ImportCliftTypes::run() {
+  Output.getContext().loadDialect<clift::CliftDialect>();
+
   importModelTypes(Binary, Output.getModule());
 }
 
 void ImportCliftFunctionDeclarations::run() {
+  Module.getContext().loadDialect<clift::CliftDialect>();
+
   for (const auto &ModelFunction : Binary.Functions()) {
     emitModelFunctionDeclaration(ModelFunction,
                                  revng::ranks::Function,
@@ -219,6 +229,8 @@ void ImportCliftFunctionDeclarations::run() {
 }
 
 void ImportCliftSegmentDeclarations::run() {
+  Module.getContext().loadDialect<clift::CliftDialect>();
+
   for (const auto &Segment : Binary.Segments())
     importSegmentDeclaration(Segment, Module.getModule(), Binary);
 }
