@@ -553,7 +553,7 @@ private:
     if (const auto It = Cache.find(ModelType.ID()); It != Cache.end())
       rc_return It->second;
 
-    if (not ModelType.verify(true)) {
+    if (not ModelType.verify()) {
       if (EmitError)
         EmitError() << "Invalid model type definition";
 
