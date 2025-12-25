@@ -251,7 +251,8 @@ private:
     auto Attr = make<clift::StructAttr>(llvm::StringRef(Handle),
                                         NameAttr,
                                         Offset,
-                                        llvm::ArrayRef(Fields));
+                                        llvm::ArrayRef(Fields),
+                                        mlir::ArrayAttr::get(Context, {}));
 
     if (not Attr)
       rc_return nullptr;
@@ -373,7 +374,8 @@ private:
     auto Attr = make<clift::StructAttr>(llvm::StringRef(Handle),
                                         NameAttr,
                                         ModelType.Size(),
-                                        llvm::ArrayRef(Fields));
+                                        llvm::ArrayRef(Fields),
+                                        mlir::ArrayAttr::get(Context, {}));
 
     if (not Attr)
       rc_return nullptr;
@@ -459,7 +461,8 @@ private:
     auto NameAttr = makeNameAttr<clift::UnionAttr>(Handle);
     auto Attr = make<clift::UnionAttr>(llvm::StringRef(Handle),
                                        NameAttr,
-                                       llvm::ArrayRef(Fields));
+                                       llvm::ArrayRef(Fields),
+                                       mlir::ArrayAttr::get(Context, {}));
 
     rc_return clift::UnionType::get(Attr);
   }

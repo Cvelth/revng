@@ -819,6 +819,10 @@ static TypeT parseClassType(mlir::AsmParser &Parser) {
         .failed())
     return {};
 
+  mlir::ArrayAttr Attributes;
+  if (not Parser.parseOptionalAttribute(Attributes).has_value())
+    Attributes = mlir::ArrayAttr::get(Parser.getContext(), {});
+
   if (Parser.parseGreater().failed())
     return {};
 
@@ -829,7 +833,8 @@ static TypeT parseClassType(mlir::AsmParser &Parser) {
                                   llvm::StringRef(Handle),
                                   NameAttr,
                                   Args...,
-                                  llvm::ArrayRef(Fields));
+                                  llvm::ArrayRef(Fields),
+                                  Attributes);
 
     if (not Attr)
       return {};
@@ -900,7 +905,12 @@ static void printClassType(TypeT Type, mlir::AsmPrinter &Printer) {
     }
     Printer << '\n';
   }
-  Printer << "}>";
+  Printer << "}";
+
+  if (not Type.getDefinition().getAttributes().empty())
+    Printer.printAttribute(Type.getDefinition().getAttributes());
+
+  Printer << ">";
 }
 
 template<typename AttrT>
@@ -1056,6 +1066,10 @@ static TypeT readClassDefinition(mlir::DialectBytecodeReader &Reader) {
   if (Reader.readList(Fields, ReadField).failed())
     return {};
 
+  mlir::ArrayAttr Attributes;
+  if (Reader.readAttribute(Attributes).failed())
+    Attributes = mlir::ArrayAttr::get(Reader.getContext(), {});
+
   auto GetCompleteType = [&](const auto &...Args) -> TypeT {
     auto NameAttr = makeNameAttr<AttrT>(Reader.getContext(), Handle, Name);
     auto Attr = AttrT::getChecked(getEmitError(Reader),
@@ -1063,7 +1077,8 @@ static TypeT readClassDefinition(mlir::DialectBytecodeReader &Reader) {
                                   llvm::StringRef(Handle),
                                   NameAttr,
                                   Args...,
-                                  llvm::ArrayRef(Fields));
+                                  llvm::ArrayRef(Fields),
+                                  Attributes);
 
     if (not Attr)
       return {};
@@ -1100,6 +1115,9 @@ writeClassDefinition(TypeT Type, mlir::DialectBytecodeWriter &Writer) {
 
     Writer.writeType(Field.getType());
   });
+
+  revng_assert(Type.getAttributes());
+  Writer.writeAttribute(Type.getAttributes());
 }
 
 //===----------------------------- StructType -----------------------------===//
