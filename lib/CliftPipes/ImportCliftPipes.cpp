@@ -36,6 +36,8 @@ public:
   void run(pipeline::ExecutionContext &EC,
            const revng::pipes::BinaryFileContainer &,
            revng::pipes::CliftContainer &CliftContainer) {
+    CliftContainer.getContext()->loadDialect<clift::CliftDialect>();
+
     mlir::clift::importAllModelTypes(*revng::getModelFromContext(EC),
                                      CliftContainer.getModule());
 
@@ -57,6 +59,8 @@ public:
 
   void run(pipeline::ExecutionContext &EC,
            revng::pipes::CliftContainer &CliftContainer) {
+    CliftContainer.getContext()->loadDialect<clift::CliftDialect>();
+
     const model::Binary &Binary = *revng::getModelFromContext(EC);
     mlir::clift::importAllModelFunctionDeclarations(Binary,
                                                     CliftContainer.getModule());
@@ -79,6 +83,8 @@ public:
 
   void run(pipeline::ExecutionContext &EC,
            revng::pipes::CliftContainer &CliftContainer) {
+    CliftContainer.getContext()->loadDialect<clift::CliftDialect>();
+
     const model::Binary &Binary = *revng::getModelFromContext(EC);
     mlir::clift::importAllModelSegmentDeclarations(Binary,
                                                    CliftContainer.getModule());
