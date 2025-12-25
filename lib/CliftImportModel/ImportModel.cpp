@@ -61,7 +61,6 @@ class CliftConverter {
 
 public:
   explicit CliftConverter(mlir::MLIRContext &Context,
-                          const model::Binary &Binary,
                           llvm::function_ref<mlir::InFlightDiagnostic()>
                             EmitError) :
     Context(&Context), EmitError(EmitError) {}
@@ -554,7 +553,7 @@ private:
     if (const auto It = Cache.find(ModelType.ID()); It != Cache.end())
       rc_return It->second;
 
-    if (not ModelType.verify()) {
+    if (not ModelType.verify(true)) {
       if (EmitError)
         EmitError() << "Invalid model type definition";
 
@@ -637,18 +636,15 @@ private:
 clift::ValueType
 clift::importModelType(llvm::function_ref<mlir::InFlightDiagnostic()> EmitError,
                        mlir::MLIRContext &Context,
-                       const model::TypeDefinition &ModelType,
-                       const model::Binary &Binary) {
-  return CliftConverter(Context, Binary, EmitError)
-    .convertTypeDefinition(ModelType);
+                       const model::TypeDefinition &ModelType) {
+  return CliftConverter(Context, EmitError).convertTypeDefinition(ModelType);
 }
 
 clift::ValueType
 clift::importModelType(llvm::function_ref<mlir::InFlightDiagnostic()> EmitError,
                        mlir::MLIRContext &Context,
-                       const model::Type &ModelType,
-                       const model::Binary &Binary) {
-  return CliftConverter(Context, Binary, EmitError).convertType(ModelType);
+                       const model::Type &ModelType) {
+  return CliftConverter(Context, EmitError).convertType(ModelType);
 }
 
 clift::FunctionOp

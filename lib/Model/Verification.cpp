@@ -588,6 +588,9 @@ static RecursiveCoroutine<bool> verifyImpl(VerifyHelper &VH,
                                            const CABIFunctionDefinition &T) {
   revng_assert(T.Kind() == model::TypeDefinitionKind::CABIFunctionDefinition);
 
+  dbg << toString(T.key()) << '\n';
+  dbg << toString(T) << '\n';
+
   if (not model::ABI::isValid(T.ABI()))
     rc_return VH.fail("Every C-ABI function must have a valid ABI.", T);
 
