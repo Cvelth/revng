@@ -210,7 +210,11 @@ private:
 
 public:
   CliftModuleContainer() :
-    Context(std::in_place_t{}, MLIRDialectRegistry, Threading) {}
+    Context(std::in_place_t{}, MLIRDialectRegistry, Threading),
+    Module(mlir::ModuleOp::create(mlir::UnknownLoc::get(&Context.value()))) {
+
+    mlir::clift::setModuleAttr(Module.get());
+  }
 
 public:
   std::set<ObjectID> objects() const {
