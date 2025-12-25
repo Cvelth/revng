@@ -1066,11 +1066,11 @@ getCalledFunctions(const llvm::Function &Function,
                      &CalledFunctions,
                    const std::set<const llvm::Function *> &ToIgnore) {
   if (CalledFunctions.contains(&Function))
-    co_return &CalledFunctions[&Function];
+    rc_return &CalledFunctions[&Function];
 
   if (Function.isDeclaration()) {
     CalledFunctions[&Function] = {};
-    co_return &CalledFunctions[&Function];
+    rc_return &CalledFunctions[&Function];
   }
 
   DenseFunctionSet Result;
@@ -1086,7 +1086,7 @@ getCalledFunctions(const llvm::Function &Function,
         continue;
 
       Result.insert(CalledFunction);
-      auto *FunctionResult = co_await getCalledFunctions(*CalledFunction,
+      auto *FunctionResult = rc_recur getCalledFunctions(*CalledFunction,
                                                          CalledFunctions,
                                                          ToIgnore);
       Result.insert(FunctionResult->begin(), FunctionResult->end());
@@ -1094,7 +1094,7 @@ getCalledFunctions(const llvm::Function &Function,
   }
 
   CalledFunctions[&Function] = Result;
-  co_return &CalledFunctions[&Function];
+  rc_return &CalledFunctions[&Function];
 }
 
 const DenseFunctionSet &
