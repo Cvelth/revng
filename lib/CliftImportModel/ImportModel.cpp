@@ -656,7 +656,9 @@ clift::importFunctionDeclaration(mlir::ModuleOp Module,
                                  mlir::Location DebugLocation,
                                  llvm::StringRef Name,
                                  llvm::StringRef Handle,
-                                 clift::FunctionType Prototype) {
+                                 clift::FunctionType Prototype,
+                                 const model::Function::TypeOfAttributes
+                                   &Attributes) {
   mlir::OpBuilder Builder(Module.getContext());
   mlir::OpBuilder::InsertionGuard Guard(Builder);
   Builder.setInsertionPointToEnd(Module.getBody());
@@ -665,6 +667,29 @@ clift::importFunctionDeclaration(mlir::ModuleOp Module,
                                                   Name,
                                                   Prototype);
   Result.setHandle(Handle);
+
+  llvm::SmallVector<mlir::Attribute, 4> Attrs;
+  for (model::FunctionAttribute::Values Attribute : Attributes) {
+    // TODO: we might want to express some of these through existing clift
+    //       attributes.
+    switch (Attribute) {
+    case model::FunctionAttribute::NoReturn:
+      Attrs.emplace_back(mlir::clift::setAttribute<"_Noreturn",
+                                                   false>(Module.getContext()));
+      break;
+
+    case model::FunctionAttribute::Inline:
+      Attrs.emplace_back(mlir::clift::setAttribute<"inline",
+                                                   false>(Module.getContext()));
+      break;
+
+    default:
+      revng_abort("Unsupported model::FunctionAttribute");
+    }
+  }
+
+  Result->setAttr("clift.attributes",
+                  mlir::ArrayAttr::get(Module.getContext(), Attrs));
 
   return Result;
 }
