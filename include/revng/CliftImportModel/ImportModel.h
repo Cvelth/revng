@@ -50,6 +50,6 @@ GlobalVariableOp importSegmentDeclaration(mlir::ModuleOp Module,
                                           mlir::Location DebugLocation,
                                           llvm::StringRef Name,
                                           llvm::StringRef Handle,
-                                          clift::StructType Type);
+                                          clift::ValueType Type);
 
 } // namespace mlir::clift
