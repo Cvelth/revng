@@ -314,7 +314,8 @@ private:
                                                                Handle,
                                                                Name),
                                       Offset,
-                                      Fields);
+                                      Fields,
+                                      mlir::ArrayAttr::get(Context, {}));
 
     return StructType::get(Context, Definition);
   }

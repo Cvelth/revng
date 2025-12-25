@@ -10,6 +10,7 @@
 #include "llvm/ADT/TypeSwitch.h"
 
 #include "mlir/IR/Builders.h"
+#include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/DialectImplementation.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OpImplementation.h"
@@ -187,7 +188,8 @@ public:
 
     TheKey.Definition.emplace(Definition.Name,
                               Definition.Size,
-                              Allocator.copyInto(Definition.Fields));
+                              Allocator.copyInto(Definition.Fields),
+                              Definition.getAttributes());
 
     return mlir::success();
   }
@@ -574,7 +576,8 @@ mlir::LogicalResult StructAttr::verify(EmitErrorType EmitError,
                                        llvm::StringRef Handle,
                                        MutableStringAttr Name,
                                        uint64_t Size,
-                                       llvm::ArrayRef<FieldAttr> Fields) {
+                                       llvm::ArrayRef<FieldAttr> Fields,
+                                       mlir::ArrayAttr Attributes) {
   return mlir::success();
 }
 
@@ -607,6 +610,14 @@ StructAttr::verifyDefinition(EmitErrorType EmitError) const {
       return EmitError() << "offset + size of field of struct type is greater "
                             "than the struct type size.";
   }
+
+  revng_assert(Definition.getAttributes(), "DEBUG!");
+
+  if (not Definition.getAttributes())
+    return mlir::failure();
+  for (auto Attribute : Definition.getAttributes())
+    if (not mlir::isa<mlir::clift::AttributeAttr>(Attribute))
+      return mlir::failure();
 
   return mlir::success();
 }
@@ -643,8 +654,12 @@ StructAttr StructAttr::get(MLIRContext *Context,
                            llvm::StringRef Handle,
                            MutableStringAttr Name,
                            uint64_t Size,
-                           llvm::ArrayRef<FieldAttr> Fields) {
-  return get(Context, Handle, ClassDefinition{ Name, Size, Fields });
+                           llvm::ArrayRef<FieldAttr> Fields,
+                           mlir::ArrayAttr Attributes) {
+  revng_assert(Attributes);
+  return get(Context,
+             Handle,
+             ClassDefinition{ Name, Size, Fields, Attributes });
 }
 
 StructAttr StructAttr::getChecked(EmitErrorType EmitError,
@@ -652,11 +667,13 @@ StructAttr StructAttr::getChecked(EmitErrorType EmitError,
                                   llvm::StringRef Handle,
                                   MutableStringAttr Name,
                                   uint64_t Size,
-                                  llvm::ArrayRef<FieldAttr> Fields) {
+                                  llvm::ArrayRef<FieldAttr> Fields,
+                                  mlir::ArrayAttr Attributes) {
+  revng_assert(Attributes);
   return getChecked(EmitError,
                     Context,
                     Handle,
-                    ClassDefinition{ Name, Size, Fields });
+                    ClassDefinition{ Name, Size, Fields, Attributes });
 }
 
 //===------------------------------ UnionAttr -----------------------------===//
@@ -682,7 +699,8 @@ mlir::LogicalResult UnionAttr::verify(EmitErrorType EmitError,
 mlir::LogicalResult UnionAttr::verify(EmitErrorType EmitError,
                                       llvm::StringRef Handle,
                                       MutableStringAttr Name,
-                                      llvm::ArrayRef<FieldAttr> Fields) {
+                                      llvm::ArrayRef<FieldAttr> Fields,
+                                      mlir::ArrayAttr Attributes) {
   return mlir::success();
 }
 
@@ -702,6 +720,12 @@ mlir::LogicalResult UnionAttr::verifyDefinition(EmitErrorType EmitError) const {
         return EmitError() << "union field names must be empty or unique";
     }
   }
+
+  if (not Definition.getAttributes())
+    return mlir::failure();
+  for (auto Attribute : Definition.getAttributes())
+    if (not mlir::isa<mlir::clift::AttributeAttr>(Attribute))
+      return mlir::failure();
 
   return mlir::success();
 }
@@ -737,19 +761,21 @@ UnionAttr UnionAttr::getChecked(EmitErrorType EmitError,
 UnionAttr UnionAttr::get(MLIRContext *Context,
                          llvm::StringRef Handle,
                          MutableStringAttr Name,
-                         llvm::ArrayRef<FieldAttr> Fields) {
-  return get(Context, Handle, ClassDefinition{ Name, 0, Fields });
+                         llvm::ArrayRef<FieldAttr> Fields,
+                         mlir::ArrayAttr Attributes) {
+  return get(Context, Handle, ClassDefinition{ Name, 0, Fields, Attributes });
 }
 
 UnionAttr UnionAttr::getChecked(EmitErrorType EmitError,
                                 MLIRContext *Context,
                                 llvm::StringRef Handle,
                                 MutableStringAttr Name,
-                                llvm::ArrayRef<FieldAttr> Fields) {
+                                llvm::ArrayRef<FieldAttr> Fields,
+                                mlir::ArrayAttr Attributes) {
   return getChecked(EmitError,
                     Context,
                     Handle,
-                    ClassDefinition{ Name, 0, Fields });
+                    ClassDefinition{ Name, 0, Fields, Attributes });
 }
 
 uint64_t UnionAttr::getSize() const {
