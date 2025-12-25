@@ -51,7 +51,10 @@ public:
   using CEmitter::CEmitter;
 
   llvm::StringRef getStringAttr(mlir::Operation *Op, llvm::StringRef Name) {
-    return mlir::cast<mlir::StringAttr>(Op->getAttr(Name)).getValue();
+    if (auto Attribute = Op->getAttr(Name))
+      return mlir::cast<mlir::StringAttr>(Attribute).getValue();
+    else
+      return llvm::StringRef{};
   }
 
   llvm::StringRef getNameAttr(mlir::Operation *Op) {
