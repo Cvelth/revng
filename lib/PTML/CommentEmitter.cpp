@@ -233,6 +233,7 @@ private:
 
   void emitLine(DoxygenLine &&Line) {
     auto Guard = PTML.initializeOpenTag(ptml::tags::Div);
+    Guard.finalizeOpenTag();
 
     revng_assert(!Line.Tags.empty());
     for (DoxygenToken &Tag : Line.Tags)
