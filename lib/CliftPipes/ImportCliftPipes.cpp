@@ -35,10 +35,7 @@ static void importModelTypes(const model::Binary &Model,
 
   llvm::SmallVector<mlir::Attribute> TypeAttrs;
   for (const auto &ModelType : Model.TypeDefinitions()) {
-    auto CliftType = clift::importModelType(EmitError,
-                                            *Context,
-                                            *ModelType,
-                                            Model);
+    auto CliftType = clift::importModelType(EmitError, *Context, *ModelType);
 
     TypeAttrs.push_back(mlir::TypeAttr::get(CliftType));
   }
@@ -62,8 +59,7 @@ clift::FunctionOp emitModelFunctionDeclaration(const FunctionT &MF,
 
   auto CliftType = mlir::clift::importModelType(EmitError,
                                                 *Module.getContext(),
-                                                *ModelPrototype,
-                                                Binary);
+                                                *ModelPrototype);
   auto Prototype = mlir::cast<mlir::clift::FunctionType>(CliftType);
 
   // NOTE: neither debug information nor name matter for the users of this.
@@ -91,8 +87,7 @@ importSegmentDeclaration(const model::Segment &Segment,
   if (const model::StructDefinition *SegmentStruct = Segment.type()) {
     SegmentType = mlir::clift::importModelType(EmitError,
                                                *Module.getContext(),
-                                               *SegmentStruct,
-                                               Binary);
+                                               *SegmentStruct);
 
   } else {
     static constexpr auto Unsigned = mlir::clift::PrimitiveKind::UnsignedKind;
