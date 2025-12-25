@@ -514,9 +514,9 @@ private:
   }
 };
 
-class ImportModelNamesPipe {
+class ImportFunctionModelNamesPipe {
 public:
-  static constexpr auto Name = "import-model-names";
+  static constexpr auto Name = "import-function-model-names";
 
   std::array<pipeline::ContractGroup, 1> getContract() const {
     using namespace pipeline;
@@ -569,15 +569,48 @@ public:
   }
 };
 
-static pipeline::RegisterPipe<ImportModelNamesPipe> X;
+static pipeline::RegisterPipe<ImportFunctionModelNamesPipe> X;
+
+class ImportModelNamesPipe {
+public:
+  static constexpr auto Name = "import-model-names";
+
+  std::array<pipeline::ContractGroup, 1> getContract() const {
+    using namespace pipeline;
+    using namespace revng::kinds;
+
+    return { ContractGroup({ Contract(CliftModule,
+                                      0,
+                                      CliftModule,
+                                      0,
+                                      InputPreservation::Preserve) }) };
+  }
+
+  void run(pipeline::ExecutionContext &EC,
+           revng::pipes::CliftContainer &CliftContainer) {
+    mlir::ModuleOp Module = CliftContainer.getModule();
+    const model::Binary &Model = *revng::getModelFromContext(EC);
+
+    SymbolRenamer Symbols;
+    auto R = NameImporter::visit(Module, Model, Symbols);
+    revng_assert(R.succeeded());
+
+    Symbols.apply(Module);
+
+    EC.commitUniqueTarget(CliftContainer);
+  }
+};
+
+static pipeline::RegisterPipe<ImportModelNamesPipe> Y;
 
 } // namespace
 
 namespace revng::pypeline::piperuns {
 
-void ImportModelNames::runOnCliftFunction(const model::Function &Function,
-                                          mlir::clift::FunctionOp
-                                            MLIRFunction) {
+void ImportFunctionModelNames::runOnCliftFunction(const model::Function
+                                                    &Function,
+                                                  mlir::clift::FunctionOp
+                                                    MLIRFunction) {
   mlir::ModuleOp Module = MLIRFunction->getParentOfType<mlir::ModuleOp>();
   SymbolRenamer Symbols;
   for (mlir::Operation &Op : Module.getBody()->getOperations()) {
@@ -590,6 +623,14 @@ void ImportModelNames::runOnCliftFunction(const model::Function &Function,
     }
   }
   Symbols.apply(Module);
+}
+
+void ImportModelNames::run() {
+  SymbolRenamer Symbols;
+  auto R = NameImporter::visit(TypesAndGlobals.getModule(), Binary, Symbols);
+  revng_assert(R.succeeded());
+
+  Symbols.apply(TypesAndGlobals.getModule());
 }
 
 } // namespace revng::pypeline::piperuns
