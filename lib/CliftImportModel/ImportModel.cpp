@@ -9,6 +9,7 @@
 #include "revng/Clift/CliftAttributes.h"
 #include "revng/Clift/CliftDialect.h"
 #include "revng/Clift/CliftTypes.h"
+#include "revng/CliftImportModel/AttributeHelpers.h"
 #include "revng/CliftImportModel/ImportModel.h"
 #include "revng/Pipeline/Location.h"
 #include "revng/Pipes/Ranks.h"
@@ -251,7 +252,8 @@ private:
     auto Attr = make<clift::StructAttr>(llvm::StringRef(Handle),
                                         NameAttr,
                                         Offset,
-                                        llvm::ArrayRef(Fields));
+                                        llvm::ArrayRef(Fields),
+                                        mlir::ArrayAttr::get(Context, {}));
 
     if (not Attr)
       rc_return nullptr;
@@ -373,7 +375,8 @@ private:
     auto Attr = make<clift::StructAttr>(llvm::StringRef(Handle),
                                         NameAttr,
                                         ModelType.Size(),
-                                        llvm::ArrayRef(Fields));
+                                        llvm::ArrayRef(Fields),
+                                        mlir::ArrayAttr::get(Context, {}));
 
     if (not Attr)
       rc_return nullptr;
@@ -459,7 +462,8 @@ private:
     auto NameAttr = makeNameAttr<clift::UnionAttr>(Handle);
     auto Attr = make<clift::UnionAttr>(llvm::StringRef(Handle),
                                        NameAttr,
-                                       llvm::ArrayRef(Fields));
+                                       llvm::ArrayRef(Fields),
+                                       mlir::ArrayAttr::get(Context, {}));
 
     rc_return clift::UnionType::get(Attr);
   }
