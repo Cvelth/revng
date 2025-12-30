@@ -15,10 +15,11 @@
 
 namespace revng::pipes {
 
-class CliftContainer : public pipeline::Container<CliftContainer> {
+class CliftFunctionContainer
+  : public pipeline::Container<CliftFunctionContainer> {
 public:
   static const char ID;
-  static constexpr auto Name = "clift-module";
+  static constexpr auto Name = "clift-functions";
   static constexpr auto MIMEType = "application/x.mlir.bc";
 
 private:
@@ -27,8 +28,8 @@ private:
   mlir::OwningOpRef<mlir::ModuleOp> Module;
 
 public:
-  explicit CliftContainer(const llvm::StringRef Name) :
-    pipeline::Container<CliftContainer>(Name) {
+  explicit CliftFunctionContainer(const llvm::StringRef Name) :
+    pipeline::Container<CliftFunctionContainer>(Name) {
     clearImpl();
   }
 
@@ -39,7 +40,7 @@ public:
   std::unique_ptr<pipeline::ContainerBase>
   cloneFiltered(const pipeline::TargetsList &Targets) const override;
 
-  void mergeBackImpl(CliftContainer &&Container) override;
+  void mergeBackImpl(CliftFunctionContainer &&Container) override;
 
   pipeline::TargetsList enumerate() const override;
 
@@ -55,6 +56,60 @@ public:
 
   static std::vector<pipeline::Kind *> possibleKinds() {
     return { &kinds::CliftFunction };
+  }
+};
+
+class CliftContainer : public pipeline::Container<CliftContainer> {
+public:
+  static const char ID;
+  static constexpr auto Name = "clift-module";
+  static constexpr auto MIMEType = "application/x.mlir.bc";
+
+private:
+  // unique_ptr is used to allow moving the context.
+  std::unique_ptr<mlir::MLIRContext> Context;
+  mlir::OwningOpRef<mlir::ModuleOp> Module;
+
+public:
+  explicit CliftContainer(const llvm::StringRef Name) :
+    pipeline::Container<CliftContainer>(Name) {
+    dbg << ">>> constructor\n";
+    clearImpl();
+  }
+
+  mlir::MLIRContext *getContext() const {
+    dbg << ">>> getContext\n"; return Context.get(); }
+  mlir::ModuleOp getModule() const {
+    dbg << ">>> getModule\n"; return *Module; }
+  void setModule(mlir::OwningOpRef<mlir::ModuleOp> &&NewModule) {
+    dbg << ">>> setModule\n";
+    Module = std::move(NewModule);
+  }
+
+  std::unique_ptr<pipeline::ContainerBase>
+  cloneFiltered(const pipeline::TargetsList &Targets) const override;
+
+  void mergeBackImpl(CliftContainer &&Container) override;
+
+  pipeline::TargetsList enumerate() const override;
+
+  bool removeImpl(const pipeline::TargetsList &Targets) override {
+    dbg << ">>> removeImpl\n";
+    clearImpl();
+    return true;
+  }
+
+  void clearImpl() override;
+
+  llvm::Error serialize(llvm::raw_ostream &OS) const override;
+  llvm::Error deserializeImpl(const llvm::MemoryBuffer &Buffer) override;
+
+  llvm::Error extractOne(llvm::raw_ostream &OS,
+                         const pipeline::Target &Target) const override;
+
+  static std::vector<pipeline::Kind *> possibleKinds() {
+    dbg << ">>> possibleKinds\n";
+    return { &kinds::CliftModule };
   }
 };
 

@@ -31,8 +31,8 @@ public:
 
   void run(pipeline::ExecutionContext &EC,
            const pipeline::LLVMContainer &LLVMContainer,
-           revng::pipes::CliftContainer &CliftContainer) {
-    CliftContainer.getContext()->loadDialect<clift::CliftDialect>();
+           revng::pipes::CliftFunctionContainer &CliftFunctionContainer) {
+    CliftFunctionContainer.getContext()->loadDialect<clift::CliftDialect>();
     auto const &Model = *revng::getModelFromContext(EC);
 
     model::CNameBuilder NameBuilder(Model);
@@ -45,10 +45,11 @@ public:
     // imported functions. The importer does some caching, but care is taken to
     // make sure that the pertinent model properties are queried within each
     // function import process regardless of caching.
-    auto Importer = clift::Clifter::make(CliftContainer.getModule(), Model);
+    auto Importer = clift::Clifter::make(CliftFunctionContainer.getModule(),
+                                         Model);
 
     for (const model::Function &Function :
-         revng::getFunctionsAndCommit(EC, CliftContainer.name())) {
+         revng::getFunctionsAndCommit(EC, CliftFunctionContainer.name())) {
       auto It = TargetToFunction.find(Function.Entry());
       revng_assert(It != TargetToFunction.end());
       Importer->import(It->second);

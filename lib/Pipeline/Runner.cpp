@@ -48,6 +48,7 @@ static Error getObjectives(Runner &Runner,
   ContainerToTargetsMap ToLoad = Targets;
   Step *CurrentStep = &(Runner[EndingStepName]);
   while (CurrentStep != nullptr and not ToLoad.empty()) {
+    dbg << "> " << CurrentStep->getName().str() << '\n';
     ContainerToTargetsMap Output = ToLoad;
     auto &&[Required,
             PipesExecutionEntries] = CurrentStep->analyzeGoals(ToLoad);
@@ -70,27 +71,29 @@ static Error getObjectives(Runner &Runner,
 
 static void explainPipeline(const ContainerToTargetsMap &Targets,
                             ArrayRef<PipelineExecutionEntry> Requirements) {
+  dbg << ">>> explainPipeline\n";
   if (Requirements.empty())
     return;
+  dbg << ">>> explainPipeline\n";
 
-  ExplanationLogger << "Requested targets:\n";
+  dbg << "Requested targets:\n";
   indent(ExplanationLogger, 1);
 
   if (Requirements.size() <= 1) {
-    ExplanationLogger << "Already satisfied\n";
+    dbg << "Already satisfied\n";
     return;
   }
 
-  ExplanationLogger << Requirements.back().ToExecute->getName() << ":\n";
+  dbg << Requirements.back().ToExecute->getName().str() << ":\n";
   prettyPrintStatus(Targets, ExplanationLogger, 2);
 
   ExplanationLogger << DoLog;
 
-  ExplanationLogger << "We need to have the following targets at the beginning "
+  dbg << "We need to have the following targets at the beginning "
                        "of the steps\n";
 
   indent(ExplanationLogger, 1);
-  ExplanationLogger << Requirements.back().ToExecute->getName() << ":\n";
+  dbg << Requirements.back().ToExecute->getName().str() << ":\n";
   prettyPrintStatus(Targets, ExplanationLogger, 2);
 
   for (size_t I = Requirements.size(); I != 0; I--) {
@@ -98,7 +101,7 @@ static void explainPipeline(const ContainerToTargetsMap &Targets,
     const ContainerToTargetsMap &TargetsNeeded = Requirements[I - 1].Input;
 
     indent(ExplanationLogger, 1);
-    ExplanationLogger << StepName << ":\n";
+    dbg << StepName.str() << ":\n";
     prettyPrintStatus(TargetsNeeded, ExplanationLogger, 2);
   }
 
@@ -353,6 +356,9 @@ Error Runner::run(llvm::StringRef EndingStepName,
       Error) {
     return Error;
   }
+
+  dbg << Targets.size() << '\n';
+  dbg << ToExec.size() << '\n';
 
   explainPipeline(Targets, ToExec);
 

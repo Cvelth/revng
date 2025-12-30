@@ -4,7 +4,6 @@
 
 #include "mlir/IR/BuiltinOps.h"
 
-#include "revng/Clift/ModuleVisitor.h"
 #include "revng/CliftEmitC/CEmitter.h"
 #include "revng/CliftEmitC/Headers.h"
 #include "revng/PTML/CTokenEmitter.h"

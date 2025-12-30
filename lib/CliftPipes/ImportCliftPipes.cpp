@@ -132,6 +132,8 @@ public:
                      CliftContainer.getModule());
 
     EC.commitUniqueTarget(CliftContainer);
+
+    CliftContainer.getModule().dump();
   }
 };
 

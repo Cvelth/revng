@@ -174,9 +174,12 @@ int main(int argc, char *argv[]) {
   }
 
   T.advance("Produce artifact", true);
+  dbg << "Produce artifact" << '\n';
 
   auto ContainerName = MaybeContainer->first();
   auto *Kind = Step.getArtifactsKind();
+
+  dbg << Kind->name().str() << '\n';
 
   if (ListArtifacts) {
     Manager.recalculateAllPossibleTargets();
@@ -201,6 +204,9 @@ int main(int argc, char *argv[]) {
       Map.add(ContainerName, RequestedTarget);
     }
   }
+
+  dbg << Map.size() << '\n';
+  dbg << Step.getName().str() << '\n';
   AbortOnError(Runner.run(Step.getName(), Map));
 
   AbortOnError(Manager.store());

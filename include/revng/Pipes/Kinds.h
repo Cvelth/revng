@@ -110,7 +110,7 @@ inline pipeline::SingleElementKind
 
 inline pipeline::SingleElementKind
   CliftModule("clift-module", ranks::Binary, {}, {});
-inline FunctionKind CliftFunction("clift-function", ranks::Function, {}, {});
+inline FunctionKind CliftFunction("clift-functions", ranks::Function, {}, {});
 
 inline pipeline::SingleElementKind DecompiledToC("decompiled-to-c",
                                                  Binary,

@@ -44,7 +44,7 @@ Containers:
   - Name: recompilable-archive.tar.gz
     Type: recompilable-archive
   - Name: functions.mlir
-    Type: clift-module
+    Type: clift-functions
   - Name: types-and-globals.mlir
     Type: clift-module
   - Name: model-type-definitions.tar.gz
@@ -520,7 +520,7 @@ Branches:
           - Type: helpers-to-header
             UsedContainers: [functions.bc.zstd, helpers.h]
           - Type: model-to-header
-            UsedContainers: [input, types-and-globals.h]
+            UsedContainers: [input, legacy-types-and-globals.h]
           - Type: decompile
             UsedContainers: [functions.bc.zstd, cfg.yml.tar.gz, decompiled.tar.gz]
         Artifacts:
@@ -573,7 +573,7 @@ Branches:
             It contains:
 
             - `functions.c`: the `decompile-to-single-file` artifact;
-            - `types-and-globals.h`: see the `emit-model-header` artifact;
+            - `legacy-types-and-globals.h`: see the `emit-model-header` artifact;
             - `helpers.h`: see the `emit-helpers-header` artifact;
             - `attributes.h`: an helper header file defining a set of
               annotations used by the decompiled C source files;
@@ -596,11 +596,11 @@ Branches:
       - Name: legacy-emit-model-header
         Pipes:
           - Type: model-to-header
-            UsedContainers: [input, types-and-globals.h]
+            UsedContainers: [input, legacy-types-and-globals.h]
         Artifacts:
-          Container: types-and-globals.h
+          Container: legacy-types-and-globals.h
           Kind: model-header
-          SingleTargetFilename: types-and-globals.h
+          SingleTargetFilename: legacy-types-and-globals.h
           Docs: |-
             This artifact contains all the declaration of types, functions and
             segments defined in the binary.
@@ -735,10 +735,24 @@ Branches:
         Pipes:
           - Type: import-clift-types
             UsedContainers: [input, types-and-globals.mlir]
-      - Name: emit-model-header
+        Artifacts:
+          Container: types-and-globals.mlir
+          Kind: clift-module
+          SingleTargetFilename: types-and-globals.mlir
+          Docs: |-
+            DEBUG
+      - Name: DEBUG
         Pipes:
           - Type: import-clift-function-declarations
             UsedContainers: [types-and-globals.mlir]
+        Artifacts:
+          Container: types-and-globals.mlir
+          Kind: clift-module
+          SingleTargetFilename: types-and-globals.mlir
+          Docs: |-
+            DEBUG
+      - Name: emit-model-header
+        Pipes:
           - Type: import-clift-segment-declarations
             UsedContainers: [types-and-globals.mlir]
           - Type: import-model-names

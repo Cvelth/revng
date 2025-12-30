@@ -8,6 +8,7 @@
 #include "llvm/Support/GraphWriter.h"
 
 #include "mlir/IR/BuiltinOps.h"
+#include "mlir/Support/LogicalResult.h"
 
 #include "revng/ADT/ScopedExchange.h"
 #include "revng/Clift/CliftTypeInterfaces.h"
@@ -63,24 +64,10 @@ public:
     // Import all the nodes
     mlir::clift::TypeDependencyGraph Result;
     for (mlir::ModuleOp Module : Modules) {
-      Module->walk([&Result](mlir::Operation *Op) {
-        if (auto Global = mlir::dyn_cast<mlir::clift::GlobalOpInterface>(Op)) {
-          namespace ranks = revng::ranks;
-          bool ShouldVisit = pipeline::locationFromString(ranks::Function,
-                                                          Global.getHandle())
-                               .has_value()
-                             or pipeline::locationFromString(ranks::Segment,
-                                                             Global.getHandle())
-                                  .has_value();
-          if constexpr (not ModelMode)
-            ShouldVisit = not ShouldVisit;
-
-          if (ShouldVisit) {
-            mlir::LogicalResult MaybeError = Base::visit(Global, Result);
-            revng_assert(MaybeError.succeeded());
-          }
-        }
-      });
+      Module.dump();
+      dbg << "Here 0.01\n";
+      mlir::LogicalResult MaybeError = Base::visit(Module, Result);
+      revng_assert(MaybeError.succeeded());
     }
 
     // And all the edges
@@ -95,6 +82,23 @@ public:
 
   /// The visitor implementation for the type system traversal
   mlir::LogicalResult visitType(mlir::Type Type);
+  mlir::LogicalResult visitAttribute(mlir::Attribute Attribute) {
+    dbg << "Here 0.1\n";
+    if (auto Type = mlir::dyn_cast<mlir::TypeAttr>(Attribute))
+      visitType(Type.getValue());
+
+    return mlir::success();
+  }
+  mlir::LogicalResult visitModuleLevelOp(mlir::Operation *Op) {
+    dbg << "Here 0.02\n";
+
+    return mlir::success();
+  }
+  mlir::LogicalResult visitNestedOp(mlir::Operation *Op) {
+    dbg << "Here 0.03\n";
+
+    return mlir::success();
+  }
 
 private:
   /// Add a declaration node and a definition node to Graph for \p Type.
@@ -302,21 +306,26 @@ void Builder<Mode>::addDependencies(mlir::clift::DefinedType Type,
 
 template<bool ModelMode>
 mlir::LogicalResult Builder<ModelMode>::visitType(mlir::Type T) {
+  dbg << "HERE 1\n";
   if (auto Type = mlir::dyn_cast<mlir::clift::DefinedType>(T)) {
     namespace rr = revng::ranks;
-    bool ShouldSkip = pipeline::genericLocationFromString(Type.getHandle(),
-                                                          rr::Binary,
-                                                          rr::HelperFunction,
-                                                          rr::HelperStructType)
-                        .has_value();
-    if constexpr (ModelMode)
-      ShouldSkip = !ShouldSkip;
+    bool ShouldVisit = pipeline::genericLocationFromString(Type.getHandle(),
+                                                           rr::Binary,
+                                                           rr::TypeDefinition,
+                                                           rr::PrimitiveType,
+                                                           rr::ArtificialStruct)
+                         .has_value();
+    if constexpr (not ModelMode)
+      ShouldVisit = !ShouldVisit;
 
-    if (not ShouldSkip)
+    dbg << Type.getHandle().str() << ": " << (ShouldVisit ? "yes" : "no")
+        << '\n';
+
+    if (ShouldVisit)
       if (auto TD = mlir::dyn_cast<mlir::clift::DefinedType>(Type))
         addNodes(TD);
 
-    if (ShouldSkip)
+    if (not ShouldVisit)
       revng_log(Log, "Skipping: " << Type.getHandle().str() << '\n');
   }
 
@@ -325,12 +334,13 @@ mlir::LogicalResult Builder<ModelMode>::visitType(mlir::Type T) {
 
 mlir::clift::TypeDependencyGraph
 mlir::clift::TypeDependencyGraph::makeModelGraph(mlir::ModuleOp Module) {
-  return Builder<false>::make({ Module });
+  dbg << "HERE 0\n";
+  return Builder<true>::make({ Module });
 }
 
 using TDG = mlir::clift::TypeDependencyGraph;
 TDG TDG::makeHelperGraph(const std::vector<mlir::ModuleOp> &Modules) {
-  return Builder<true>::make(Modules);
+  return Builder<false>::make(Modules);
 }
 
 void mlir::clift::TypeDependencyGraph::viewGraph() const {
