@@ -90,8 +90,19 @@ private:
     // determine if a given function type is the outermost type and should be
     // expanded.
     if (Declarator and Declarator->Kind == CTE::EntityKind::Function) {
-      if (auto Function = mlir::dyn_cast<FunctionType>(Type))
+      if (auto Function = mlir::dyn_cast<FunctionType>(Type)) {
+        Parent.emitAttributes(Function.getAttributes(),
+                              /* SpaceBefore = */ false,
+                              /* SpaceAfter = */ true);
+
+        if (Declarator) {
+          Parent.emitAttributes(Declarator->Attributes,
+                                /* SpaceBefore = */ false,
+                                /* SpaceAfter = */ true);
+        }
+
         OutermostFunctionType = Function;
+      }
     }
 
     {
@@ -301,8 +312,11 @@ private:
       }
     }
 
-    if (Declarator)
-      Parent.emitAttributes(Declarator->Attributes);
+    if (Declarator and not OutermostFunctionType) {
+      Parent.emitAttributes(Declarator->Attributes,
+                            /* SpaceBefore = */ true,
+                            /* SpaceAfter = */ false);
+    }
   }
 };
 
