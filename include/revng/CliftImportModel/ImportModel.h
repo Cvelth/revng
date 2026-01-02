@@ -67,4 +67,7 @@ void importModelInfo(const model::Function &Function,
                      const model::Binary &Model,
                      mlir::ModuleOp Module);
 
+std::pair<mlir::ModuleOp, std::unique_ptr<mlir::MLIRContext>>
+makeHeaderModule(const model::Binary &Model);
+
 } // namespace mlir::clift
