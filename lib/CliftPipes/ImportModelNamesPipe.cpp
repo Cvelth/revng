@@ -2,12 +2,15 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include <type_traits>
+
 #include "revng/Clift/Helpers.h"
 #include "revng/Clift/ModuleVisitor.h"
 #include "revng/CliftImportModel/AttributeHelpers.h"
 #include "revng/CliftPipes/CliftContainer.h"
 #include "revng/CliftPipes/ImportModelNamesPipe.h"
 #include "revng/Model/CABIFunctionDefinition.h"
+#include "revng/Model/Function.h"
 #include "revng/Model/NameBuilder.h"
 #include "revng/Pipeline/Location.h"
 #include "revng/Pipeline/RegisterPipe.h"
@@ -424,12 +427,12 @@ private:
   mlir::LogicalResult visitFunctionOp(clift::FunctionOp Op) {
     CurrentFunction.reset();
 
-    if (auto Pair = getModelFunction(Op.getHandle())) {
-      auto &[L, MF] = *Pair;
-
+    auto ProcessFunction = [this, &Op]<typename MFType>(auto L, MFType &&MF) {
       const auto *Type = Model.prototypeOrDefault(MF.prototype());
 
-      CurrentFunction.emplace(*this, std::move(L), MF);
+      if constexpr (std::same_as<std::decay_t<MFType>, model::Function>)
+        CurrentFunction.emplace(*this, std::move(L), MF);
+
       Symbols.record(Op, NameBuilder.name(MF));
 
       ArgumentAttributeMutator Attrs(Op);
@@ -490,12 +493,15 @@ private:
       }
 
       Attrs.commit();
+    };
 
+    if (auto Pair = getModelFunction(Op.getHandle())) {
+      ProcessFunction(Pair->Location, Pair->Object);
       return mlir::success();
     }
 
     if (auto Pair = getModelDynamicFunction(Op.getHandle())) {
-      Symbols.record(Op, NameBuilder.name(Pair->Object));
+      ProcessFunction(Pair->Location, Pair->Object);
       return mlir::success();
     }
 
