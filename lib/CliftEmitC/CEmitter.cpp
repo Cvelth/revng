@@ -357,7 +357,12 @@ bool CEmitter::isValidAttributeArray(mlir::ArrayAttr ArrayAttr) {
 mlir::ArrayAttr CEmitter::getDeclarationOpAttributes(mlir::Operation *Op) {
   if (auto Attr = Op->getAttr("clift.attributes")) {
     auto ArrayAttr = mlir::cast<mlir::ArrayAttr>(Attr);
-    revng_assert(isValidAttributeArray(ArrayAttr));
+
+    if (not isValidAttributeArray(ArrayAttr)) {
+      Op->dump();
+      revng_abort("Invalid `clift.attributes` array");
+    }
+
     return ArrayAttr;
   }
   return {};
