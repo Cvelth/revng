@@ -41,7 +41,8 @@ public:
   mlir::ArrayAttr getDeclarationOpAttributes(mlir::Operation *Op);
 
   void emitAttribute(AttributeAttr Attribute);
-  void emitAttributes(mlir::ArrayAttr Attributes);
+  void
+  emitAttributes(mlir::ArrayAttr Attributes, bool SpaceBefore, bool SpaceAfter);
 
   //===---------------------------- Prototype -----------------------------===//
 
