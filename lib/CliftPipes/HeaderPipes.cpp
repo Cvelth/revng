@@ -63,7 +63,7 @@ static void emitTypeDefinitionImpl(llvm::raw_ostream &Out,
   auto CliftType = mlir::clift::importModelType(EmitError, Context, Type);
   revng_check(CliftType != nullptr);
 
-  // FUTURE-WIP: @fez, one more problem with reimporting types - we need to
+  // WIP: @fez, one more problem with reimporting types - we need to
   // reimport names too.
   mlir::clift::importNames(Binary, Module);
 

@@ -11,7 +11,7 @@
 #include "revng/PTML/Constants.h"
 #include "revng/PTML/Emitter.h"
 
-// FUTURE-WIP comment (will remove after the review):
+// WIP comment (will remove after the review):
 //
 // This is a cut-down version of `CommentBuilder` from `Doxygen.cpp`.
 // I'm not doing the full rewrite to conserve time, but this is definitely

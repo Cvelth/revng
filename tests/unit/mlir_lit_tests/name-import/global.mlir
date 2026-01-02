@@ -2,7 +2,7 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
-// FUTURE-WIP: this is extremely weird! `revng pipe` might be broken for single-output containers.
+// WIP: this is extremely weird! `revng pipe` might be broken for single-output containers.
 // RUN: %revngpipe import-function-model-names %S/model.yml %s /dev/stdout | %revngcliftopt | FileCheck %s
 
 !void = !clift.primitive<void 0>

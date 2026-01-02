@@ -218,7 +218,7 @@ public:
 
 public:
   std::set<ObjectID> objects() const {
-    // FUTURE-WIP: is this a good way to check if it's empty or not?
+    // WIP: is this a good way to check if it's empty or not?
     if (Module.get().getBodyRegion().empty())
       return std::set<ObjectID>{};
     else
