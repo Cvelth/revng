@@ -13,7 +13,7 @@
 }>
 
 module attributes { clift.module } {
-  // CHECK: clift.global @seg_0x40002001 : !segment attributes {
+  // CHECK: clift.global @g : !_type_definition_2005_StructDefinition attributes {
   // CHECK:   handle = "/segment/0x40002001:Generic64-4"
   // CHECK: }
   clift.global @g : !segment attributes {
