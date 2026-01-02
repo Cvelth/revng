@@ -55,6 +55,10 @@ GlobalVariableOp importSegmentDeclaration(mlir::ModuleOp Module,
                                           clift::ValueType Type);
 
 void importAllModelTypes(const model::Binary &Model, mlir::ModuleOp Module);
+void importAllModelFunctionDeclarations(const model::Binary &Model,
+                                        mlir::ModuleOp Module);
+void importAllModelSegmentDeclarations(const model::Binary &Model,
+                                       mlir::ModuleOp Module);
 
 void importModelInfo(const model::Binary &Model, mlir::ModuleOp Module);
 
