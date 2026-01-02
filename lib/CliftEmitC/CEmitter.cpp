@@ -4,6 +4,7 @@
 
 #include <optional>
 
+#include "revng/Clift/CliftTypes.h"
 #include "revng/CliftEmitC/CCommentEmitter.h"
 #include "revng/CliftEmitC/CEmitter.h"
 #include "revng/Pipeline/Location.h"
@@ -300,8 +301,11 @@ private:
       }
     }
 
-    if (Declarator)
-      Parent.emitAttributes(Declarator->Attributes);
+    if (Declarator) {
+      Parent.emitAttributes(Declarator->Attributes,
+                            /* SpaceBefore = */ true,
+                            /* SpaceAfter = */ false);
+    }
   }
 };
 
@@ -371,7 +375,6 @@ mlir::ArrayAttr CEmitter::getDeclarationOpAttributes(mlir::Operation *Op) {
 void CEmitter::emitAttribute(AttributeAttr Attribute) {
   auto Macro = Attribute.getMacro();
 
-  Tokens.emitSpace();
   Tokens.emitIdentifier(Macro.getString(),
                         Macro.getHandle(),
                         CTE::EntityKind::Attribute,
@@ -396,11 +399,30 @@ void CEmitter::emitAttribute(AttributeAttr Attribute) {
   }
 }
 
-void CEmitter::emitAttributes(mlir::ArrayAttr Attributes) {
-  if (Attributes) {
-    for (mlir::Attribute Attr : Attributes)
-      emitAttribute(mlir::cast<AttributeAttr>(Attr));
+void CEmitter::emitAttributes(mlir::ArrayAttr Attributes,
+                              bool SpaceBefore,
+                              bool SpaceAfter) {
+  if (not Attributes)
+    return;
+
+  if (Attributes.empty())
+    return;
+
+  if (SpaceBefore)
+    Tokens.emitSpace();
+
+  bool First = true;
+  for (mlir::Attribute Attr : Attributes) {
+    if (First)
+      First = false;
+    else
+      Tokens.emitSpace();
+
+    emitAttribute(mlir::cast<AttributeAttr>(Attr));
   }
+
+  if (SpaceAfter)
+    Tokens.emitSpace();
 }
 
 //===---------------------------- Declarations ----------------------------===//
