@@ -734,6 +734,9 @@ void ptml::CTokenEmitter::emitPragmaOnceDirective() {
   emitNewline();
 }
 
+// TODO: consider exposing this as a configuration option!
+static constexpr uint64_t TabWidth = 2;
+
 CTokenEmitter::Scope::Scope(CTokenEmitter &Emitter,
                             ScopeKind Kind,
                             CTokenEmitter::Delimiter Delimiter,
@@ -751,11 +754,11 @@ CTokenEmitter::Scope::Scope(CTokenEmitter &Emitter,
     Tag->finalizeOpenTag();
   }
 
-  Emitter.PTML.indent(Indent);
+  Emitter.indent(LevelDifference * TabWidth);
 }
 
 CTokenEmitter::Scope::~Scope() {
-  Emitter.PTML.indent(-Indent);
+  Emitter.indent(-LevelDifference * TabWidth);
 
   Tag.reset();
 
