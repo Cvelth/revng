@@ -373,20 +373,16 @@ void CEmitter::emitDeclaration(ValueType Type,
 void CEmitter::emitFunctionPrototype(FunctionOp Op) {
   llvm::SmallVector<ParameterDeclaratorInfo> ParameterDeclarators;
   for (unsigned I = 0; I < Op.getArgCount(); ++I) {
-    auto Attrs = Op.getArgAttrs(I);
-
-    auto GetStringAttr = [&Attrs](llvm::StringRef Name) {
-      return mlir::cast<mlir::StringAttr>(Attrs.get(Name)).getValue();
-    };
-
     mlir::ArrayAttr Attributes = {};
-    if (auto Attr = Attrs.get("clift.c_attributes")) {
+    if (auto Attr = Op.getArgAttrs(I).get("clift.c_attributes")) {
       Attributes = mlir::cast<mlir::ArrayAttr>(Attr);
       revng_assert(isValidCAttributeArray(Attributes));
     }
 
-    ParameterDeclarators.emplace_back(GetStringAttr("clift.name"),
-                                      GetStringAttr("clift.handle"),
+    ParameterDeclarators.emplace_back(Op.getStringArgAttr(I, "clift.name")
+                                        .value_or(llvm::StringRef{}),
+                                      Op.getStringArgAttr(I, "clift.handle")
+                                        .value_or(llvm::StringRef{}),
                                       Attributes);
   }
 

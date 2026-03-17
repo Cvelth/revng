@@ -178,6 +178,14 @@ def Clift_FunctionOp : Clift_Op<"func",
       return {};
     }
 
+    std::optional<llvm::StringRef>
+    getStringArgAttr(unsigned Index, llvm::StringRef Name) {
+      if (auto Result = getArgAttrOfType<mlir::StringAttr>(Index, Name))
+        return Result.getValue();
+
+      return std::nullopt;
+    }
+
 
     mlir::DictionaryAttr getResAttrs(unsigned Index) {
       if (auto Attrs = getResAttrs())
@@ -196,6 +204,14 @@ def Clift_FunctionOp : Clift_Op<"func",
       if (auto Attr = getResAttr(Index, Name))
         return mlir::dyn_cast<AttrT>(Attr);
       return {};
+    }
+
+    std::optional<llvm::StringRef>
+    getStringResAttr(unsigned Index, llvm::StringRef Name) {
+      if (auto Result = getResAttrOfType<mlir::StringAttr>(Index, Name))
+        return Result.getValue();
+
+      return std::nullopt;
     }
 
 
