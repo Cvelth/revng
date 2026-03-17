@@ -109,8 +109,6 @@ def Clift_FunctionOp : Clift_Op<"func",
                                  IsolatedFromAbove]> {
   let arguments = (ins StrAttr:$sym_name,
                        TypeAttrOf<Clift_AnyFunctionType>:$function_value_type,
-                       OptionalAttr<DictArrayAttr>:$arg_attrs,
-                       OptionalAttr<DictArrayAttr>:$res_attrs,
                        DefaultValuedStrAttr<StrAttr, "">:$handle);
 
   let description = [{
@@ -118,11 +116,6 @@ def Clift_FunctionOp : Clift_Op<"func",
   }];
 
   let regions = (region Clift_StatementRegion:$body);
-
-  let builders = [
-    OpBuilder<(ins "llvm::StringRef":$Name,
-                   "mlir::clift::FunctionType":$FunctionType)>
-  ];
 
   let hasVerifier = 1;
   let hasCustomAssemblyFormat = 1;
@@ -159,10 +152,19 @@ def Clift_FunctionOp : Clift_Op<"func",
     }
 
 
+    mlir::ArrayAttr getArgAttrsAttr() {
+      llvm::ArrayRef<mlir::Attribute> Cast = {
+        getFunctionType().getArgumentAttributes().begin(),
+        getFunctionType().getArgumentAttributes().end()
+      };
+      return mlir::ArrayAttr::get(getContext(), Cast);
+    }
+
     mlir::DictionaryAttr getArgAttrs(unsigned Index) {
-      if (auto Attrs = getArgAttrs())
-        return mlir::cast<mlir::DictionaryAttr>((*Attrs)[Index]);
-      return {};
+      if (getFunctionType().getArgumentAttributes().size() < Index)
+        return {};
+
+      return getFunctionType().getArgumentAttributes()[Index];
     }
 
     mlir::Attribute getArgAttr(unsigned Index, llvm::StringRef Name) {
@@ -186,11 +188,31 @@ def Clift_FunctionOp : Clift_Op<"func",
       return std::nullopt;
     }
 
+    void setArgAttrsAttr(mlir::ArrayAttr Attributes) {
+      if (not Attributes or Attributes.empty())
+        getFunctionType().setArgumentAttributes(Attributes.getValue());
+
+      revng_assert(Attributes.size() <= getArgCount());
+      llvm::SmallVector<mlir::DictionaryAttr> RealAttributes;
+      for (auto Attribute : Attributes)
+        RealAttributes.emplace_back(mlir::cast<mlir::DictionaryAttr>(Attribute));
+
+      getFunctionType().setArgumentAttributes(RealAttributes);
+    }
+
+
+    mlir::ArrayAttr getResAttrsAttr() {
+      llvm::ArrayRef<mlir::Attribute> Cast = {
+        getFunctionType().getReturnValueAttributes(),
+      };
+      return mlir::ArrayAttr::get(getContext(), Cast);
+    }
 
     mlir::DictionaryAttr getResAttrs(unsigned Index) {
-      if (auto Attrs = getResAttrs())
-        return mlir::cast<mlir::DictionaryAttr>((*Attrs)[Index]);
-      return {};
+      if (Index != 0)
+        return {};
+
+      return getFunctionType().getReturnValueAttributes();
     }
 
     mlir::Attribute getResAttr(unsigned Index, llvm::StringRef Name) {
@@ -212,6 +234,17 @@ def Clift_FunctionOp : Clift_Op<"func",
         return Result.getValue();
 
       return std::nullopt;
+    }
+
+    void setResAttrsAttr(mlir::ArrayAttr Attributes) {
+      if (not Attributes or Attributes.empty())
+        getFunctionType().setReturnValueAttributes({});
+
+      revng_assert(Attributes.size() == 1);
+      llvm::SmallVector<mlir::DictionaryAttr, 1> RealAttributes {
+        *Attributes.begin(),
+      };
+      getFunctionType().setArgumentAttributes(RealAttributes);
     }
 
 

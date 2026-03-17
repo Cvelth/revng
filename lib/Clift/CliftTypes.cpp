@@ -8,7 +8,12 @@
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallSet.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringExtras.h"
+
+#include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/IR/MLIRContext.h"
+#include "mlir/IR/OperationSupport.h"
 
 #include "revng/Clift/CliftTypes.h"
 #include "revng/Support/Identifier.h"
@@ -528,11 +533,14 @@ static void writeType(clift::TypedefType Type,
 
 //===---------------------------- FunctionType ----------------------------===//
 
-mlir::LogicalResult FunctionType::verify(EmitErrorType EmitError,
-                                         llvm::StringRef Handle,
-                                         MutableStringAttr Name,
-                                         mlir::Type ReturnType,
-                                         llvm::ArrayRef<mlir::Type> Args) {
+mlir::LogicalResult
+FunctionType::verify(EmitErrorType EmitError,
+                     llvm::StringRef Handle,
+                     MutableStringAttr Name,
+                     mlir::Type ReturnType,
+                     mlir::DictionaryAttr ReturnValueAttributes,
+                     llvm::ArrayRef<mlir::Type> Args,
+                     llvm::ArrayRef<mlir::DictionaryAttr> ArgumentAttributes) {
   auto R = mlir::dyn_cast<clift::ValueType>(ReturnType);
   if (not R)
     return EmitError() << "Function return type must be a ValueType";
@@ -587,20 +595,34 @@ mlir::Type FunctionType::parse(mlir::AsmParser &Parser) {
   if (Parser.parseType(ReturnType).failed())
     return {};
 
+  mlir::NamedAttrList RVAttributes;
+  if (Parser.parseOptionalAttrDictWithKeyword(RVAttributes).failed())
+    return {};
+
   llvm::SmallVector<clift::ValueType> ParameterTypes;
-  const auto ParseParameterType = [&Parser,
-                                   &ParameterTypes]() -> mlir::ParseResult {
+  llvm::SmallVector<mlir::DictionaryAttr> ParameterAttributes;
+  const auto ParseParameters = [&Parser, // formatting
+                                &ParameterTypes,
+                                &ParameterAttributes]() -> mlir::ParseResult {
     clift::ValueType ParameterType;
     if (Parser.parseType(ParameterType))
       return mlir::failure();
 
     ParameterTypes.push_back(ParameterType);
+
+    mlir::NamedAttrList Attributes;
+    if (Parser.parseOptionalAttrDictWithKeyword(Attributes).failed())
+      return mlir::failure();
+
+    mlir::MLIRContext *Context = Parser.getContext();
+    ParameterAttributes.emplace_back(Attributes.getDictionary(Context));
+
     return mlir::success();
   };
 
   if (Parser
         .parseCommaSeparatedList(mlir::AsmParser::Delimiter::Paren,
-                                 ParseParameterType,
+                                 ParseParameters,
                                  " in parameter list")
         .failed())
     return {};
@@ -608,13 +630,16 @@ mlir::Type FunctionType::parse(mlir::AsmParser &Parser) {
   if (Parser.parseGreater().failed())
     return {};
 
-  auto NameAttr = makeNameAttr<FunctionType>(Parser.getContext(), Handle, Name);
+  mlir::MLIRContext *Context = Parser.getContext();
+  auto NameAttr = makeNameAttr<FunctionType>(Context, Handle, Name);
   return FunctionType::getChecked(getEmitError(Parser, Loc),
-                                  Parser.getContext(),
+                                  Context,
                                   llvm::StringRef(Handle),
                                   NameAttr,
                                   ReturnType,
-                                  llvm::ArrayRef(ParameterTypes));
+                                  RVAttributes.getDictionary(Context),
+                                  llvm::ArrayRef(ParameterTypes),
+                                  llvm::ArrayRef(ParameterAttributes));
 }
 
 void FunctionType::print(mlir::AsmPrinter &Printer) const {
@@ -624,15 +649,27 @@ void FunctionType::print(mlir::AsmPrinter &Printer) const {
 
   Printer << " : ";
   Printer.printType(getReturnType());
+  if (not getReturnValueAttributes().empty()) {
+    Printer << " attributes ";
+    Printer.printAttribute(getReturnValueAttributes());
+  }
   Printer << "(";
 
   bool Comma = false;
-  for (mlir::Type ParameterType : getArgumentTypes()) {
+  for (uint64_t Index = 0; Index < getArgumentTypes().size(); ++Index) {
     if (Comma)
       Printer << ", ";
     Comma = true;
 
-    Printer.printType(ParameterType);
+    Printer.printType(getArgumentTypes()[Index]);
+    if (getArgumentAttributes().size() > Index) {
+      if (mlir::DictionaryAttr Attributes = getArgumentAttributes()[Index]) {
+        if (not Attributes.empty()) {
+          Printer << " attributes ";
+          Printer.printAttribute(Attributes);
+        }
+      }
+    }
   }
 
   Printer << ")";
@@ -661,8 +698,23 @@ static clift::FunctionType readType(mlir::DialectBytecodeReader &Reader) {
   if (ReadType(ReturnType).failed())
     return {};
 
+  mlir::DictionaryAttr ReturnValueAttributes;
+  if (Reader.readAttribute(ReturnValueAttributes).failed())
+    return {};
+
   llvm::SmallVector<mlir::Type> ParameterTypes;
   if (Reader.readList(ParameterTypes, ReadType).failed())
+    return {};
+
+  auto ReadAttribute = [&](mlir::DictionaryAttr &Attrs) -> mlir::LogicalResult {
+    if (Reader.readAttribute(Attrs).failed())
+      return mlir::failure();
+
+    return mlir::success();
+  };
+
+  llvm::SmallVector<mlir::DictionaryAttr> ArgumentAttributes;
+  if (Reader.readList(ArgumentAttributes, ReadAttribute).failed())
     return {};
 
   auto NameAttr = makeNameAttr<FunctionType>(Reader.getContext(), Handle, Name);
@@ -671,7 +723,9 @@ static clift::FunctionType readType(mlir::DialectBytecodeReader &Reader) {
                                          Handle,
                                          NameAttr,
                                          ReturnType,
-                                         std::move(ParameterTypes));
+                                         ReturnValueAttributes,
+                                         std::move(ParameterTypes),
+                                         ArgumentAttributes);
 }
 
 static void writeType(clift::FunctionType Type,
@@ -679,8 +733,13 @@ static void writeType(clift::FunctionType Type,
   Writer.writeOwnedString(Type.getHandle());
   Writer.writeOwnedString(Type.getName());
   Writer.writeType(Type.getReturnType());
+  Writer.writeAttribute(Type.getReturnValueAttributes());
   Writer.writeList(Type.getArgumentTypes(),
                    [&](mlir::Type Type) { Writer.writeType(Type); });
+  Writer.writeList(Type.getArgumentAttributes(),
+                   [&](mlir::DictionaryAttr Attributes) {
+                     Writer.writeAttribute(Attributes);
+                   });
 }
 
 //===----------------------------- Class types ----------------------------===//

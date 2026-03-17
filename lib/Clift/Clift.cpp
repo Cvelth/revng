@@ -304,29 +304,6 @@ void mlir::printCliftOpTypesImpl(OpAsmPrinter &Printer,
 
 //===----------------------------- FunctionOp -----------------------------===//
 
-void FunctionOp::build(OpBuilder &Builder,
-                       OperationState &State,
-                       llvm::StringRef Name,
-                       clift::FunctionType FunctionType) {
-  size_t ArgumentCount = FunctionType.getArgumentTypes().size();
-
-  llvm::SmallVector<mlir::Attribute> Array;
-  Array.resize(std::max<size_t>(ArgumentCount, 1),
-               mlir::DictionaryAttr::get(Builder.getContext()));
-
-  auto GetArrayAttr = [&](unsigned Count) {
-    return mlir::ArrayAttr::get(Builder.getContext(),
-                                llvm::ArrayRef(Array).take_front(Count));
-  };
-
-  build(Builder,
-        State,
-        Name,
-        FunctionType,
-        /*arg_attrs=*/GetArrayAttr(ArgumentCount),
-        /*res_attrs=*/GetArrayAttr(1));
-}
-
 mlir::ParseResult FunctionOp::parse(OpAsmParser &Parser,
                                     OperationState &Result) {
   StringAttr SymbolNameAttr;
@@ -355,7 +332,6 @@ mlir::ParseResult FunctionOp::parse(OpAsmParser &Parser,
 
   llvm::SmallVector<OpAsmParser::Argument> Arguments;
   llvm::SmallVector<mlir::Type> ResultTypes;
-  llvm::SmallVector<DictionaryAttr> ResultAttrs;
   bool IsVariadic = false;
 
   auto RoughResultTypeLocation = Parser.getCurrentLocation();
@@ -363,8 +339,7 @@ mlir::ParseResult FunctionOp::parse(OpAsmParser &Parser,
                                                       /*allowVariadic=*/false,
                                                       Arguments,
                                                       IsVariadic,
-                                                      ResultTypes,
-                                                      ResultAttrs)
+                                                      ResultTypes)
         .failed())
     return mlir::failure();
 
@@ -377,7 +352,6 @@ mlir::ParseResult FunctionOp::parse(OpAsmParser &Parser,
                                              PrimitiveKind::VoidKind,
                                              0,
                                              false));
-    ResultAttrs.push_back(DictionaryAttr::get(Parser.getContext()));
   }
 
   llvm::SmallVector<mlir::Type> ArgumentTypes;
@@ -386,18 +360,6 @@ mlir::ParseResult FunctionOp::parse(OpAsmParser &Parser,
 
   Result.addAttribute(getFunctionTypeAttrName(Result.name),
                       TypeAttr::get(FunctionType));
-
-  if (Parser.parseOptionalAttrDictWithKeyword(Result.attributes).failed())
-    return mlir::failure();
-
-  function_interface_impl::addArgAndResultAttrs(Parser.getBuilder(),
-                                                Result,
-                                                Arguments,
-                                                ResultAttrs,
-                                                getArgAttrsAttrName(Result
-                                                                      .name),
-                                                getResAttrsAttrName(Result
-                                                                      .name));
 
   auto *Body = Result.addRegion();
   auto RegionParseResult = Parser.parseOptionalRegion(*Body, Arguments);
@@ -416,19 +378,16 @@ void FunctionOp::print(OpAsmPrinter &Printer) {
   Printer.printType(FunctionType);
   Printer << '>';
 
-  function_interface_impl::printFunctionSignature(Printer,
-                                                  *this,
-                                                  FunctionType
-                                                    .getArgumentTypes(),
-                                                  /*isVariadic=*/false,
-                                                  FunctionType
-                                                    .getResultTypes());
+  namespace impl = function_interface_impl;
+  impl::printFunctionSignature(Printer,
+                               *this,
+                               FunctionType.getArgumentTypes(),
+                               /*isVariadic=*/false,
+                               FunctionType.getResultTypes());
 
-  function_interface_impl::printFunctionAttributes(Printer,
-                                                   *this,
-                                                   { getFunctionTypeAttrName(),
-                                                     getArgAttrsAttrName(),
-                                                     getResAttrsAttrName() });
+  impl::printFunctionAttributes(Printer, // formatting
+                                *this,
+                                { getFunctionTypeAttrName() });
 
   if (Region &Body = getBody(); !Body.empty()) {
     Printer << ' ';

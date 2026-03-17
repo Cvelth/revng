@@ -257,21 +257,30 @@ def Clift_FunctionType
     strong identity.
   }];
 
+  // Combining the argument types with corresponding attributes will make it
+  // a lot harder to satisfy `mlir::FunctionOpInterface`, hence two parallel
+  // `llvm::ArrayRef`s are used.
   let parameters = (ins StringRefParameter<>:$handle,
                         "mlir::clift::MutableStringAttr":$mutable_name,
                         "mlir::Type":$return_type,
-                        OptionalArrayRefParameter<"mlir::Type">:$argument_types);
+                        "mlir::DictionaryAttr":$return_value_attributes,
+                        OptionalArrayRefParameter<"mlir::Type">:$argument_types,
+                        OptionalArrayRefParameter<"mlir::DictionaryAttr">:$argument_attributes);
 
   let builders = [
     TypeBuilder<(ins "llvm::StringRef":$Handle,
                      "mlir::clift::MutableStringAttr":$Name,
                      "mlir::clift::ValueType":$ReturnType,
-                     "llvm::ArrayRef<mlir::clift::ValueType>":$ArgumentTypes), [{
+                     "mlir::DictionaryAttr":$ReturnValueAttributes,
+                     "llvm::ArrayRef<mlir::clift::ValueType>":$ArgumentTypes,
+                     "llvm::ArrayRef<mlir::DictionaryAttr>":$ArgumentAttributes), [{
       return $_get($_ctxt,
                    Handle,
                    Name,
                    ReturnType,
-                   llvm::SmallVector<mlir::Type, 16>(ArgumentTypes));
+                   ReturnValueAttributes,
+                   llvm::SmallVector<mlir::Type, 16>(ArgumentTypes),
+                   llvm::SmallVector<mlir::DictionaryAttr, 16>(ArgumentAttributes));
     }]>,
   ];
 

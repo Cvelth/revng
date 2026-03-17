@@ -4,7 +4,10 @@
 
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/ScopeExit.h"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/Support/GenericDomTree.h"
+
+#include "mlir/IR/BuiltinAttributes.h"
 
 #include "revng/ABI/FunctionType/Layout.h"
 #include "revng/ADT/RecursiveCoroutine.h"
@@ -362,7 +365,9 @@ private:
                              Handle,
                              makeNameAttr<FunctionType>(Context, Handle),
                              ReturnType,
-                             ParameterTypes);
+                             mlir::DictionaryAttr{},
+                             ParameterTypes,
+                             llvm::ArrayRef<mlir::DictionaryAttr>{});
   }
 
   // Import a Clift function type from an LLVM function, using the name of the
@@ -810,7 +815,9 @@ private:
                                                  Handle,
                                                  NameAttr,
                                                  ReturnType,
-                                                 ParameterTypes);
+                                                 {},
+                                                 ParameterTypes,
+                                                 {});
 
     return emitHelperCall(Loc,
                           C.getHelperFunction(HelperName, FunctionType),

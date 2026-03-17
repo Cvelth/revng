@@ -5,6 +5,9 @@
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/Support/FormatVariadic.h"
 
+#include "mlir/IR/Attributes.h"
+#include "mlir/IR/BuiltinAttributes.h"
+
 #include "revng/ADT/RecursiveCoroutine.h"
 #include "revng/Clift/CliftAttributes.h"
 #include "revng/Clift/CliftDialect.h"
@@ -145,11 +148,25 @@ private:
     AttributeVector<mlir::Type> ArgumentTypes;
     ArgumentTypes.reserve(ModelType.Arguments().size());
 
-    for (const model::Argument &Argument : ModelType.Arguments()) {
+    AttributeVector<mlir::DictionaryAttr> ArgumentAttributes;
+    ArgumentAttributes.reserve(ModelType.Arguments().size());
+
+    for (const auto &Argument : ModelType.Arguments()) {
       const auto Type = rc_recur fromType(*Argument.Type());
       if (not Type)
         rc_return nullptr;
       ArgumentTypes.push_back(Type);
+
+      llvm::SmallVector<mlir::NamedAttribute, 1> Attributes = {
+        mlir::NamedAttribute{
+          "clift.handle",
+          getLocation(ModelType)
+            .extend(revng::ranks::CABIArgument, Argument.key())
+            .toString(),
+        }
+      };
+      ArgumentAttributes.emplace_back(mlir::DictionaryAttr::get(Context,
+                                                                Attributes));
     }
 
     mlir::Type ReturnType = nullptr;
@@ -166,7 +183,9 @@ private:
     rc_return make<clift::FunctionType>(llvm::StringRef(Handle),
                                         NameAttr,
                                         ReturnType,
-                                        llvm::ArrayRef(ArgumentTypes));
+                                        mlir::DictionaryAttr{},
+                                        llvm::ArrayRef(ArgumentTypes),
+                                        llvm::ArrayRef(ArgumentAttributes));
   }
 
   RecursiveCoroutine<clift::DefinedType>
@@ -282,11 +301,25 @@ private:
     AttributeVector<mlir::Type> ArgumentTypes;
     ArgumentTypes.reserve(ArgumentsCount);
 
+    AttributeVector<mlir::DictionaryAttr> ArgumentAttributes;
+    ArgumentAttributes.reserve(ModelType.Arguments().size());
+
     for (const model::NamedTypedRegister &Register : ModelType.Arguments()) {
       const auto Type = rc_recur fromType(*Register.Type());
       if (not Type)
         rc_return nullptr;
       ArgumentTypes.push_back(Type);
+
+      llvm::SmallVector<mlir::NamedAttribute, 1> Attributes = {
+        mlir::NamedAttribute{
+          "clift.handle",
+          getLocation(ModelType)
+            .extend(revng::ranks::RawArgument, Register.key())
+            .toString(),
+        }
+      };
+      ArgumentAttributes.emplace_back(mlir::DictionaryAttr::get(Context,
+                                                                Attributes));
     }
 
     if (StackArgumentType)
@@ -320,7 +353,9 @@ private:
     rc_return make<clift::FunctionType>(llvm::StringRef(Handle),
                                         NameAttr,
                                         mlir::Type(ReturnType),
-                                        llvm::ArrayRef(ArgumentTypes));
+                                        mlir::DictionaryAttr{},
+                                        llvm::ArrayRef(ArgumentTypes),
+                                        llvm::ArrayRef(ArgumentAttributes));
   }
 
   RecursiveCoroutine<clift::DefinedType>

@@ -3,6 +3,7 @@
 //
 
 #include "mlir/IR/AsmState.h"
+#include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/DialectImplementation.h"
 #include "mlir/IR/OpImplementation.h"
 
