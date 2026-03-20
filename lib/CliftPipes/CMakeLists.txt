@@ -8,7 +8,7 @@ revng_add_analyses_library_internal(
   CliftContainer.cpp
   ClifterPipe.cpp
   ImportCliftTypesPipe.cpp
-  ImportModelNamesPipe.cpp
+  ImportModelInfoPipe.cpp
   LegalizationPipe.cpp
   ModelVerifyPipe.cpp
   OptimizationPipe.cpp)

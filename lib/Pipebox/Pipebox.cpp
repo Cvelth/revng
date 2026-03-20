@@ -9,7 +9,7 @@
 #include "revng/Canonicalize/SwitchToStatements.h"
 #include "revng/CliftPipes/CBackendPipe.h"
 #include "revng/CliftPipes/ClifterPipe.h"
-#include "revng/CliftPipes/ImportModelNamesPipe.h"
+#include "revng/CliftPipes/ImportModelInfoPipe.h"
 #include "revng/CliftPipes/ModelVerifyPipe.h"
 #include "revng/DataLayoutAnalysis/DLA.h"
 #include "revng/EarlyFunctionAnalysis/AttachDebugInfo.h"
@@ -114,7 +114,7 @@ static RegisterFunctionPipeRun<SwitchToStatements> P26;
 static RegisterFunctionPipeRun<LLVMToClift> P27;
 static RegisterPipe<PureMLIRPassesPipe> P28;
 static RegisterFunctionPipeRun<ModelVerifyClift> P29;
-static RegisterSingleOutputPipeRun<ImportModelNames> P30;
+static RegisterSingleOutputPipeRun<ImportModelInfo> P30;
 static RegisterFunctionPipeRun<EmitC> P31;
 static RegisterSingleOutputPipeRun<DecompileToSingleFile> P32;
 static RegisterSingleOutputPipeRun<MergeLLVMModules> P33;
@@ -123,7 +123,7 @@ static RegisterSingleOutputPipeRun<ProcessCallGraph> P35;
 static RegisterSingleOutputPipeRun<YieldCallGraph> P36;
 static RegisterFunctionPipeRun<YieldCallGraphSlice> P37;
 static RegisterFunctionPipeRun<YieldCFG> P38;
-static RegisterFunctionPipeRun<ImportFunctionModelNames> P39;
+static RegisterFunctionPipeRun<ImportFunctionModelInfo> P39;
 
 //
 // Analyses
