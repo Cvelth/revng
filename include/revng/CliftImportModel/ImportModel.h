@@ -54,6 +54,8 @@ GlobalVariableOp importSegmentDeclaration(mlir::ModuleOp Module,
                                           llvm::StringRef Handle,
                                           clift::ValueType Type);
 
+void importAllModelTypes(const model::Binary &Model, mlir::ModuleOp Module);
+
 void importModelInfo(const model::Binary &Model, mlir::ModuleOp Module);
 
 // NOTE: this overload can be dropped together with the old pipeline.

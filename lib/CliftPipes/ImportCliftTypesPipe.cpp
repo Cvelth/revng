@@ -10,31 +10,6 @@
 #include "revng/Pipeline/RegisterPipe.h"
 #include "revng/Pipes/Kinds.h"
 
-namespace clift = mlir::clift;
-
-static void importModelTypes(const model::Binary &Model,
-                             mlir::ModuleOp Module) {
-  mlir::MLIRContext *Context = Module->getContext();
-  Context->loadDialect<clift::CliftDialect>();
-
-  mlir::Location Loc = mlir::UnknownLoc::get(Context);
-  auto EmitError = [&]() -> mlir::InFlightDiagnostic {
-    return Context->getDiagEngine().emit(Loc, mlir::DiagnosticSeverity::Error);
-  };
-
-  llvm::SmallVector<mlir::Attribute> TypeAttrs;
-  for (const auto &ModelType : Model.TypeDefinitions()) {
-    auto CliftType = clift::importModelType(EmitError,
-                                            *Context,
-                                            *ModelType,
-                                            Model);
-
-    TypeAttrs.push_back(mlir::TypeAttr::get(CliftType));
-  }
-
-  Module->setAttr("clift.types", mlir::ArrayAttr::get(Context, TypeAttrs));
-}
-
 class ImportCliftTypesPipe {
 public:
   static constexpr auto Name = "import-clift-types";
@@ -52,8 +27,11 @@ public:
 
   void run(pipeline::ExecutionContext &EC,
            revng::pipes::CliftContainer &CliftContainer) {
-    importModelTypes(*revng::getModelFromContext(EC),
-                     CliftContainer.getModule());
+    mlir::MLIRContext *Context = CliftContainer.getContext();
+    Context->loadDialect<mlir::clift::CliftDialect>();
+
+    mlir::clift::importAllModelTypes(*revng::getModelFromContext(EC),
+                                     CliftContainer.getModule());
 
     EC.commitAllFor(CliftContainer);
   }
