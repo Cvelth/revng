@@ -564,7 +564,7 @@ private:
 
 } // namespace
 
-void clift::importNames(const model::Binary &Model, mlir::ModuleOp Module) {
+void clift::importModelInfo(const model::Binary &Model, mlir::ModuleOp Module) {
   SymbolRenamer Symbols;
 
   auto R = NameImporter::visit(Module, Model, Symbols);
@@ -573,9 +573,9 @@ void clift::importNames(const model::Binary &Model, mlir::ModuleOp Module) {
   Symbols.apply(Module);
 }
 
-void clift::importNames(const model::Function &Function,
-                        const model::Binary &Model,
-                        mlir::ModuleOp Module) {
+void clift::importModelInfo(const model::Function &Function,
+                            const model::Binary &Model,
+                            mlir::ModuleOp Module) {
   std::unordered_map<MetaAddress, clift::FunctionOp> Functions;
   clift::FunctionOp CliftFunction = nullptr;
   Module->walk([&Function, &CliftFunction](clift::FunctionOp F) {
