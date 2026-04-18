@@ -52,11 +52,13 @@ emitHelperHeaderImpl(llvm::raw_ostream &Out,
   Out.flush();
 }
 
-static void emitTypeDefinitionImpl(llvm::raw_ostream &Out,
-                                   mlir::ModuleOp Module,
-                                   const CDataModel &DataModel,
-                                   const model::TypeDefinition &Type) {
-  ptml::CTokenEmitter Tokens(Out, ptml::Tagging::Disabled);
+static void
+emitTypeDefinitionImpl(llvm::raw_ostream &Out,
+                       mlir::ModuleOp Module,
+                       const CDataModel &DataModel,
+                       const model::TypeDefinition &Type,
+                       ptml::Tagging Tagging = ptml::Tagging::Enabled) {
+  ptml::CTokenEmitter Tokens(Out, Tagging);
 
   mlir::MLIRContext &Context = *Module.getContext();
   auto EmitError = [&Context]() -> mlir::InFlightDiagnostic {
@@ -201,9 +203,14 @@ using ESTD = EmitSingleTypeDefinition;
 void ESTD::runOnTypeDefinition(const model::UpcastableTypeDefinition &Type) {
   revng_assert(Type);
   auto Stream = Output.getOStream(ObjectID(Type->key()));
-  
+
   auto DataModel = abi::getDataModel(Binary);
-  emitTypeDefinitionImpl(*Stream, Input.getModule(), DataModel, *Type);
+  emitTypeDefinitionImpl(*Stream,
+                         Input.getModule(),
+                         DataModel,
+                         *Type,
+                         Configuration.DisableMarkup ? ptml::Tagging::Disabled :
+                                                       ptml::Tagging::Enabled);
 }
 
 } // namespace revng::pypeline::piperuns
