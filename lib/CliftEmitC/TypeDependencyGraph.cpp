@@ -190,36 +190,39 @@ void Builder<ModelMode>::addDependenciesFrom(const AssociatedNodes Dependent,
   if (not DefinitionDependedOn)
     return;
 
+  // Ensure the **dependent** node is correctly initialized.
   const auto &[DeclarationNode, DefinitionNode] = Dependent;
   revng_assert(DeclarationNode);
-
-  clift::DefinedType DependentType = DeclarationNode->T;
-
-  bool ForwardDeclaration = isSeparateDeclarationAllowed(DependentType);
+  bool ForwardDeclaration = isSeparateDeclarationAllowed(DeclarationNode->T);
   revng_assert(ForwardDeclaration == static_cast<bool>(DefinitionNode));
   TypeDependencyNode *DependentNode = ForwardDeclaration ? DefinitionNode :
                                                            DeclarationNode;
 
+  // Ensure the **depended** node is correctly initialized.
   auto NodesDependedOn = Graph->TypeToNodes.at(DefinitionDependedOn);
   revng_assert(NodesDependedOn.Declaration);
 
-  // If `LastArray` is true, the node depended on is always the node
-  // representing the full definition of the type.
+  // `Anything -> Array -> Anything` case: depend on the definition.
   //
-  // Note, that it would still be a `Declaration` node in cases where there is
-  // no separate Definition (e.g. for typedefs (including function type ones)).
+  // If `LastArray` is true, because of quirks of C, the full type definition
+  // must be available (size must be computable). As such, we have to depend
+  // on the definition node.
+  //
+  // Note, that it could still be a `Declaration` node (for example, when
+  // depending on a function type - definition node does not exist for those).
   if (LastArray) {
-    TypeDependencyNode *NodeDependedOn = NodesDependedOn.Definition ?
-                                           NodesDependedOn.Definition :
-                                           NodesDependedOn.Declaration;
-    revng_assert(NodeDependedOn);
-    addAndLogSuccessor(DependentNode, NodeDependedOn);
+    addAndLogSuccessor(DependentNode,
+                       NodesDependedOn.Definition ?
+                         NodesDependedOn.Definition :
+                         NodesDependedOn.Declaration);
     return;
   }
 
+  // `Anything -> Pointer -> NonArray` case: depend on the declaration.
+  //
   // If `FoundPointer` is true, and `LastArray` is false, the node depended on
   // is always the `Declaration` node, because we don't need the full
-  // definition.
+  // definition (unless the declaration node does not exist).
   if (FoundPointer) {
     addAndLogSuccessor(DependentNode, NodesDependedOn.Declaration);
     return;
@@ -227,23 +230,25 @@ void Builder<ModelMode>::addDependenciesFrom(const AssociatedNodes Dependent,
 
   // Otherwise we fall back in the baseline case.
 
-  // The `DependentNode` always depends on the `Declaration` node.
-  addAndLogSuccessor(DependentNode, NodesDependedOn.Declaration);
-
+  // `ClassType -> ClassType` case: depend on the definition.
+  //
   // If both `Dependent` and `DefinitionDependedOn` have a separate forward
   // declaration we add a dependency from `DependentNode` to the `Definition`
-  // of the `NodesDependedOn`.
-  if (ForwardDeclaration
+  // of the `DependedOn`.
+  if (isSeparateDeclarationAllowed(DependentNode->T)
       and isSeparateDeclarationAllowed(DefinitionDependedOn)) {
     addAndLogSuccessor(DependentNode, NodesDependedOn.Definition);
+    return;
   }
 
+  // `ClassType -> Typedef -> ClassType` case: depend on the definition.
+  //
   // Finally, if the `DependentDefinition` has a forward declaration, it also
   // means that it has a separate definition from the forward declaration.
   // In that case, if `DefinitionDependedOn` is a typedef, we also have to look
   // across all those typedefs and ensure the full definition of the dependent
   // also depends on the full definition of the depended-on, across typedefs.
-  if (ForwardDeclaration
+  if (isSeparateDeclarationAllowed(DependentNode->T)
       and mlir::isa<clift::TypedefType>(DefinitionDependedOn)) {
     using DefinedType = clift::DefinedType;
     if (auto D = clift::unwrapped_dyn_cast<DefinedType>(DefinitionDependedOn)) {
@@ -251,9 +256,13 @@ void Builder<ModelMode>::addDependenciesFrom(const AssociatedNodes Dependent,
         auto TransitivelyDependedOn = Graph->TypeToNodes.at(D);
         revng_assert(TransitivelyDependedOn.Definition);
         addAndLogSuccessor(DependentNode, TransitivelyDependedOn.Definition);
+        return;
       }
     }
   }
+
+  // In all the other cases, depend on the declaration.
+  addAndLogSuccessor(DependentNode, NodesDependedOn.Declaration);
 }
 
 template<bool ModelMode>
