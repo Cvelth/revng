@@ -1,0 +1,99 @@
+#
+# This file is distributed under the MIT License. See LICENSE.md for details.
+#
+
+tags:
+  - name: import-from-c-round-trip
+
+sources:
+  - tags: [import-from-c-round-trip]
+    prefix: share/revng/test/tests/round-trip/import-from-c/
+    members:
+      - function-type
+      - enum
+      - function
+      - function-no-comment
+      - function-with-comment
+      - function-param-only
+      - function-return-only
+      - function-unknown-keyword
+      - struct
+      - typedef
+      - union
+
+commands:
+  # Unlike the original `import-from-c` tests whose goal is to test
+  # the analysis succeeds (or fails with the expected error), this test
+  # verifies that pushing `emit-single-type-definition` output through
+  # `import-from-c` doesn't change the model.
+  #
+  # In particular, it does the following:
+  # 1. produces `emit-single-type-definition` from the input model.
+  # 2. diffs it against `expected.c`.
+  # 3. runs `import-from-c` on the emitted C to produce a new model.
+  # 4. produces `emit-single-type-definition` from the new model.
+  # 5. diffs the output against `expected.c` ensuring it didn't change.
+  #
+  # NOTE: listing steps here and not in the script below because scripts like
+  #       these break in the presence of comments (they get concatenated into
+  #       a single line, so one comment = everything after it is ignored).
+  # TODO: we should probably fix that at some point.
+  - type: revng.import-from-c-round-trip
+    from:
+      - type: source
+        filter: import-from-c-round-trip
+    suffix: /
+    command: |-
+      PROJECT_DIR=$$(temp -d);
+      cp "${INPUT}/model.yaml" "$${PROJECT_DIR}/model.yml";
+
+      LOCATION_TO_EDIT=$$(grep -vE '^(#|$$)' "${INPUT}/type-to-edit.location");
+      if echo "$${LOCATION_TO_EDIT}" | grep -q "^/function/"; then
+        ARTIFACT_NAME="emit-single-function-declaration";
+      else
+        ARTIFACT_NAME="emit-single-type-definition";
+      fi;
+
+      revng2 -C "$${PROJECT_DIR}" project artifact "$${ARTIFACT_NAME}" -o "${OUTPUT}/artifact.yml";
+
+      ARTIFACT_KEY=$$(yq -r '. | keys | .[]' "${OUTPUT}/artifact.yml");
+      yq -r ".[\"$${ARTIFACT_KEY}\"]" "${OUTPUT}/artifact.yml" > "${OUTPUT}/extracted.c";
+
+      DIFF_OUTPUT=$$(temp);
+      EXPECTED_FILE=$$(temp);
+      tail -n +5 "${INPUT}/expected.c" > "$$EXPECTED_FILE";
+      if ! diff -u "$$EXPECTED_FILE" "${OUTPUT}/extracted.c" > "$${DIFF_OUTPUT}"; then
+        echo "Round-trip test on ${INPUT}: emitted C does not match expected.c";
+        echo "Expected:";
+        cat "$$EXPECTED_FILE";
+        echo "Got:";
+        cat "${OUTPUT}/extracted.c";
+        echo "Diff:";
+        cat "$${DIFF_OUTPUT}";
+        exit 1;
+      fi;
+
+      C_CODE=$$(sed 's;^;  ;' "${INPUT}/expected.c");
+      CONFIGURATION=$$(printf '%s\n%s\n%s' "LocationToEdit: $${LOCATION_TO_EDIT}" "CCode: |" "$${C_CODE}");
+
+      revng2 pipeline run-analysis import-from-c
+        -c "$${CONFIGURATION}"
+        "$${PROJECT_DIR}/model.yml"
+        -o "$${PROJECT_DIR}/new-model.yml";
+
+      cp "$${PROJECT_DIR}/new-model.yml" "$${PROJECT_DIR}/model.yml";
+      revng2 -C "$${PROJECT_DIR}" project artifact "$${ARTIFACT_NAME}" -o "${OUTPUT}/artifact2.yml";
+
+      ARTIFACT_KEY2=$$(yq -r '. | keys | .[]' "${OUTPUT}/artifact2.yml");
+      yq -r ".[\"$${ARTIFACT_KEY2}\"]" "${OUTPUT}/artifact2.yml" > "${OUTPUT}/extracted2.c";
+
+      if ! diff -u "$$EXPECTED_FILE" "${OUTPUT}/extracted2.c" > "$${DIFF_OUTPUT}"; then
+        echo "Round-trip test on ${INPUT}: re-imported C does not match expected.c";
+        echo "Expected:";
+        cat "$$EXPECTED_FILE";
+        echo "After re-import:";
+        cat "${OUTPUT}/extracted2.c";
+        echo "Diff:";
+        cat "$${DIFF_OUTPUT}";
+        exit 1;
+      fi;

@@ -1,0 +1,38 @@
+#
+# This file is distributed under the MIT License. See LICENSE.md for details.
+#
+
+---
+Architecture: x86_64
+DefaultABI: SystemV_x86_64
+Functions:
+  - Entry: "0x400000:Code_x86_64"
+    Name: function_with_comment
+    Comment: "This function has a comment that should be preserved."
+    Prototype:
+      Kind: DefinedType
+      Definition: "/TypeDefinitions/0-CABIFunctionDefinition"
+TypeDefinitions:
+  - Kind: CABIFunctionDefinition
+    ID: 0
+    Name: function_with_comment_type
+    ABI: SystemV_x86_64
+    ReturnType:
+      Kind: PrimitiveType
+      PrimitiveKind: Signed
+      Size: 8
+    Arguments:
+      - Index: 0
+        Type:
+          Kind: PrimitiveType
+          PrimitiveKind: Signed
+          Size: 8
+        Name: arg1
+Segments:
+  - StartAddress: "0x400000:Generic64"
+    VirtualSize: 4096
+    StartOffset: 0
+    FileSize: 4096
+    IsReadable: true
+    IsWriteable: false
+    IsExecutable: true

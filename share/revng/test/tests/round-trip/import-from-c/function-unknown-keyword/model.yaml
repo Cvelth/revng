@@ -1,0 +1,62 @@
+#
+# This file is distributed under the MIT License. See LICENSE.md for details.
+#
+
+---
+Architecture: x86_64
+DefaultABI: SystemV_x86_64
+Functions:
+  - Entry: "0x400000:Code_x86_64"
+    Name: doxygen_test
+    Prototype:
+      Kind: DefinedType
+      Definition: "/TypeDefinitions/0-CABIFunctionDefinition"
+    Comment: |-
+      We should silently ignore most doxygen keywords, like \ref whatever.
+
+      \c code_text \b bold_text \e em_text
+
+      <b>bold</b> <i>italic</i> <a href="http://example.com">link</a>
+
+      \note This is a note.
+      \warning This is a warning.
+      \since 1.0
+      \deprecated Use new_function instead.
+      \see related_function
+      \todo Fix this.
+
+      \code
+      int foo() {
+          return 42;
+      }
+      \endcode
+
+      \page a
+      \tableofcontents
+      \section a1
+      \section a2
+      \subsection a2.1
+TypeDefinitions:
+  - Kind: CABIFunctionDefinition
+    ID: 0
+    Name: doxygen_test_type
+    ABI: SystemV_x86_64
+    ReturnType:
+      Kind: PrimitiveType
+      PrimitiveKind: Signed
+      Size: 8
+    Arguments:
+      - Index: 0
+        Type:
+          Kind: PrimitiveType
+          PrimitiveKind: Signed
+          Size: 8
+        Name: arg1
+Segments:
+  - StartAddress: "0x400000:Generic64"
+    VirtualSize: 4096
+    StartOffset: 0
+    FileSize: 4096
+    IsReadable: true
+    IsWriteable: false
+    IsExecutable: true

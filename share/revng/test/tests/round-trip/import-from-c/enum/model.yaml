@@ -1,0 +1,30 @@
+#
+# This file is distributed under the MIT License. See LICENSE.md for details.
+#
+
+---
+Architecture: x86_64
+DefaultABI: SystemV_x86_64
+TypeDefinitions:
+  - Kind: EnumDefinition
+    ID: 0
+    Name: my_enum
+    Comment: This is an enum!
+    UnderlyingType:
+      Kind: PrimitiveType
+      PrimitiveKind: Unsigned
+      Size: 4
+    Entries:
+      - Value: 0
+        Name: none
+        Comment: This one has a comment,
+      - Value: 1
+        Name: positive
+        Comment: |-
+          So does this one!
+
+          But none of the following ones do!
+      - Value: 2
+        Name: negative
+      - Value: 3
+        Name: neutral

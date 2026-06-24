@@ -9,6 +9,10 @@ matchers:
     suffixes: ["c", "cc", "cpp", "h", "hpp", "inc"]
     exclude_files:
       - include/revng/ADT/TraitfulAny.h
+    exclude_directories:
+      # These tests contain C files we *output,* as such, they don't comply
+      # with the expectations we have for our own sources.
+      - share/revng/test/tests/round-trip/
   python:
     type: suffix_or_shebang
     suffixes: ["py"]
@@ -180,6 +184,8 @@ read_passes:
             regexes:
               - "^namespace {"
   - type: WhitespaceCheckPass
+    exclude_directories:
+      - share/revng/test/tests/round-trip/
   - type: SingleCommandPass
     name: codespell
     tag: codespell

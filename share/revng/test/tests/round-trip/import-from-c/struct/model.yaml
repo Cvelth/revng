@@ -1,0 +1,47 @@
+#
+# This file is distributed under the MIT License. See LICENSE.md for details.
+#
+
+---
+Architecture: x86_64
+DefaultABI: SystemV_x86_64
+TypeDefinitions:
+  - Kind: StructDefinition
+    ID: 0
+    Name: my_struct
+    Comment: This is a struct
+    Size: 40
+    Fields:
+      - Offset: 0
+        Type:
+          Kind: PrimitiveType
+          PrimitiveKind: Unsigned
+          Size: 8
+        Name: first_field
+        Comment: First field with a comment.
+      - Offset: 8
+        Type:
+          Kind: PrimitiveType
+          PrimitiveKind: Unsigned
+          Size: 8
+        Name: second_field
+      - Offset: 16
+        Type:
+          Kind: PrimitiveType
+          PrimitiveKind: Unsigned
+          Size: 4
+        Name: third_field
+        Comment: Third field with a comment.
+      - Offset: 24
+        Type:
+          Kind: PrimitiveType
+          PrimitiveKind: Unsigned
+          Size: 8
+        Name: fourth_field
+      - Offset: 32
+        Type:
+          Kind: PrimitiveType
+          PrimitiveKind: Unsigned
+          Size: 4
+        Name: fifth_field
+        Comment: Fifth field with a comment.

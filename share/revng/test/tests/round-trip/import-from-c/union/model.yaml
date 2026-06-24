@@ -1,0 +1,39 @@
+#
+# This file is distributed under the MIT License. See LICENSE.md for details.
+#
+
+---
+Architecture: x86_64
+DefaultABI: SystemV_x86_64
+TypeDefinitions:
+  - Kind: UnionDefinition
+    ID: 0
+    Name: my_union
+    Comment: This is just a union
+    Fields:
+      - Index: 0
+        Type:
+          Kind: PrimitiveType
+          PrimitiveKind: Unsigned
+          Size: 8
+        Name: first_field
+        Comment: First field with a comment.
+      - Index: 1
+        Type:
+          Kind: PrimitiveType
+          PrimitiveKind: Unsigned
+          Size: 4
+        Name: second_field
+      - Index: 2
+        Type:
+          Kind: PrimitiveType
+          PrimitiveKind: Unsigned
+          Size: 2
+        Name: third_field
+        Comment: Third field with a comment.
+      - Index: 3
+        Type:
+          Kind: PrimitiveType
+          PrimitiveKind: Unsigned
+          Size: 4
+        Name: fourth_field
