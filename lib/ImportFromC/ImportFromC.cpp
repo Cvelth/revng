@@ -2,6 +2,8 @@
 // This file is distributed under the MIT License. See LICENSE.md for details.
 //
 
+#include "clang/AST/Comment.h"
+#include "clang/AST/CommentVisitor.h"
 #include "clang/AST/Decl.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
@@ -31,25 +33,12 @@ namespace {
 //       for now.
 
 void preserveMetadata(const model::Function &Old, model::Function &New) {
+  New.StackFrame() = Old.StackFrame();
+  New.CallSitePrototypes() = Old.CallSitePrototypes();
+  New.ExportedNames() = Old.ExportedNames();
   New.Comments() = Old.Comments();
   New.LocalVariables() = Old.LocalVariables();
   New.GotoLabels() = Old.GotoLabels();
-  New.CallSitePrototypes() = Old.CallSitePrototypes();
-  New.ExportedNames() = Old.ExportedNames();
-  New.StackFrame() = Old.StackFrame();
-
-  // TODO: don't forget to extend when new fields are added.
-}
-
-void preserveMetadata(const model::TypeDefinition &Old,
-                      model::TypeDefinition &New) {
-  New.Comment() = Old.Comment();
-
-  // TODO: don't forget to extend when new fields are added.
-}
-
-void preserveMetadata(const model::EnumEntry &Old, model::EnumEntry &New) {
-  New.Comment() = Old.Comment();
 
   // TODO: don't forget to extend when new fields are added.
 }
@@ -73,6 +62,396 @@ void setNameIfNotAutomatic(model::CNameBuilder &NameBuilder,
     Entity.Name() = Name;
   else
     Entity.Name() = "";
+}
+
+// WIP!!!!
+//
+// The following block is llm-generated. It works but it's messy
+// (see tests in the next commit for some :enterprise: highlights).
+//
+// Clang takes care of the doxygen parsing BUT we have to have weird
+// work-arounds to flatten the parsed keywords back into simple text.
+//
+// What we should probably do instead is just grab `\param` and `\returns`
+// manually, splitting the commit into pieces based on that.
+//
+// For the context, clang still takes care of the comments (delta the two
+// side-cases: function comments get attached to `_ABI` and enum entries share
+// the same comment between them. But both are easy enough to overcome),
+// this is about what should we do about their *internals*.
+//
+// What do you think?
+//
+// ---
+//
+// P. S. There's another important discussion to be had here about how we
+// *output* comments. Namely, do we care about emitting *correct* doxygen
+// more? Or do we care about user freedom more?
+//
+// Here's an example of something we can currently emit:
+// ```cpp
+// /// whatever
+// /// \param a this
+// ///
+// /// is still a part of the `\param` in our output, but doxygen sees it as
+// /// separate.
+// ```
+//
+// I'm bringing this up because if we want to keep the newlines, we cannot use
+// clang's doxygen parser whether we want to or not.
+//
+// WIP!!!!
+
+/// Strip a prefix from each line of a multi-line string.
+/// Empty lines are preserved.  Leading whitespace after the prefix is kept.
+static std::string stripPrefixFromEachLine(llvm::StringRef Text,
+                                           llvm::StringRef Prefix) {
+  std::string Result;
+  llvm::SmallVector<llvm::StringRef, 8> Lines;
+  Text.split(Lines, '\n');
+  for (llvm::StringRef Line : Lines) {
+    llvm::StringRef Stripped = Line;
+    // Only strip leading whitespace + prefix from the beginning of the line.
+    size_t Pos = 0;
+    while (Pos < Stripped.size()
+           and (Stripped[Pos] == ' ' or Stripped[Pos] == '\t'
+                or Stripped[Pos] == '\n' or Stripped[Pos] == '\r'))
+      ++Pos;
+    if (Stripped.substr(Pos).startswith(Prefix)) {
+      Stripped = Stripped.substr(Pos + Prefix.size());
+      // Strip one trailing space after the prefix (common in /// comments).
+      if (Stripped.startswith(" "))
+        Stripped = Stripped.substr(1);
+    }
+    if (not Result.empty())
+      Result += '\n';
+    Result += Stripped.str();
+  }
+  return Result;
+}
+
+std::string getCommentText(const clang::Decl *D,
+                           const clang::ASTContext &Context) {
+  if (not D)
+    return "";
+
+  clang::RawComment *RC = Context.getRawCommentForDeclNoCache(D);
+  if (not RC)
+    return "";
+
+  const clang::SourceManager &SM = Context.getSourceManager();
+  clang::StringRef RawText = RC->getRawText(SM);
+
+  llvm::StringRef Text = RawText.trim();
+  if (Text.startswith("///")) {
+    return stripPrefixFromEachLine(Text, "///");
+
+  } else if (Text.startswith("//")) {
+    return stripPrefixFromEachLine(Text, "//");
+
+  } else if (Text.startswith("/*") and Text.endswith("*/")) {
+    return Text.substr(2, Text.size() - 4).trim().str();
+
+  } else {
+    return Text.str();
+  }
+}
+
+static bool isHTMLTag(const auto &CommentBlock) {
+  return llvm::isa<clang::comments::HTMLStartTagComment>(CommentBlock)
+         or llvm::isa<clang::comments::HTMLEndTagComment>(CommentBlock);
+}
+
+// Extract text from a comment node by concatenating child text nodes.
+static std::string
+extractCommentText(const clang::comments::Comment *C,
+                   const clang::comments::CommandTraits *Traits = nullptr) {
+  if (not C)
+    return "";
+
+  // Inline commands (e.g. \ref) have no children; extract args directly.
+  if (auto *ICC = llvm::dyn_cast<clang::comments::InlineCommandComment>(C)) {
+    std::string Result;
+    if (Traits != nullptr) {
+      Result += "\\";
+      Result += ICC->getCommandName(*Traits).str();
+    }
+    for (unsigned I = 0; I < ICC->getNumArgs(); ++I) {
+      if (not Result.empty())
+        Result += " ";
+      Result += ICC->getArgText(I).str();
+    }
+    return Result;
+  }
+
+  // HTML start tags (e.g. <b>, <a href="...">).
+  if (auto *HSTC = llvm::dyn_cast<clang::comments::HTMLStartTagComment>(C)) {
+    std::string Result = "<" + HSTC->getTagName().str();
+    for (unsigned I = 0; I < HSTC->getNumAttrs(); ++I) {
+      const auto &Attr = HSTC->getAttr(I);
+      Result += " " + Attr.Name.str() + "=\"" + Attr.Value.str() + "\"";
+    }
+    if (HSTC->isSelfClosing())
+      Result += "/>";
+    else
+      Result += ">";
+    return Result;
+  }
+
+  // HTML end tags (e.g. </b>).
+  if (auto *HETC = llvm::dyn_cast<clang::comments::HTMLEndTagComment>(C)) {
+    return "</" + HETC->getTagName().str() + ">";
+  }
+
+  // Verbatim block lines (children of \code ... \endcode blocks).
+  if (auto *BC = llvm::dyn_cast<clang::comments::VerbatimBlockLineComment>(C)) {
+    return BC->getText().str();
+  }
+
+  std::string Result;
+  for (auto It = C->child_begin(); It != C->child_end(); ++It) {
+    if (auto *TC = llvm::dyn_cast<clang::comments::TextComment>(*It)) {
+      llvm::StringRef Text = TC->getText().trim();
+      if (Text.empty())
+        continue;
+      if (not Result.empty())
+        Result += " ";
+      Result += Text.str();
+    } else {
+      std::string ChildText = extractCommentText(*It, Traits);
+      if (not ChildText.empty()) {
+        // Don't add spaces around HTML tags to preserve formatting like
+        // <b>bold</b> instead of <b> bold </b>.
+        bool CurrIsHTMLTag = isHTMLTag(*It);
+        bool PrevIsHTMLTag = (It != C->child_begin()) and isHTMLTag(*(It - 1));
+        if (not Result.empty() and not PrevIsHTMLTag and not CurrIsHTMLTag)
+          Result += " ";
+        Result += ChildText;
+      }
+    }
+  }
+  return Result;
+}
+
+struct FunctionComments {
+  std::string Main;
+  std::string Return;
+  std::map<std::string, std::string> Params;
+};
+
+// Internal visitor to extract Doxygen \param and \returns from parsed comments.
+struct DoxygenExtractor
+  : public clang::comments::ConstCommentVisitor<DoxygenExtractor> {
+  const clang::comments::CommandTraits &Traits;
+  FunctionComments &Out;
+  bool HasSeenBlockCommand = false;
+
+  DoxygenExtractor(const clang::comments::CommandTraits &Traits,
+                   FunctionComments &Out) :
+    Traits(Traits), Out(Out) {}
+
+  void visitParamCommandComment(const clang::comments::ParamCommandComment *C) {
+    if (C->hasParamName()) {
+      std::string Name = C->getParamNameAsWritten().str();
+
+      revng_assert(not Out.Params.contains(Name));
+      Out.Params[Name] = extractCommentText(C->getParagraph(), &Traits);
+    }
+  }
+
+  void visitBlockCommandComment(const clang::comments::BlockCommandComment *C) {
+    namespace cc = clang::comments;
+
+    HasSeenBlockCommand = true;
+    llvm::StringRef CommandName = C->getCommandName(Traits);
+    if (CommandName == "returns" or CommandName == "return") {
+      revng_assert(Out.Return.empty());
+      Out.Return = extractCommentText(C->getParagraph(), &Traits);
+
+    } else {
+      std::string Text;
+      if (auto *VBC = llvm::dyn_cast<cc::VerbatimBlockComment>(C)) {
+        // \code ... \endcode: reconstruct the block with opening command,
+        // each line, and closing command.
+        Text = "\\" + CommandName.str();
+        for (unsigned I = 0; I < VBC->getNumLines(); ++I) {
+          Text += "\n";
+          Text += VBC->getText(I).str();
+        }
+        Text += "\n\\" + VBC->getCloseName().str();
+
+      } else if (auto *VLC = llvm::dyn_cast<cc::VerbatimLineComment>(C)) {
+        Text = "\\" + CommandName.str();
+        llvm::StringRef VerbatimText = VLC->getText().trim();
+        if (not VerbatimText.empty()) {
+          Text += " ";
+          Text += VerbatimText.str();
+        }
+
+      } else {
+        Text = "\\" + CommandName.str();
+        std::string Paragraph = extractCommentText(C->getParagraph(), &Traits);
+        if (not Paragraph.empty()) {
+          Text += " ";
+          Text += Paragraph;
+        }
+      }
+      if (not Text.empty())
+        appendToMain(Text);
+    }
+  }
+
+  void visitParagraphComment(const clang::comments::ParagraphComment *C) {
+    std::string Text = extractCommentText(C, &Traits);
+    // Trim whitespace
+    size_t Start = Text.find_first_not_of(" \t\n\r");
+    if (Start == std::string::npos) {
+      // Empty or whitespace-only paragraph: add a blank line only if we
+      // haven't seen any block commands yet (i.e., it's the blank line
+      // separating the main description from block commands).
+      if (not HasSeenBlockCommand)
+        appendToMain("");
+      return;
+    }
+    size_t End = Text.find_last_not_of(" \t\n\r");
+    if (End != std::string::npos)
+      Text = Text.substr(Start, End - Start + 1);
+    appendToMain(Text);
+  }
+
+  void visitFullComment(const clang::comments::FullComment *C) {
+    for (auto It = C->child_begin(); It != C->child_end(); ++It)
+      visit(*It);
+  }
+
+  void visitComment(const clang::comments::Comment *C) {
+    for (auto It = C->child_begin(); It != C->child_end(); ++It)
+      visit(*It);
+  }
+
+private:
+  void appendToMain(const std::string &Text) {
+    if (not Out.Main.empty())
+      Out.Main += "\n";
+    Out.Main += Text;
+  }
+};
+
+static bool isBlockCommand(llvm::StringRef CommandName,
+                           const clang::comments::CommandTraits &Traits) {
+  if (CommandName.empty())
+    return false;
+  const clang::comments::CommandInfo
+    *Info = Traits.getCommandInfoOrNULL(CommandName);
+  if (Info == nullptr)
+    return false;
+  return Info->IsBlockCommand;
+}
+
+/// Strip \param and \returns lines (and their continuation) from raw comment
+/// text, returning the remaining text suitable for Comments.Main.
+static std::string
+stripParamAndReturns(llvm::StringRef Text,
+                     const clang::comments::CommandTraits &Traits) {
+  llvm::SmallVector<llvm::StringRef, 16> Lines;
+  Text.split(Lines, '\n');
+
+  std::string Result;
+  bool InParam = false;
+  for (llvm::StringRef Line : Lines) {
+    llvm::StringRef Trimmed = Line.trim();
+    if (Trimmed.empty()) {
+      // Blank line ends a \param / \returns description.
+      InParam = false;
+      if (not Result.empty())
+        Result += '\n';
+      Result += Line.str();
+      continue;
+    }
+
+    if (Trimmed.startswith("\\") or Trimmed.startswith("@")) {
+      llvm::StringRef CommandName = Trimmed.substr(1).take_until([](char C) {
+        return clang::isWhitespace(C);
+      });
+      if (CommandName == "param" or CommandName == "returns"
+          or CommandName == "return") {
+        InParam = true;
+        continue;
+      }
+      if (isBlockCommand(CommandName, Traits)) {
+        InParam = false;
+      }
+    }
+
+    if (InParam)
+      continue;
+
+    if (not Result.empty())
+      Result += '\n';
+    Result += Line.str();
+  }
+
+  return Result;
+}
+
+FunctionComments parseFunctionComment(const clang::FunctionDecl *FD,
+                                      const clang::ASTContext &Context) {
+  FunctionComments Result;
+
+  namespace cc = clang::comments;
+  const cc::CommandTraits &Traits = Context.getCommentCommandTraits();
+
+  // Try the standard comment lookup first.
+  const clang::RawComment *RC = Context.getRawCommentForDeclNoCache(FD);
+
+  if (RC == nullptr) {
+    // Fallback: when a macro/attribute prefix sits between the comment and
+    // the function name, getRawCommentForDeclNoCache returns nullptr
+    // because Decl::getBeginLoc() points into the prefix.  Scan all comments
+    // in the same file and pick the one whose end is closest to (but still
+    // before) the function name token.
+    clang::SourceLocation NameLoc = FD->getNameInfo().getBeginLoc();
+    if (NameLoc.isValid()) {
+      const clang::SourceManager &SM = Context.getSourceManager();
+      clang::FileID File = SM.getFileID(NameLoc);
+      const std::map<unsigned, clang::RawComment *>
+        *CommentsInFile = Context.Comments.getCommentsInFile(File);
+      if (CommentsInFile) {
+        const clang::RawComment *Best = nullptr;
+        clang::SourceLocation BestEnd;
+        for (const auto &[Offset, C] : *CommentsInFile) {
+          clang::SourceLocation End = C->getEndLoc();
+          if (SM.isBeforeInTranslationUnit(End, NameLoc)) {
+            if (Best == nullptr || SM.isBeforeInTranslationUnit(BestEnd, End)) {
+              Best = C;
+              BestEnd = End;
+            }
+          }
+        }
+        RC = Best;
+      }
+    }
+  }
+
+  if (RC != nullptr) {
+    // Use the FullComment AST only to extract \param and \returns.
+    clang::comments::FullComment *FC = RC->parse(Context, nullptr, FD);
+    DoxygenExtractor Extractor(Traits, Result);
+    Extractor.visit(FC);
+
+    // Use the raw comment text as the base for Main, stripping \param and
+    // \returns so they don't appear twice (the emitter emits them separately).
+    std::string RawText = getCommentText(FD, Context);
+    Result.Main = stripParamAndReturns(RawText, Traits);
+
+    // Strip trailing blank lines from Main.  The emitter adds its own
+    // structural blank lines between the main comment and \param/\returns,
+    // so we must not preserve trailing empty paragraphs in Main.
+    while (not Result.Main.empty() and Result.Main.back() == '\n')
+      Result.Main.pop_back();
+  }
+
+  return Result;
 }
 
 } // namespace
@@ -143,7 +522,8 @@ public:
   bool VisitEnumDecl(const EnumDecl *D);
   bool VisitTypedefDecl(const TypedefDecl *D);
   bool VisitFunctionPrototype(const FunctionProtoType *FP,
-                              llvm::StringRef TheABI);
+                              llvm::StringRef TheABI,
+                              const TypedefDecl *D);
 
 private:
   // This checks that the declaration is the one user provided as input.
@@ -610,9 +990,6 @@ bool DeclVisitor::VisitFunctionDecl(const clang::FunctionDecl *FD) {
                             NewArgument,
                             FD->getParamDecl(I)->getName());
 
-      // TODO: This discard whatever comments might have been attached to
-      //       the original argument.
-
       NewArgument.Type() = std::move(ParamType);
       ++Index;
     }
@@ -762,9 +1139,6 @@ bool DeclVisitor::VisitFunctionDecl(const clang::FunctionDecl *FD) {
                                 TheRawFunctionType,
                                 ParamReg,
                                 ParamDecl->getName());
-
-        // TODO: This discard whatever comments might have been attached to
-        //       the original register.
       }
     }
   }
@@ -784,6 +1158,34 @@ bool DeclVisitor::VisitFunctionDecl(const clang::FunctionDecl *FD) {
 
   if (auto *OriginalFunction = Model->Functions().tryGet(FunctionEntry))
     preserveMetadata(*OriginalFunction, ModelFunction);
+
+  FunctionComments Comments = parseFunctionComment(FD, Context);
+  if (not Comments.Main.empty())
+    ModelFunction.Comment() = Comments.Main;
+  if (not IsRawFunctionType) {
+    auto &FunctionType = llvm::cast<CABIFunctionDefinition>(*NewType);
+    for (auto &Argument : FunctionType.Arguments()) {
+      std::string EffectiveName = NameBuilder.name(FunctionType, Argument);
+      if (auto It = Comments.Params.find(EffectiveName);
+          It != Comments.Params.end()) {
+        Argument.Comment() = It->second;
+      }
+    }
+
+    FunctionType.ReturnValueComment() = Comments.Return;
+
+  } else {
+    auto &FunctionType = llvm::cast<RawFunctionDefinition>(*NewType);
+    for (auto &Argument : FunctionType.Arguments()) {
+      std::string EffectiveName = NameBuilder.name(FunctionType, Argument);
+      if (auto It = Comments.Params.find(EffectiveName);
+          It != Comments.Params.end()) {
+        Argument.Comment() = It->second;
+      }
+    }
+
+    FunctionType.ReturnValueComment() = Comments.Return;
+  }
 
   auto &&[_, Prototype] = Model->recordNewType(std::move(NewType));
   ModelFunction.Prototype() = Prototype;
@@ -821,7 +1223,7 @@ bool DeclVisitor::VisitTypedefDecl(const TypedefDecl *D) {
       return false;
     }
 
-    return VisitFunctionPrototype(Fn, *ABI);
+    return VisitFunctionPrototype(Fn, *ABI, D);
   }
 
   // Regular, non-function, typedef.
@@ -840,10 +1242,8 @@ bool DeclVisitor::VisitTypedefDecl(const TypedefDecl *D) {
   TheTypeTypeDef->UnderlyingType() = std::move(ModelTypedefType);
 
   setNameIfNotAutomatic(NameBuilder, *TheTypeTypeDef, D->getName());
-
-  if (AnalysisOption == ImportFromCOption::EditType)
-    if (auto *OldType = Model->TypeDefinitions().tryGet(*Type))
-      preserveMetadata(**OldType, *NewTypedef);
+  if (std::string Text = getCommentText(D, Context); not Text.empty())
+    TheTypeTypeDef->Comment() = std::move(Text);
 
   if (AnalysisOption == ImportFromCOption::EditType) {
     revng_assert(*Type == NewTypedef->key());
@@ -857,7 +1257,8 @@ bool DeclVisitor::VisitTypedefDecl(const TypedefDecl *D) {
 }
 
 bool DeclVisitor::VisitFunctionPrototype(const FunctionProtoType *FP,
-                                         llvm::StringRef ABI) {
+                                         llvm::StringRef ABI,
+                                         const TypedefDecl *D) {
   revng_assert(AnalysisOption != ImportFromCOption::EditFunctionPrototype);
   revng_assert(ABI != "");
 
@@ -914,24 +1315,63 @@ bool DeclVisitor::VisitFunctionPrototype(const FunctionProtoType *FP,
       return false;
     }
 
+    auto &FunctionType = cast<RawFunctionDefinition>(*NewType);
+    FunctionType.Architecture() = Architecture;
+
     // TODO: Since we do not have info about parameters annotation, we use
     // default raw function.
-    auto Default = cast<RawFunctionDefinition>(*Model->defaultPrototype());
-
-    auto &FunctionType = llvm::cast<RawFunctionDefinition>(*NewType);
-    FunctionType.Architecture() = Architecture;
-    FunctionType.Arguments() = Default.Arguments();
-    FunctionType.ReturnValues() = Default.ReturnValues();
-    FunctionType.PreservedRegisters() = Default.PreservedRegisters();
-    FunctionType.FinalStackOffset() = Default.FinalStackOffset();
+    if (AnalysisOption == ImportFromCOption::EditType) {
+      // Preserve existing arguments/return values when editing
+      if (auto *OldType = Model->TypeDefinitions().tryGet(*Type)) {
+        if (auto *OldFn = dyn_cast<RawFunctionDefinition>(&**OldType)) {
+          FunctionType.Arguments() = OldFn->Arguments();
+          FunctionType.ReturnValues() = OldFn->ReturnValues();
+          FunctionType.PreservedRegisters() = OldFn->PreservedRegisters();
+          FunctionType.FinalStackOffset() = OldFn->FinalStackOffset();
+        }
+      }
+    } else {
+      // For new types, copy from default prototype
+      auto *DefaultPrototype = Model->defaultPrototype();
+      if (DefaultPrototype) {
+        if (auto *Default = dyn_cast<RawFunctionDefinition>(DefaultPrototype)) {
+          FunctionType.Arguments() = Default->Arguments();
+          FunctionType.ReturnValues() = Default->ReturnValues();
+          FunctionType.PreservedRegisters() = Default->PreservedRegisters();
+          FunctionType.FinalStackOffset() = Default->FinalStackOffset();
+        }
+      }
+    }
   }
 
+  model::TypeDefinition::Key NewTypeKey = NewType->key();
   if (AnalysisOption == ImportFromCOption::EditType) {
-    revng_assert(*Type == NewType->key());
+    revng_assert(*Type == NewTypeKey);
     Model->TypeDefinitions().erase(*Type);
     Model->TypeDefinitions().insert(std::move(NewType));
   } else {
     Model->recordNewType(std::move(NewType));
+  }
+
+  // For typedef function types, set the name and comment from the typedef
+  if (D) {
+    model::TypeDefinition::Key Key = *Type;
+    if (AnalysisOption != ImportFromCOption::EditType)
+      Key = NewTypeKey;
+
+    if (auto *Definition = Model->TypeDefinitions().tryGet(Key)) {
+      model::TypeDefinition *Ptr = Definition->get();
+      if (auto *CFT = llvm::dyn_cast<model::CABIFunctionDefinition>(Ptr)) {
+        setNameIfNotAutomatic(NameBuilder, *CFT, D->getName());
+        if (std::string Text = getCommentText(D, Context); not Text.empty())
+          CFT->Comment() = std::move(Text);
+
+      } else if (auto *R = llvm::dyn_cast<model::RawFunctionDefinition>(Ptr)) {
+        setNameIfNotAutomatic(NameBuilder, *R, D->getName());
+        if (std::string Text = getCommentText(D, Context); not Text.empty())
+          R->Comment() = std::move(Text);
+      }
+    }
   }
 
   return true;
@@ -950,6 +1390,8 @@ bool DeclVisitor::handleStructType(const clang::RecordDecl *RD) {
     NewType->ID() = ID;
 
   setNameIfNotAutomatic(NameBuilder, *NewType, RD->getName());
+  if (std::string Text = getCommentText(RD, Context); not Text.empty())
+    NewType->Comment() = std::move(Text);
 
   auto *Struct = cast<model::StructDefinition>(NewType.get());
   uint64_t CurrentOffset = 0;
@@ -958,9 +1400,6 @@ bool DeclVisitor::handleStructType(const clang::RecordDecl *RD) {
   if (AnalysisOption == ImportFromCOption::EditType)
     if (auto *OldType = Model->TypeDefinitions().tryGet(*Type))
       OldStruct = dyn_cast<model::StructDefinition>(&**OldType);
-
-  if (OldStruct != nullptr)
-    preserveMetadata(*OldStruct, *Struct);
 
   //
   // Iterate over the struct fields
@@ -1068,9 +1507,8 @@ bool DeclVisitor::handleStructType(const clang::RecordDecl *RD) {
                             *Struct,
                             FieldModelType,
                             Field->getName());
-
-      // TODO: This discard whatever comments might have been attached to
-      //       the original field.
+      if (std::string Text = getCommentText(Field, Context); not Text.empty())
+        FieldModelType.Comment() = std::move(Text);
 
       FieldModelType.Type() = std::move(ModelField);
     } else {
@@ -1133,12 +1571,10 @@ bool DeclVisitor::handleUnionType(const clang::RecordDecl *RD) {
     NewType->ID() = ID;
 
   setNameIfNotAutomatic(NameBuilder, *NewType, RD->getName());
+  if (std::string Text = getCommentText(RD, Context); not Text.empty())
+    NewType->Comment() = std::move(Text);
 
   auto Union = cast<model::UnionDefinition>(NewType.get());
-
-  if (AnalysisOption == ImportFromCOption::EditType)
-    if (auto *OldType = Model->TypeDefinitions().tryGet(*Type))
-      preserveMetadata(**OldType, *Union);
 
   uint64_t CurrentIndex = 0;
   for (const FieldDecl *Field : Definition->fields()) {
@@ -1161,14 +1597,12 @@ bool DeclVisitor::handleUnionType(const clang::RecordDecl *RD) {
     }
 
     auto &FieldModelType = Union->Fields()[CurrentIndex];
-
     setNameIfNotAutomatic(NameBuilder,
                           *Union,
                           FieldModelType,
                           Field->getName());
-
-    // TODO: This discard whatever comments might have been attached to
-    //       the original field.
+    if (std::string Text = getCommentText(Field, Context); not Text.empty())
+      FieldModelType.Comment() = std::move(Text);
 
     FieldModelType.Type() = std::move(TheFieldType);
 
@@ -1274,26 +1708,35 @@ bool DeclVisitor::VisitEnumDecl(const EnumDecl *D) {
 
   auto *Definition = D->getDefinition();
   setNameIfNotAutomatic(NameBuilder, *NewType, Definition->getName());
+  if (std::string Text = getCommentText(Definition, Context); not Text.empty())
+    NewType->Comment() = std::move(Text);
 
-  const model::EnumDefinition *OldEnum = nullptr;
-  if (AnalysisOption == ImportFromCOption::EditType) {
-    if (auto *OldType = Model->TypeDefinitions().tryGet(*Type)) {
-      OldEnum = dyn_cast<model::EnumDefinition>(&**OldType);
-      preserveMetadata(*OldEnum, *NewType);
-    }
-  }
-
+  clang::RawComment *LastEnumComment = nullptr;
   for (const auto *Enum : Definition->enumerators()) {
     auto Value = Enum->getInitVal().getExtValue();
+
+    // Skip the auto-generated max value entry
+    const auto Prefix = NameBuilder.Configuration.MaximumEnumValuePrefix();
+    if (Enum->getName().starts_with(Prefix))
+      continue;
+
     auto NewIterator = NewType->Entries().insert(Value).first;
     setNameIfNotAutomatic(NameBuilder,
                           *NewType,
                           *NewIterator,
                           Enum->getName().str());
 
-    if (OldEnum != nullptr)
-      if (auto *OldEntry = OldEnum->Entries().tryGet(Value))
-        preserveMetadata(*OldEntry, *NewIterator);
+    // Only set comment if it's different from the last one (prevents
+    // propagation to consecutive entries separated by commas)
+    clang::RawComment *RC = Context.getRawCommentForDeclNoCache(Enum);
+    if (RC != LastEnumComment) {
+      if (std::string Text = getCommentText(Enum, Context); not Text.empty()) {
+        NewIterator->Comment() = std::move(Text);
+        LastEnumComment = RC;
+      } else {
+        LastEnumComment = nullptr;
+      }
+    }
   }
 
   return true;
