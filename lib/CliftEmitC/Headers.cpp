@@ -318,3 +318,21 @@ void emitSingleTypeDefinition(ptml::CTokenEmitter &Tokens,
   Emitter.emitTypeDefinition(Type);
   Tokens.emitNewline();
 }
+
+void emitSingleFunctionDeclaration(ptml::CTokenEmitter &Tokens,
+                                   mlir::ModuleOp Module,
+                                   llvm::StringRef FunctionHandle) {
+  CEmitter Emitter(Tokens, clift::getDataModel(Module));
+
+  clift::FunctionOp TargetFunction = nullptr;
+  Module->walk([&](clift::FunctionOp Function) {
+    if (Function.getHandle() == FunctionHandle)
+      TargetFunction = Function;
+  });
+  revng_check(TargetFunction != nullptr,
+              "Function with handle not found in Clift module");
+
+  Emitter.emitFunctionPrototype(TargetFunction);
+  Tokens.emitPunctuator(ptml::CTokenEmitter::Punctuator::Semicolon);
+  Tokens.emitNewline();
+}

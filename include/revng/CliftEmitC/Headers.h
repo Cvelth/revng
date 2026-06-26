@@ -33,3 +33,7 @@ void emitSingleTypeDefinition(ptml::CTokenEmitter &Tokens,
                               const CDataModel &DataModel,
                               clift::DefinedType Type,
                               TypeEmitterConfiguration Configuration = {});
+
+void emitSingleFunctionDeclaration(ptml::CTokenEmitter &Tokens,
+                                   mlir::ModuleOp Module,
+                                   llvm::StringRef FunctionHandle);
