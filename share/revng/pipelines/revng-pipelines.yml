@@ -47,6 +47,8 @@ Containers:
     Type: helper-header
   - Name: single-type-definition.tar.gz
     Type: single-type-definition
+  - Name: single-function-declaration.tar.gz
+    Type: single-function-declaration
 Branches:
   - Steps:
       - Name: initial
@@ -661,6 +663,23 @@ Branches:
             `import-from-c` analysis. In fact, this artifact is designed to be
             easily editable by the end-user; it's not designed to represent
             valid C code, unlike the `emit-type-and-global-header` artifact.
+      - Name: emit-single-function-declaration
+        Pipes:
+          - Type: import-function-declarations
+            UsedContainers: [types-and-globals.mlir]
+          - Type: import-descriptive-info
+            UsedContainers: [types-and-globals.mlir]
+          - Type: emit-single-function-declaration
+            UsedContainers: [types-and-globals.mlir, single-function-declaration.tar.gz]
+        Artifacts:
+          Container: single-function-declaration.tar.gz
+          Kind: single-function-declaration
+          SingleTargetFilename: function.h
+          Docs: |-
+            This artifact is an archive of plain C headers.
+            Each file contains the declaration of a single function.
+            This artifact is designed to be used as the initial input of the
+            `import-from-c` analysis for editing function prototypes.
 AnalysesLists:
   - Name: revng-initial-auto-analysis
     Analyses:

@@ -36,6 +36,12 @@ inline TypeKind SingleTypeDefinition("single-type-definition",
                                      {},
                                      {});
 
+inline TypeKind SingleFunctionDeclaration("single-function-declaration",
+                                          TypeAndGlobalHeader,
+                                          ranks::Function,
+                                          {},
+                                          {});
+
 } // namespace revng::kinds
 
 namespace detail {
@@ -50,6 +56,10 @@ inline constexpr char TypeDefinitionName[] = "single-type-definition";
 inline constexpr char TypeDefinitionMimeType[] = "text/x.c+tar+gz";
 inline constexpr char TypeDefinitionSuffix[] = ".c";
 
+inline constexpr char FunctionDeclarationName[] = "single-function-declaration";
+inline constexpr char FunctionDeclarationMimeType[] = "text/x.c+tar+gz";
+inline constexpr char FunctionDeclarationSuffix[] = ".c";
+
 template<auto... Values>
 using SBF = revng::pipes::StringBufferContainer<Values...>;
 
@@ -57,6 +67,9 @@ using SBF = revng::pipes::StringBufferContainer<Values...>;
 namespace RPD = revng::pipes::detail;
 template<auto... Values>
 using TSM = RPD::GenericStringMap<&revng::ranks::TypeDefinition, Values...>;
+
+template<auto... Values>
+using FSM = RPD::GenericStringMap<&revng::ranks::Function, Values...>;
 
 template<typename T>
 using RegisterDCC = pipeline::RegisterDefaultConstructibleContainer<T>;
@@ -81,3 +94,10 @@ using TypeDefinitionContainer = detail::TSM<&revng::kinds::SingleTypeDefinition,
                                             detail::TypeDefinitionMimeType,
                                             detail::TypeDefinitionSuffix>;
 inline detail::RegisterDCC<TypeDefinitionContainer> RegisteredTDC;
+
+using FunctionDeclarationContainer = detail::FSM<
+  &revng::kinds::SingleFunctionDeclaration,
+  detail::FunctionDeclarationName,
+  detail::FunctionDeclarationMimeType,
+  detail::FunctionDeclarationSuffix>;
+inline detail::RegisterDCC<FunctionDeclarationContainer> RegisteredFDC;

@@ -106,6 +106,7 @@ REGISTER(FunctionPipeRun, Clifter);
 REGISTER(FunctionPipeRun, CollectCFG);
 REGISTER(FunctionPipeRun, EmitC);
 REGISTER(FunctionPipeRun, EmitFunctionPointers);
+REGISTER(FunctionPipeRun, EmitSingleFunctionDeclaration);
 REGISTER(FunctionPipeRun, EmitStringConstants);
 REGISTER(FunctionPipeRun, EnforceABI);
 REGISTER(FunctionPipeRun, ImportDescriptiveFunctionInfo);

@@ -69,6 +69,8 @@ containers:
     type: PTMLCBytesContainer
   - name: single-type
     type: PTMLCTypeBytesContainer
+  - name: single-function
+    type: PTMLCFunctionBytesContainer
   - name: tagless-type-and-global-header
     type: PTMLCBytesContainer
   - name: tagless-helper-header
@@ -824,3 +826,21 @@ branches:
             container: single-type
             category: user
             filename: type.h
+
+  emit-single-function-declaration:
+    from: import-types
+    tasks:
+      - pipe: import-descriptive-info
+        arguments: [clift-types-and-globals]
+      - pipe: emit-single-function-declaration
+        arguments: [clift-types-and-globals, single-function]
+        configuration:
+          disable-markup: true
+          emission-mode: editable
+      - savepoint: single-function-declaration
+        containers: [single-function]
+        artifacts:
+          - name: emit-single-function-declaration
+            container: single-function
+            category: user
+            filename: function.h

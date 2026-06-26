@@ -113,4 +113,37 @@ public:
   void runOnTypeDefinition(const model::UpcastableTypeDefinition &Type);
 };
 
+class EmitSingleFunctionDeclaration {
+private:
+  const model::Binary &Binary;
+  const CliftModuleContainer &Input;
+  PTMLCFunctionBytesContainer &Output;
+
+  CEmissionPipeConfiguration Configuration;
+
+public:
+  static constexpr llvm::StringRef Name = "emit-single-function-declaration";
+  using Arguments = TypeList<PipeRunArgument<CliftModuleContainer,
+                                             "Input",
+                                             "MLIR container containing "
+                                             "function declarations",
+                                             Access::Read>,
+                             PipeRunArgument<PTMLCFunctionBytesContainer,
+                                             "Output",
+                                             "A single C function declaration",
+                                             Access::Write>>;
+
+  EmitSingleFunctionDeclaration(const class Model &Model,
+                                llvm::StringRef Configuration,
+                                llvm::StringRef DynamicConfig,
+                                const CliftModuleContainer &Input,
+                                PTMLCFunctionBytesContainer &Output) :
+    Binary(*Model.get().get()),
+    Input(Input),
+    Output(Output),
+    Configuration(parseCEmissionPipeConfiguration(Configuration)){};
+
+  void runOnFunction(const model::Function &Function);
+};
+
 } // namespace revng::pypeline::piperuns

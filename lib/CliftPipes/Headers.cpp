@@ -116,6 +116,21 @@ static void emitTypeDefinitionImpl(llvm::raw_ostream &Out,
   Out.flush();
 }
 
+static void
+emitSingleFunctionDeclarationImpl(llvm::raw_ostream &Out,
+                                  mlir::ModuleOp Module,
+                                  llvm::StringRef FunctionHandle,
+                                  PipeConfiguration *PipeCfg = nullptr) {
+  ptml::CTokenEmitter Tokens(Out,
+                             not PipeCfg || PipeCfg->DisableMarkup ?
+                               ptml::Tagging::Disabled :
+                               ptml::Tagging::Enabled);
+
+  emitSingleFunctionDeclaration(Tokens, Module, FunctionHandle);
+
+  Out.flush();
+}
+
 //
 // Old style pipes
 //
@@ -208,6 +223,40 @@ public:
 
 static pipeline::RegisterPipe<SingleTypeDefinitionPipe> TypeDefinition;
 
+class SingleFunctionDeclarationPipe {
+public:
+  static constexpr auto Name = "emit-single-function-declaration";
+
+  std::array<pipeline::ContractGroup, 1> getContract() const {
+    using namespace pipeline;
+    using namespace revng::kinds;
+
+    return { ContractGroup({ Contract(CliftModule,
+                                      0,
+                                      SingleFunctionDeclaration,
+                                      1,
+                                      InputPreservation::Preserve) }) };
+  }
+
+  void run(pipeline::ExecutionContext &EC,
+           const revng::pipes::CliftContainer &CliftContainer,
+           FunctionDeclarationContainer &Output) {
+    mlir::ModuleOp Module = CliftContainer.getModule();
+
+    for (const model::Function &Function :
+         revng::getFunctionsAndCommit(EC, Output.name())) {
+      std::string &Result = Output[Function.key()];
+      llvm::raw_string_ostream Out(Result);
+
+      auto Location = pipeline::locationString(revng::ranks::Function,
+                                               Function.key());
+      emitSingleFunctionDeclarationImpl(Out, Module, Location);
+    }
+  }
+};
+
+static pipeline::RegisterPipe<SingleFunctionDeclarationPipe> FunctionDeclPipe;
+
 } // namespace
 
 //
@@ -246,6 +295,17 @@ void ESTD::runOnTypeDefinition(const model::UpcastableTypeDefinition &Type) {
                          DataModel,
                          *Type,
                          &Configuration);
+}
+
+using ESFD = EmitSingleFunctionDeclaration;
+void ESFD::runOnFunction(const model::Function &Function) {
+  auto Stream = Output.getOStream(ObjectID(Function.Entry()));
+  std::string Handle = pipeline::locationString(revng::ranks::Function,
+                                                Function.Entry());
+  emitSingleFunctionDeclarationImpl(*Stream,
+                                    Input.getModule(),
+                                    Handle,
+                                    &Configuration);
 }
 
 } // namespace revng::pypeline::piperuns
