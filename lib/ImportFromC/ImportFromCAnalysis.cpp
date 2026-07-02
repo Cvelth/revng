@@ -266,11 +266,50 @@ private:
     return Result;
   }
 
+  static std::string adjustErrorLineNumbers(llvm::StringRef Message,
+                                            size_t InjectedLineCount) {
+    if (InjectedLineCount == 0)
+      return Message.str();
+
+    // TODO: we might want something more robust here, but considering
+    //       the plans to eventually support SARIF here, no reason to put too
+    //       much effort into this now.
+    size_t FirstColon = Message.find(':');
+    if (FirstColon == llvm::StringRef::npos)
+      return Message.str();
+
+    llvm::StringRef Prefix = Message.substr(0, FirstColon);
+    if (Prefix.empty())
+      return Message.str();
+
+    size_t NumberEnd = Message.find(':', FirstColon + 1);
+    if (NumberEnd == llvm::StringRef::npos)
+      return Message.str();
+
+    llvm::StringRef NumberString = Message.substr(FirstColon + 1,
+                                                  NumberEnd - FirstColon - 1);
+    unsigned long long LineNumber;
+    if (NumberString.getAsInteger(10, LineNumber))
+      return Message.str();
+
+    if (LineNumber <= InjectedLineCount)
+      return {};
+
+    LineNumber -= InjectedLineCount;
+    return (Prefix + ":" + std::to_string(LineNumber)
+            + Message.substr(NumberEnd))
+      .str();
+  }
+
   static llvm::Error parseCompiledC(ImportFromCState &State,
                                     llvm::StringRef HeaderPath,
                                     llvm::StringRef CCode) {
-    std::string InputC = std::string("#include \"") + HeaderPath.str()
-                         + std::string("\"\n") + CCode.str();
+    std::string Prefix = std::string("#include \"") + HeaderPath.str()
+                         + std::string("\"\n");
+    std::string InputC = Prefix + CCode.str();
+    const size_t InjectedLineCount = std::count(Prefix.begin(),
+                                                Prefix.end(),
+                                                '\n');
     revng_log(Log, "Real input:\n" << InputC << "\n");
 
     static constexpr std::string_view InputFileName = "revng-input.c";
@@ -283,18 +322,19 @@ private:
 
     // Check if an error was reported by clang or revng during parsing of C
     // code.
-    //
-    // TODO: adjusting line numbers to account for the lines we append would
-    //       make UX considerably better.
     if (not State.Errors.empty()) {
       std::string ConcatenatedErrorMessage;
-      for (auto &Error : State.Errors)
-        ConcatenatedErrorMessage += std::move(Error);
+      for (auto &Error : State.Errors) {
+        std::string Adjusted = adjustErrorLineNumbers(Error, InjectedLineCount);
+        if (not Adjusted.empty())
+          ConcatenatedErrorMessage += std::move(Adjusted);
+      }
 
       // TODO: the best thing for the UI would be having clang emit SARIF,
       //       we should add an option to emit it instead (it's still worth
       //       keeping the basic output for CLI users).
-      return revng::createError(ConcatenatedErrorMessage);
+      if (not ConcatenatedErrorMessage.empty())
+        return revng::createError(ConcatenatedErrorMessage);
     }
 
     model::VerifyHelper VH;
